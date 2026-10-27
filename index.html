@@ -3,13 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Prototyp konkursowy: nie chcemy, żeby wyszukiwarki pokazywały go jako aplikację państwową -->
-    <meta name="robots" content="noindex, nofollow" />
+    <!-- Prototyp konkursowy: nie chcemy, żeby wyszukiwarki pokazywały go jako aplikację państwową.
+         To samo wysyła serwer w nagłówku X-Robots-Tag (vercel.json). -->
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+    <meta name="referrer" content="no-referrer" />
     <title>mObywatel dla bliskich — prototyp</title>
     <meta name="description" content="Koncepcyjny prototyp na mObywatel Challenge: aktualny mObywatel z nowymi funkcjami — pomoc, ochrona i kontrola dla całej rodziny." />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles/tokens.css" />
     <link rel="stylesheet" href="styles/app.css" />
     <link rel="stylesheet" href="styles/devices.css" />
