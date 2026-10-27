@@ -73,9 +73,52 @@ button:disabled {
 }
 
 .stage-header-inner {
-  max-width: 1280px;
+  max-width: 1720px;
   margin: 0 auto;
   padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+}
+
+.stage-intro {
+  flex: 1 1 560px;
+  min-width: 0;
+}
+
+/* Wybór urządzenia: iPhone 18 Pro albo składany iPhone Duo */
+
+.device-picker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--mo-bg);
+  border: 1px solid var(--mo-hair);
+}
+
+.device-picker-label {
+  padding: 0 8px 0 6px;
+  font-size: 13px;
+  color: var(--mo-text-2);
+}
+
+.device-picker button {
+  padding: 7px 12px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mo-text-2);
+  white-space: nowrap;
+}
+
+.device-picker button[aria-pressed='true'] {
+  background: var(--mo-surface);
+  color: var(--mo-text);
+  box-shadow: 0 1px 3px rgba(15, 25, 60, 0.14);
 }
 
 .stage-eyebrow {
@@ -96,7 +139,7 @@ button:disabled {
 }
 
 .stage {
-  max-width: 1280px;
+  max-width: 1720px;
   margin: 0 auto;
   padding: 24px;
   display: grid;
@@ -107,7 +150,7 @@ button:disabled {
 }
 
 .stage-footer {
-  max-width: 1280px;
+  max-width: 1720px;
   margin: 0 auto;
   padding: 0 24px 32px;
   font-size: 12px;
@@ -251,36 +294,40 @@ button:disabled {
   color: var(--mo-text-2);
 }
 
-.phone-frame {
-  width: 375px;
-  height: clamp(640px, calc(100vh - 190px), 812px);
-  border-radius: 50px;
-  padding: 10px;
-  background: #16171a;
-  box-shadow: 0 0 0 1px #3b3d42, 0 40px 80px -24px rgba(20, 22, 30, 0.45);
-}
-
 .phone-screen {
   position: relative;
   height: 100%;
-  border-radius: 40px;
+  border-radius: var(--screen-r);
   overflow: hidden;
   background: var(--mo-bg);
   display: flex;
   flex-direction: column;
 }
 
+/* Pasek stanu iOS: godzina po lewej, ikony po prawej, w iPhonie 18 Pro po obu stronach Dynamic Island */
+
 .statusbar {
-  display: flex;
-  justify-content: space-between;
-  padding: 14px 30px 4px 34px;
-  font-size: 15px;
+  flex-shrink: 0;
+  height: var(--statusbar-h);
+  display: grid;
+  grid-template-columns: 1fr var(--island-w) 1fr;
+  align-items: center;
+  padding: var(--statusbar-pad);
+  font-size: 17px;
   font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #000;
+}
+
+.statusbar-time {
+  justify-self: center;
 }
 
 .statusbar-icons {
-  font-size: 11px;
-  letter-spacing: 1px;
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Nagłówek zakładki: znak po lewej, ikony po prawej, duży tytuł */
@@ -793,7 +840,7 @@ button:disabled {
 
 .tabbar {
   display: flex;
-  padding: 6px 4px 22px;
+  padding: 6px 4px var(--safe-bottom);
   background: rgba(255, 255, 255, 0.96);
   border-top: 1px solid var(--mo-hair);
 }
@@ -817,7 +864,7 @@ button:disabled {
 
 .banners {
   position: absolute;
-  top: 44px;
+  top: var(--banner-top);
   left: 8px;
   right: 8px;
   display: grid;
@@ -1419,7 +1466,7 @@ label.btn {
 .read-aloud {
   position: absolute;
   right: 14px;
-  bottom: 84px;
+  bottom: calc(var(--safe-bottom) + 62px);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1465,14 +1512,14 @@ label.btn {
 
 /* ---------- Szerokości ekranu ---------- */
 
-@media (max-width: 1240px) {
-  .stage {
-    grid-template-columns: auto auto;
-  }
+.stage-guide-below {
+  grid-template-columns: auto auto;
+}
 
-  .guide {
-    grid-column: 1 / -1;
-  }
+.stage-guide-below .guide {
+  grid-column: 1 / -1;
+  max-width: 980px;
+  justify-self: center;
 }
 
 /* Telefon lub wąskie okno: jeden telefon na cały ekran, przełącznik u góry */
@@ -1529,21 +1576,8 @@ label.btn {
     display: none;
   }
 
-  .phone,
-  .phone-frame {
+  .phone {
     width: 100%;
-  }
-
-  .phone-frame {
-    height: calc(100dvh - 50px);
-    padding: 0;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-  }
-
-  .phone-screen {
-    border-radius: 0;
   }
 
   .statusbar {

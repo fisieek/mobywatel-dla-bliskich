@@ -12,16 +12,25 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles/tokens.css" />
     <link rel="stylesheet" href="styles/app.css" />
+    <link rel="stylesheet" href="styles/devices.css" />
   </head>
   <body>
     <header class="stage-header">
       <div class="stage-header-inner">
-        <p class="stage-eyebrow">Prototyp koncepcyjny · mObywatel Challenge 2026</p>
-        <h1 class="stage-title">mObywatel dla bliskich</h1>
-        <p class="stage-lead">
-          Ten sam mObywatel, który znasz — z nowymi funkcjami: <strong>pomoc, ochrona, kontrola</strong>.
-          Wszystko, co dodaliśmy, ma etykietę <span class="new-badge">Nowość</span>
-        </p>
+        <div class="stage-intro">
+          <p class="stage-eyebrow">Prototyp koncepcyjny · mObywatel Challenge 2026</p>
+          <h1 class="stage-title">mObywatel dla bliskich</h1>
+          <p class="stage-lead">
+            Ten sam mObywatel, który znasz — z nowymi funkcjami: <strong>pomoc, ochrona, kontrola</strong>.
+            Wszystko, co dodaliśmy, ma etykietę <span class="new-badge">Nowość</span>
+          </p>
+        </div>
+        <div class="device-picker" role="group" aria-label="Na jakim telefonie pokazać">
+          <span class="device-picker-label">Pokaż na</span>
+          <button data-device-pick="iphone18pro" aria-pressed="true">iPhone 18 Pro</button>
+          <button data-device-pick="duo-closed" aria-pressed="false">iPhone Duo · złożony</button>
+          <button data-device-pick="duo-open" aria-pressed="false">iPhone Duo · rozłożony</button>
+        </div>
       </div>
     </header>
 
@@ -33,12 +42,36 @@
     <main class="stage">
       <section class="phone" data-persona="krystyna" aria-label="Telefon Krystyny">
         <p class="phone-caption">Krystyna, 71 lat · tryb prosty</p>
-        <div class="phone-frame"><div class="phone-screen"></div></div>
+        <div class="phone-frame">
+          <span class="hw hw-action" aria-hidden="true"></span>
+          <span class="hw hw-volume-up" aria-hidden="true"></span>
+          <span class="hw hw-volume-down" aria-hidden="true"></span>
+          <span class="hw hw-side" aria-hidden="true"></span>
+          <span class="hw hw-camera" aria-hidden="true"></span>
+          <div class="phone-glass">
+            <div class="phone-screen"></div>
+            <span class="crease" aria-hidden="true"></span>
+            <span class="camera-cutout" aria-hidden="true"></span>
+            <span class="home-indicator" aria-hidden="true"></span>
+          </div>
+        </div>
       </section>
 
       <section class="phone" data-persona="anna" aria-label="Telefon Anny">
         <p class="phone-caption">Anna, 34 lata · córka Krystyny</p>
-        <div class="phone-frame"><div class="phone-screen"></div></div>
+        <div class="phone-frame">
+          <span class="hw hw-action" aria-hidden="true"></span>
+          <span class="hw hw-volume-up" aria-hidden="true"></span>
+          <span class="hw hw-volume-down" aria-hidden="true"></span>
+          <span class="hw hw-side" aria-hidden="true"></span>
+          <span class="hw hw-camera" aria-hidden="true"></span>
+          <div class="phone-glass">
+            <div class="phone-screen"></div>
+            <span class="crease" aria-hidden="true"></span>
+            <span class="camera-cutout" aria-hidden="true"></span>
+            <span class="home-indicator" aria-hidden="true"></span>
+          </div>
+        </div>
       </section>
 
       <aside class="guide" aria-label="Przewodnik" data-guide></aside>

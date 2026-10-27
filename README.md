@@ -22,6 +22,7 @@ Potem otwórz http://localhost:4173. W aplikacji Claude: podgląd `mobywatel-pro
 Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzutów ekranu. Dokładamy tylko nowe funkcje i oznaczamy je etykietą „Nowość”.
 
 - `index.html` — scena: dwa telefony obok siebie + przewodnik. Poniżej 860 px jeden telefon i przełącznik u góry.
+- `styles/devices.css` + `js/device.js` — realistyczne telefony w prawdziwych wymiarach: iPhone 18 Pro (402 × 874 pt, Dynamic Island) i składany iPhone Duo — złożony (466 × 678 pt) i rozłożony (890 × 626 pt, boczne menu zamiast dolnego paska). Przełącznik „Pokaż na” w nagłówku, jedna skala dla wszystkich urządzeń.
 - `styles/tokens.css` — kolory i kształty mObywatela (odczytane ze zrzutów, przybliżone).
 - `styles/app.css` — szkielet aplikacji (nagłówek, karty dokumentów, listy, dolny pasek) i tryb prosty.
 - `js/store.js` — wspólny stan obu telefonów: nawigacja, powiadomienia między telefonami, tryb prosty, „Działam jako”, historia. Zapis w `sessionStorage`.

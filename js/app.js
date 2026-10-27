@@ -8,6 +8,7 @@ import { documentsScreen, callContactScreen } from './screens/documents.js';
 import { resolveCommonScreen } from './screens/common.js';
 import { helpScreens, onPhotoSelected } from './scenes/help.js';
 import { renderGuide } from './guide.js';
+import { initDevices, biometric } from './device.js';
 
 const tabs = [
   { id: 'documents', iconName: 'cards', label: 'Dokumenty' },
@@ -104,12 +105,25 @@ function readAloudButton(state, persona, screen) {
   return `<button class="read-aloud" data-speak>${icon('speaker', { size: 22 })}<span>Przeczytaj na głos</span></button>`;
 }
 
+// Pasek stanu jak w iOS: godzina, zasięg, Wi-Fi, bateria
+const statusbar = `
+  <div class="statusbar" aria-hidden="true">
+    <span class="statusbar-time">9:41</span>
+    <span class="statusbar-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.2-1.2A10.3 10.3 0 008 .9 10.3 10.3 0 00.8 3.8L2 5a8.6 8.6 0 016-2.4z"/><path d="M8 6c1.4 0 2.6.5 3.6 1.4l1.2-1.2A6.9 6.9 0 008 4.3c-1.9 0-3.6.7-4.8 1.9l1.2 1.2C5.4 6.5 6.6 6 8 6z"/><path d="M8 9.3c.6 0 1.2.2 1.6.6L8 11.6 6.4 9.9c.4-.4 1-.6 1.6-.6z"/></svg>
+      <svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3.8" stroke="currentColor" opacity=".38"/><rect x="2" y="2" width="20" height="9" rx="2.5" fill="currentColor"/><path d="M25 4.5v4a2.2 2.2 0 000-4z" fill="currentColor" opacity=".4"/></svg>
+    </span>
+  </div>`;
+
 function overlay(state, persona) {
   const mode = state.overlay[persona];
   if (!mode) return '';
+  const name = biometric();
+  const waiting = name === 'Touch ID' ? 'fingerprint' : 'eye';
   return `
     <div class="faceid ${mode === 'faceid-ok' ? 'faceid-ok' : ''}" role="status">
-      <div class="faceid-box">${icon(mode === 'faceid-ok' ? 'checkCircle' : 'eye', { size: 56 })}<span>Face ID</span></div>
+      <div class="faceid-box">${icon(mode === 'faceid-ok' ? 'checkCircle' : waiting, { size: 56 })}<span>${name}</span></div>
     </div>`;
 }
 
@@ -139,7 +153,7 @@ function renderPhone(persona, state) {
 
   phone.classList.toggle('simple', state.simpleMode[persona]);
   root.innerHTML = `
-    <div class="statusbar" aria-hidden="true"><span>9:41</span><span class="statusbar-icons">●●● ▮</span></div>
+    ${statusbar}
     ${screen.kind === 'tab' ? tabHeader(screen, state, persona) : innerHeader(screen, state, persona)}
     <main class="app-content">${screen.render(state, persona)}</main>
     ${readAloudButton(state, persona, screen)}
@@ -251,3 +265,4 @@ document.addEventListener('change', (event) => {
 });
 store.subscribe(render);
 render(store.get());
+initDevices(() => render(store.get()));

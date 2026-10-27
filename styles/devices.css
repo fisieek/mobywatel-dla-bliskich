@@ -1,0 +1,437 @@
+/* Realistyczne telefony na komputerze: iPhone 18 Pro oraz składany iPhone Duo (złożony i rozłożony).
+   Ekrany w prawdziwych punktach iOS (dane techniczne Apple: piksele / 3), całość skalowana jedną skalą (js/device.js).
+   - iPhone 18 Pro: ekran 6,3″, 1206 × 2622 px → 402 × 874 pt, Dynamic Island, Face ID.
+   - iPhone Duo złożony: ekran zewnętrzny 5,4″, 1398 × 2034 px → 466 × 678 pt, zawias po lewej, Touch ID.
+   - iPhone Duo rozłożony: ekran wewnętrzny 7,6″, 2670 × 1878 px → 890 × 626 pt, zgięcie na środku. */
+
+.phone-frame {
+  --screen-w: 402px;
+  --screen-h: 874px;
+  --screen-r: 62px;
+  --frame: 5px;
+  --rim: 11px;
+  --r-left: calc(var(--screen-r) + var(--rim) + var(--frame));
+  --r-right: var(--r-left);
+  --island-w: 126px;
+  --statusbar-h: 54px;
+  --statusbar-pad: 2px 6px 0;
+  --safe-bottom: 30px;
+  --banner-top: 58px;
+
+  position: relative;
+  zoom: var(--device-zoom, 1);
+  width: calc(var(--screen-w) + 2 * (var(--rim) + var(--frame)));
+  height: calc(var(--screen-h) + 2 * (var(--rim) + var(--frame)));
+  padding: var(--frame);
+  border-radius: var(--r-left) var(--r-right) var(--r-right) var(--r-left);
+  /* Metalowa krawędź: odblaski na narożnikach, ciemniejszy środek */
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.28), transparent 3%, transparent 97%, rgba(255, 255, 255, 0.28)),
+    linear-gradient(160deg, #a7abb4 0%, #4b4e56 9%, #2a2c32 30%, #34373e 62%, #55585f 88%, #a1a5ae 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    inset 0 0 1px 2px rgba(0, 0, 0, 0.55),
+    0 0 0 0.5px rgba(0, 0, 0, 0.5),
+    0 70px 90px -50px rgba(15, 20, 40, 0.55),
+    0 30px 50px -30px rgba(15, 20, 40, 0.4);
+}
+
+.phone-frame.device-in {
+  animation: device-in 0.35s ease-out;
+}
+
+@keyframes device-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+/* Czarna ramka wokół ekranu */
+.phone-glass {
+  position: relative;
+  height: 100%;
+  padding: var(--rim);
+  border-radius: calc(var(--r-left) - var(--frame)) calc(var(--r-right) - var(--frame)) calc(var(--r-right) - var(--frame))
+    calc(var(--r-left) - var(--frame));
+  background: #050506;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+
+/* Delikatny odblask szkła — tylko dekoracja, nie przechwytuje kliknięć */
+.phone-glass::after {
+  content: '';
+  position: absolute;
+  inset: var(--rim);
+  border-radius: var(--screen-r);
+  background: linear-gradient(118deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 24%, transparent 40%);
+  pointer-events: none;
+  z-index: 30;
+}
+
+/* Dynamic Island (iPhone 18 Pro) albo otwór aparatu (iPhone Duo) */
+.camera-cutout {
+  position: absolute;
+  top: calc(var(--rim) + 11px);
+  left: 50%;
+  width: 124px;
+  height: 36px;
+  transform: translateX(-50%);
+  border-radius: 18px;
+  background: #000;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.camera-cutout::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 22px;
+  width: 11px;
+  height: 11px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #2b3a5a 0, #0d1220 45%, #000 70%);
+}
+
+.home-indicator {
+  position: absolute;
+  bottom: calc(var(--rim) + 8px);
+  left: 50%;
+  width: 140px;
+  height: 5px;
+  transform: translateX(-50%);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.88);
+  z-index: 20;
+  pointer-events: none;
+}
+
+.crease {
+  display: none;
+}
+
+/* Przyciski na krawędziach obudowy */
+.hw {
+  position: absolute;
+  width: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #2a2c31, #8d919a 45%, #3a3d44);
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.45);
+}
+
+.hw-action,
+.hw-volume-up,
+.hw-volume-down {
+  left: -3px;
+}
+
+.hw-side,
+.hw-camera {
+  right: -3px;
+}
+
+.hw-action {
+  top: 176px;
+  height: 34px;
+}
+
+.hw-volume-up {
+  top: 244px;
+  height: 62px;
+}
+
+.hw-volume-down {
+  top: 322px;
+  height: 62px;
+}
+
+.hw-side {
+  top: 262px;
+  height: 100px;
+}
+
+/* Sterowanie aparatem: szafirowa płytka prawie w jednej linii z ramą */
+.hw-camera {
+  top: 560px;
+  height: 64px;
+  right: -1.5px;
+  width: 3px;
+  background: linear-gradient(90deg, #1b1d22, #4d5260);
+}
+
+/* ---------- iPhone Duo: złożony (ekran zewnętrzny) ---------- */
+
+[data-device='duo-closed'] .phone-frame {
+  --screen-w: 466px;
+  --screen-h: 678px;
+  --screen-r: 40px;
+  --r-left: 30px;
+  --r-right: 56px;
+  --island-w: 24px;
+  --statusbar-h: 46px;
+  --statusbar-pad: 4px 10px 0;
+  --safe-bottom: 26px;
+  --banner-top: 46px;
+}
+
+/* Zawias jak grzbiet paszportu */
+[data-device='duo-closed'] .phone-frame::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: -2px;
+  width: 9px;
+  border-radius: 6px 0 0 6px;
+  background: linear-gradient(90deg, #6d717a, #c3c7cf 35%, #5b5e66 70%, #33363c);
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.4);
+}
+
+[data-device^='duo'] .camera-cutout {
+  top: calc(var(--rim) + 13px);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 38%, #33456b 0, #0d1220 45%, #000 70%);
+}
+
+[data-device^='duo'] .camera-cutout::after {
+  content: none;
+}
+
+[data-device^='duo'] .hw-action,
+[data-device^='duo'] .hw-volume-up,
+[data-device^='duo'] .hw-volume-down,
+[data-device^='duo'] .hw-camera {
+  left: auto;
+  right: -3px;
+}
+
+/* Touch ID w przycisku bocznym */
+[data-device^='duo'] .hw-side {
+  top: 120px;
+  height: 78px;
+  background: linear-gradient(90deg, #2a2c31, #9aa0ab 45%, #3a3d44);
+  box-shadow: 0 0 0 1px rgba(110, 120, 140, 0.55);
+}
+
+[data-device^='duo'] .hw-volume-up {
+  top: 222px;
+  height: 48px;
+}
+
+[data-device^='duo'] .hw-volume-down {
+  top: 280px;
+  height: 48px;
+}
+
+[data-device^='duo'] .hw-action {
+  top: 70px;
+  height: 28px;
+}
+
+[data-device^='duo'] .hw-camera {
+  display: none;
+}
+
+/* ---------- iPhone Duo: rozłożony (ekran wewnętrzny) ---------- */
+
+[data-device='duo-open'] .phone-frame {
+  --screen-w: 890px;
+  --screen-h: 626px;
+  --screen-r: 34px;
+  --r-left: 48px;
+  --r-right: 48px;
+  --island-w: 0px;
+  --statusbar-h: 38px;
+  --statusbar-pad: 2px 14px 0;
+  --safe-bottom: 22px;
+  --banner-top: 42px;
+  --sidebar-w: 236px;
+}
+
+/* Zawias na środku: przerwa w ramie u góry i na dole */
+[data-device='duo-open'] .phone-frame::before,
+[data-device='duo-open'] .phone-frame::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 22px;
+  height: 5px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, #1d1f24, #5d6068 50%, #1d1f24);
+}
+
+[data-device='duo-open'] .phone-frame::before {
+  top: 0;
+}
+
+[data-device='duo-open'] .phone-frame::after {
+  bottom: 0;
+}
+
+/* Linia zgięcia na ekranie: widoczna pod światło, nie zasłania treści */
+[data-device='duo-open'] .crease {
+  display: block;
+  position: absolute;
+  top: var(--rim);
+  bottom: var(--rim);
+  left: 50%;
+  width: 18px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    90deg,
+    transparent 0,
+    rgba(0, 0, 0, 0.025) 35%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(0, 0, 0, 0.035) 65%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 25;
+}
+
+/* Aparat do selfie w prawej połowie */
+[data-device='duo-open'] .camera-cutout {
+  top: calc(var(--rim) + 12px);
+  left: 76%;
+}
+
+[data-device='duo-open'] .home-indicator {
+  width: 180px;
+}
+
+/* Przyciski na górnej krawędzi prawej połowy */
+[data-device='duo-open'] .hw {
+  top: -3px;
+  right: auto;
+  width: auto;
+  height: 4px;
+  background: linear-gradient(180deg, #2a2c31, #8d919a 45%, #3a3d44);
+}
+
+[data-device='duo-open'] .hw-side {
+  left: auto;
+  right: 120px;
+  width: 78px;
+}
+
+[data-device='duo-open'] .hw-volume-up {
+  left: auto;
+  right: 222px;
+  width: 48px;
+}
+
+[data-device='duo-open'] .hw-volume-down {
+  left: auto;
+  right: 280px;
+  width: 48px;
+}
+
+[data-device='duo-open'] .hw-action {
+  left: auto;
+  right: 70px;
+  width: 28px;
+}
+
+/* Na dużym ekranie aplikacja dostaje boczne menu zamiast dolnego paska (jak na iPadzie) */
+@media (min-width: 861px) {
+  [data-device='duo-open'] .statusbar {
+    grid-template-columns: auto 1fr auto;
+    margin-left: calc(-1 * var(--sidebar-w));
+  }
+
+  [data-device='duo-open'] .statusbar-time,
+  [data-device='duo-open'] .statusbar-icons {
+    justify-self: auto;
+    padding: 0 12px;
+  }
+
+  [data-device='duo-open'] .statusbar-icons {
+    grid-column: 3;
+  }
+
+  [data-device='duo-open'] .phone-screen {
+    padding-left: var(--sidebar-w);
+  }
+
+  [data-device='duo-open'] .tabbar {
+    position: absolute;
+    top: var(--statusbar-h);
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-w);
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 12px var(--safe-bottom);
+    border-top: 0;
+    border-right: 1px solid var(--mo-hair);
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  [data-device='duo-open'] .tab {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 15px;
+  }
+
+  [data-device='duo-open'] .tab-active {
+    background: var(--mo-blue-wash);
+  }
+
+  [data-device='duo-open'] .read-aloud {
+    bottom: 24px;
+  }
+
+  /* Powiadomienia na środku obszaru treści */
+  [data-device='duo-open'] .banners {
+    left: calc(var(--sidebar-w) / 2 + 50% - 190px);
+    right: auto;
+    width: 380px;
+  }
+}
+
+/* Telefon lub wąskie okno: aplikacja na cały ekran, bez obudowy */
+@media (max-width: 860px) {
+  .device-picker {
+    display: none;
+  }
+
+  .phone-frame {
+    zoom: 1;
+    width: 100%;
+    height: calc(100dvh - 50px);
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    --banner-top: 12px;
+  }
+
+  .phone-frame::before,
+  .phone-frame::after,
+  .phone-glass::after,
+  .hw,
+  .crease,
+  .camera-cutout,
+  .home-indicator {
+    display: none !important;
+  }
+
+  .phone-glass {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .phone-screen {
+    border-radius: 0;
+  }
+}

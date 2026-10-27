@@ -38,6 +38,8 @@ const paths = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".5" fill="currentColor"/>',
   idCheck: '<rect x="3.5" y="6" width="17" height="12" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 15.5a3 3 0 016 0M14 10h4M14 13h3"/>',
   ban: '<circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/>',
+  fingerprint:
+    '<path d="M6.2 6.6A7.5 7.5 0 0119.5 11v1.5M4.5 15v-4a7.4 7.4 0 01.6-2.9"/><path d="M8.5 19.5A11 11 0 009.5 14v-3a2.5 2.5 0 015 0v1.5"/><path d="M12 11v3a14 14 0 01-1.6 6.5M14.5 15.5a17 17 0 01-.9 4.5M17 11a5 5 0 00-9.4-2.4M7 11v3a7 7 0 01-.8 3.3M19.3 16a20 20 0 01-.5 2.5"/>',
   dots: '<circle cx="6" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="18" cy="12" r="1.2" fill="currentColor"/>',
 };
 
