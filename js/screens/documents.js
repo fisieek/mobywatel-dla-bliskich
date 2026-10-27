@@ -3,6 +3,7 @@
 import { store, notify } from '../store.js';
 import { people, actingAsOptions } from '../personas.js';
 import { docStack, list, row, newBadge, sectionTitle, infoBox } from '../ui.js';
+import { protectionStatus } from '../scenes/protect.js';
 
 function setActingAs(id) {
   store.update((s) => {
@@ -52,7 +53,10 @@ function annaContent(state) {
   const mamaRow = state.guardian === 'active'
     ? list([row({ iconName: 'people', tint: 'green', title: 'Mama — wszystko w porządku', desc: 'Brak nowych pism i terminów', action: 'actAs', id: 'mama' })])
     : '';
-  return `${mamaRow}${docStack(people.anna.documents)}`;
+  return `
+    ${mamaRow}
+    ${docStack(people.anna.documents)}
+    ${list([row({ iconName: 'eye', tint: 'violet', title: 'Moja historia', desc: 'Kto i kiedy widział Twoje dane', go: 'myData', badge: newBadge() })])}`;
 }
 
 function standardHome(persona, state) {
@@ -64,6 +68,8 @@ function standardHome(persona, state) {
 }
 
 function simpleStatus(persona, state) {
+  const protection = persona === 'krystyna' ? protectionStatus(state) : null;
+  if (protection) return protection;
   if (persona === 'krystyna' && state.letter === 'awaiting') {
     return { text: 'Anna przygotowała odpowiedź na Twoje pismo. Przeczytaj ją w „Moje pisma”.', tone: 'attention' };
   }

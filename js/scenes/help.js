@@ -11,7 +11,7 @@ import { explanation as sampleExplanation, explanationSpeech, paperHtml, sampleL
 import { explainLetter, draftReply } from '../assistant.js';
 import { readTextFromPhoto } from '../ocr.js';
 
-const GUARDIAN_UNTIL = '27.10.2027';
+export const GUARDIAN_UNTIL = '27.10.2027';
 // Poniżej tej długości odczyt zdjęcia uznajemy za nieudany
 const MIN_OCR_CHARS = 150;
 
@@ -143,6 +143,12 @@ function successBlock(title, body) {
 
 // ---------- 1a: pozwolenie ----------
 
+export function revokeGuardian() {
+  patch({ guardian: 'none', actingAs: 'ja' });
+  addHistory({ persona: 'krystyna', text: 'Odwołałaś pomoc Anny' });
+  notify('anna', { title: 'Mama odwołała Twoją pomoc', body: 'Nie widzisz już jej pism.' });
+}
+
 function helpersForKrystyna(state) {
   if (state.guardian === 'none') {
     return `
@@ -186,11 +192,7 @@ export const helpScreens = {
       })}
       ${persona === 'krystyna' ? helpersForKrystyna(state) : helpersForAnna(state)}`,
     actions: {
-      revoke: () => {
-        patch({ guardian: 'none', actingAs: 'ja' });
-        addHistory({ persona: 'krystyna', text: 'Odwołałaś pomoc Anny' });
-        notify('anna', { title: 'Mama odwołała Twoją pomoc', body: 'Nie widzisz już jej pism.' });
-      },
+      revoke: () => revokeGuardian(),
     },
   },
 
@@ -283,7 +285,7 @@ export const helpScreens = {
       accept: (el, persona) =>
         withBiometric(persona, () => {
           patch({ guardian: 'active' });
-          addHistory({ persona: 'krystyna', text: 'Anna przyjęła prośbę i może Ci pomagać' });
+          addHistory({ persona: 'krystyna', actor: 'anna', text: 'Przyjęła prośbę i może Ci pomagać' });
           notify('krystyna', {
             title: 'Anna może Ci teraz pomagać',
             body: 'Niczego nie wyśle ani nie podpisze bez Ciebie.',
@@ -443,7 +445,7 @@ export const helpScreens = {
       if (state.actingAs !== 'mama' && state.guardian === 'active') patch({ actingAs: 'mama' });
       if (state.letter === 'requested') {
         patch({ letter: 'opened' });
-        addHistory({ persona: 'krystyna', text: 'Anna przeczytała pismo z urzędu' });
+        addHistory({ persona: 'krystyna', actor: 'anna', text: 'Przeczytała pismo z urzędu' });
         notify('krystyna', { title: 'Anna otworzyła Twoje pismo', body: `${officeName(state)}.` });
       }
     },
@@ -474,7 +476,7 @@ export const helpScreens = {
       sendToMama: (el, persona) => {
         const text = document.querySelector(`[data-persona="${persona}"] [data-draft]`)?.value ?? store.get().reply;
         patch({ letter: 'awaiting', reply: text });
-        addHistory({ persona: 'krystyna', text: 'Anna przygotowała odpowiedź do urzędu' });
+        addHistory({ persona: 'krystyna', actor: 'anna', text: 'Przygotowała odpowiedź do urzędu' });
         notify('krystyna', {
           title: 'Anna przygotowała odpowiedź',
           body: 'Przeczytać Ci?',

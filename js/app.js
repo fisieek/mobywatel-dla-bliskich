@@ -7,6 +7,8 @@ import { actingAsOptions } from './personas.js';
 import { documentsScreen, callContactScreen } from './screens/documents.js';
 import { resolveCommonScreen } from './screens/common.js';
 import { helpScreens, onPhotoSelected } from './scenes/help.js';
+import { protectScreens, callOverlay, callPill, callAction, startScamCall, startRealCall } from './scenes/protect.js';
+import { controlScreens } from './scenes/control.js';
 import { renderGuide } from './guide.js';
 import { initDevices, biometric } from './device.js';
 
@@ -23,7 +25,7 @@ const resolve = (value, state, persona) => (typeof value === 'function' ? value(
 function resolveScreen(id) {
   if (id === 'documents') return documentsScreen;
   if (id === 'callContact') return callContactScreen;
-  return helpScreens[id] ?? resolveCommonScreen(id) ?? documentsScreen;
+  return helpScreens[id] ?? protectScreens[id] ?? controlScreens[id] ?? resolveCommonScreen(id) ?? documentsScreen;
 }
 
 // Na wąskim ekranie widać jeden telefon naraz
@@ -83,11 +85,16 @@ function tabbar(state, persona) {
     </nav>`;
 }
 
+// Powiadomienie wjeżdża i wibruje tylko raz — nie przy każdym przerysowaniu telefonu
+const shownBanners = new Set();
+
 function banners(state, persona) {
   return state.notifications[persona]
-    .map(
-      (n) => `
-      <div class="banner banner-${n.tone}" role="alert">
+    .map((n) => {
+      const isNew = !shownBanners.has(n.id);
+      shownBanners.add(n.id);
+      return `
+      <div class="banner banner-${n.tone} ${isNew ? 'banner-new' : ''}" role="alert">
         <div class="banner-head">
           <span class="banner-app" aria-hidden="true">m</span><span>mObywatel</span><span class="banner-time">teraz</span>
           <button class="banner-close" data-dismiss="${n.id}" aria-label="Zamknij powiadomienie">${icon('close', { size: 16 })}</button>
@@ -95,8 +102,8 @@ function banners(state, persona) {
         <p class="banner-title">${n.title}</p>
         <p class="banner-body">${n.body}</p>
         ${n.action ? `<button class="btn btn-primary btn-small" data-notification-go="${n.action.go}" data-id="${n.id}">${n.action.label}</button>` : ''}
-      </div>`,
-    )
+      </div>`;
+    })
     .join('');
 }
 
@@ -105,11 +112,11 @@ function readAloudButton(state, persona, screen) {
   return `<button class="read-aloud" data-speak>${icon('speaker', { size: 22 })}<span>Przeczytaj na głos</span></button>`;
 }
 
-// Pasek stanu jak w iOS: godzina, zasięg, Wi-Fi, bateria
-const statusbar = `
-  <div class="statusbar" aria-hidden="true">
-    <span class="statusbar-time">9:41</span>
-    <span class="statusbar-icons">
+// Pasek stanu jak w iOS: godzina (albo zielona pigułka trwającej rozmowy), zasięg, Wi-Fi, bateria
+const statusbar = (state, persona) => `
+  <div class="statusbar">
+    ${callPill(state, persona) || '<span class="statusbar-time" aria-hidden="true">9:41</span>'}
+    <span class="statusbar-icons" aria-hidden="true">
       <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
       <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.2-1.2A10.3 10.3 0 008 .9 10.3 10.3 0 00.8 3.8L2 5a8.6 8.6 0 016-2.4z"/><path d="M8 6c1.4 0 2.6.5 3.6 1.4l1.2-1.2A6.9 6.9 0 008 4.3c-1.9 0-3.6.7-4.8 1.9l1.2 1.2C5.4 6.5 6.6 6 8 6z"/><path d="M8 9.3c.6 0 1.2.2 1.6.6L8 11.6 6.4 9.9c.4-.4 1-.6 1.6-.6z"/></svg>
       <svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3.8" stroke="currentColor" opacity=".38"/><rect x="2" y="2" width="20" height="9" rx="2.5" fill="currentColor"/><path d="M25 4.5v4a2.2 2.2 0 000-4z" fill="currentColor" opacity=".4"/></svg>
@@ -153,11 +160,12 @@ function renderPhone(persona, state) {
 
   phone.classList.toggle('simple', state.simpleMode[persona]);
   root.innerHTML = `
-    ${statusbar}
+    ${statusbar(state, persona)}
     ${screen.kind === 'tab' ? tabHeader(screen, state, persona) : innerHeader(screen, state, persona)}
     <main class="app-content">${screen.render(state, persona)}</main>
     ${readAloudButton(state, persona, screen)}
     ${tabbar(state, persona)}
+    ${callOverlay(state, persona)}
     <div class="banners" aria-live="assertive">${banners(state, persona)}</div>
     ${overlay(state, persona)}`;
 
@@ -212,6 +220,7 @@ function handleClick(event) {
     const screen = resolveScreen(currentScreen(persona));
     const { go: goTo, tab, action, actionGlobal, dismiss, notificationGo } = target.dataset;
 
+    if (target.dataset.call) return callAction(persona, target.dataset.call);
     if (goTo) return go(persona, goTo);
     if (tab) return openTab(persona, tab);
     if ('back' in target.dataset) return back(persona);
@@ -230,6 +239,12 @@ function handleClick(event) {
     }
     if (action) return screen.actions?.[action]?.(target, persona);
     return;
+  }
+
+  // Przyciski w przewodniku: telefon od „policjanta” albo od prawdziwego urzędu
+  if (target.dataset.guideAction) {
+    mobilePersona = 'krystyna';
+    return target.dataset.guideAction === 'realCall' ? startRealCall() : startScamCall();
   }
 
   if (target.dataset.showPersona) {
