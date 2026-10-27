@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Prototyp konkursowy: nie chcemy, żeby wyszukiwarki pokazywały go jako aplikację państwową -->
+    <meta name="robots" content="noindex, nofollow" />
+    <title>mObywatel dla bliskich — prototyp</title>
+    <meta name="description" content="Koncepcyjny prototyp na mObywatel Challenge: aktualny mObywatel z nowymi funkcjami — pomoc, ochrona i kontrola dla całej rodziny." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles/tokens.css" />
+    <link rel="stylesheet" href="styles/app.css" />
+  </head>
+  <body>
+    <header class="stage-header">
+      <div class="stage-header-inner">
+        <p class="stage-eyebrow">Prototyp koncepcyjny · mObywatel Challenge 2026</p>
+        <h1 class="stage-title">mObywatel dla bliskich</h1>
+        <p class="stage-lead">
+          Ten sam mObywatel, który znasz — z nowymi funkcjami: <strong>pomoc, ochrona, kontrola</strong>.
+          Wszystko, co dodaliśmy, ma etykietę <span class="new-badge">Nowość</span>
+        </p>
+      </div>
+    </header>
+
+    <div class="mobile-switch" role="group" aria-label="Który telefon pokazać">
+      <button data-show-persona="krystyna" aria-pressed="true">Telefon Krystyny <span class="badge"></span></button>
+      <button data-show-persona="anna" aria-pressed="false">Telefon Anny <span class="badge"></span></button>
+    </div>
+
+    <main class="stage">
+      <section class="phone" data-persona="krystyna" aria-label="Telefon Krystyny">
+        <p class="phone-caption">Krystyna, 71 lat · tryb prosty</p>
+        <div class="phone-frame"><div class="phone-screen"></div></div>
+      </section>
+
+      <section class="phone" data-persona="anna" aria-label="Telefon Anny">
+        <p class="phone-caption">Anna, 34 lata · córka Krystyny</p>
+        <div class="phone-frame"><div class="phone-screen"></div></div>
+      </section>
+
+      <aside class="guide" aria-label="Przewodnik" data-guide></aside>
+    </main>
+
+    <footer class="stage-footer">
+      <p>
+        Prototyp koncepcyjny na konkurs mObywatel Challenge. Nie jest usługą administracji publicznej ani aplikacją mObywatel.
+        Wygląd odwzorowuje publicznie dostępne zrzuty aplikacji; godła i logo nie używamy. Osoby i dane są fikcyjne.
+      </p>
+    </footer>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

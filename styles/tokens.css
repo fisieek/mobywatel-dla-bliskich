@@ -1,0 +1,38 @@
+/* Wygląd odwzorowany z aktualnej aplikacji mObywatel (zrzuty App Store i info.mobywatel.gov.pl, 2026).
+   Kolory odczytane ze zrzutów, przybliżone. Opis: context/design/wytyczne-mobywatel-ui.md */
+:root {
+  --mo-bg: #f5f6fb;
+  --mo-surface: #ffffff;
+  --mo-text: #121318;
+  --mo-text-2: #5f6270;
+  --mo-text-3: #8b8e9a;
+  --mo-hair: #e6e8ef;
+
+  --mo-blue: #1a5cf5;
+  --mo-blue-dark: #0f47c9;
+  --mo-blue-wash: #e8f0ff;
+  --mo-info-wash: #dceafe;
+
+  --mo-red: #dc143c;
+  --mo-red-wash: #fdecef;
+  --mo-green: #1f8a4c;
+  --mo-green-wash: #e7f6ec;
+  --mo-amber: #9a5a00;
+  --mo-amber-wash: #fff3df;
+  --mo-violet: #a051e7;
+  --mo-violet-wash: #efe4fc;
+
+  /* Karty dokumentów */
+  --card-mdowod: linear-gradient(135deg, #2f63d8 0%, #4f8be8 100%);
+  --card-emeryt: linear-gradient(135deg, #2e8a7b 0%, #4fae93 100%);
+  --card-prawo-jazdy: linear-gradient(135deg, #3b2483 0%, #7a3485 100%);
+  --card-pojazdy: linear-gradient(135deg, #ea6d2f 0%, #eeab55 100%);
+
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+
+  --radius-card: 14px;
+  --radius-doc: 18px;
+  --radius-btn: 14px;
+  --shadow-card: 0 1px 2px rgba(15, 25, 60, 0.06);
+  --focus-ring: 0 0 0 3px rgba(26, 92, 245, 0.35);
+}
