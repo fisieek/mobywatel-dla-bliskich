@@ -1,0 +1,6 @@
+# Na serwer trafia tylko to, czego potrzebuje juror: strona, style, skrypty i funkcja asystenta.
+README.md
+dev-server.mjs
+.env.example
+.env.local
+.env
