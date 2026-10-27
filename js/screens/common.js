@@ -63,7 +63,7 @@ const qrScreen = {
       row({ iconName: 'qr', title: 'Zeskanuj kod QR', desc: 'Potwierdź swoje dane lub zaloguj się', go: 'qrScan' }),
       row({ iconName: 'idCheck', title: 'Pokaż kod QR', desc: 'Pozwól komuś sprawdzić Twój dokument', go: 'qrShow' }),
     ])}
-    <p class="footnote">W scenie Kontrola sprawdzisz tu, że wypożyczalnia dostaje tylko te dane, które są potrzebne.</p>`,
+    <p class="footnote">W scenie Kontrola Anna zeskanuje tu kod wypożyczalni i pokaże tylko te dane, które są potrzebne.</p>`,
 };
 
 const searchScreen = {
@@ -175,25 +175,11 @@ const screens = {
   },
   customize: placeholder('Dostosuj', 'żadnej — to istniejąca funkcja mObywatela'),
   addDocument: placeholder('Dodaj dokument', 'żadnej — to istniejąca funkcja mObywatela'),
-  qrScan: placeholder('Zeskanuj kod QR', 'Kontrola'),
-  qrShow: placeholder('Pokaż kod QR', 'Kontrola'),
-
-  // Nasze nowe usługi (sceny Ochrona i Kontrola w budowie; Pomoc jest w scenes/help.js)
-  whoIsCalling: {
+  qrShow: {
     kind: 'inner',
-    title: 'Ktoś do mnie dzwoni?',
-    speech: () => 'Ktoś do Ciebie dzwoni? Tu sprawdzisz, czy to naprawdę policja, bank albo urząd.',
-    render: () => `
-      ${serviceHeader({ iconName: 'phoneQuestion', tint: 'violet', title: 'Ktoś do mnie dzwoni?', desc: 'Sprawdź, czy policja, bank albo urząd naprawdę się z Tobą kontaktuje.', badge: newBadge() })}
-      ${comingSoon('Ochrona')}`,
-  },
-  myData: {
-    kind: 'inner',
-    title: 'Kto widział moje dane',
-    speech: () => 'Kto widział moje dane. Tu zobaczysz, kto i kiedy korzystał z Twoich danych.',
-    render: () => `
-      ${serviceHeader({ iconName: 'eye', tint: 'violet', title: 'Kto widział moje dane', desc: 'Logowania, udostępnienia, podpisy i działania osób, które Ci pomagają — w jednym miejscu, jak historia konta w banku.', badge: newBadge() })}
-      ${comingSoon('Kontrola')}`,
+    title: 'Pokaż kod QR',
+    render: () =>
+      infoBox('Pokazywanie kodu QR działa już w prawdziwym mObywatelu. W scenie Kontrola Anna <strong>skanuje</strong> kod wypożyczalni: Kod QR → Zeskanuj kod QR.'),
   },
 };
 

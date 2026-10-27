@@ -1,7 +1,7 @@
 // Wspólny stan obu telefonów. Oba telefony działają na jednej stronie,
 // więc to, co zrobi Anna, od razu widzi Krystyna (i odwrotnie).
 
-const STORAGE_KEY = 'mobywatel-dla-bliskich:v4';
+const STORAGE_KEY = 'mobywatel-dla-bliskich:v5';
 
 function initialState() {
   return {
@@ -35,7 +35,24 @@ function initialState() {
     nav: { krystyna: ['documents'], anna: ['documents'] },
     // Powiadomienia czekające na wyświetlenie na danym telefonie
     notifications: { krystyna: [], anna: [] },
-    // Historia „jak w banku” (scena 3), wspólna dla obu osób
+    // Połączenie telefoniczne na telefonie Krystyny (scena 2):
+    // null | { caller: 'scam' | 'zus', status: 'ringing' | 'talking', minimized, since }
+    call: null,
+    // Scena 2: czy Krystyna sprawdziła telefon, co z prośbą o logowanie, której nie zaczęła
+    // push: 'none' → 'queued' → 'pending' → 'blocked'
+    protection: { checked: false, push: 'none' },
+    // Wynik ostatniego sprawdzenia „Ktoś do mnie dzwoni?”: { institution, verified }
+    callCheck: null,
+    // Wersja pozytywna sceny 2: dzwoni naprawdę Zakład Ubezpieczeń Społecznych: 'none' | 'verified'
+    realCall: 'none',
+    // Scena 3: prośba wypożyczalni o dane: 'none' → 'scanned' → 'shared'
+    consent: 'none',
+    // Poziom danych na ekranie zgody: 'confirm' | 'basic' | 'full'
+    consentLevel: 'basic',
+    // Czy Krystyna obejrzała historię po udostępnieniu danych przez Annę (koniec sceny 3)
+    historySeen: false,
+    // Historia „jak w banku” (scena 3), wspólna dla obu osób.
+    // Wpis: { id, at, persona, actor: 'self' | 'anna' | 'blocked' | 'institution' | 'shared', who, text, consent, revoked }
     history: [],
   };
 }
@@ -162,7 +179,7 @@ export function dismissNotification(persona, id) {
 
 export function addHistory(entry) {
   store.update((s) => {
-    s.history.unshift({ at: new Date().toISOString(), ...entry });
+    s.history.unshift({ id: `h-${Date.now()}-${nextId++}`, at: new Date().toISOString(), actor: 'self', ...entry });
     return s;
   });
 }

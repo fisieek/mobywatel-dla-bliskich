@@ -41,6 +41,14 @@ const paths = {
   fingerprint:
     '<path d="M6.2 6.6A7.5 7.5 0 0119.5 11v1.5M4.5 15v-4a7.4 7.4 0 01.6-2.9"/><path d="M8.5 19.5A11 11 0 009.5 14v-3a2.5 2.5 0 015 0v1.5"/><path d="M12 11v3a14 14 0 01-1.6 6.5M14.5 15.5a17 17 0 01-.9 4.5M17 11a5 5 0 00-9.4-2.4M7 11v3a7 7 0 01-.8 3.3M19.3 16a20 20 0 01-.5 2.5"/>',
   dots: '<circle cx="6" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="18" cy="12" r="1.2" fill="currentColor"/>',
+  camera: '<path d="M4 8.5a2 2 0 012-2h2l1.5-2h5L16 6.5h2a2 2 0 012 2V17a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><circle cx="12" cy="12.5" r="3.5"/>',
+  // połączenie telefoniczne
+  mic: '<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M6 11.5a6 6 0 0012 0M12 17.5v3"/>',
+  keypad: '<circle cx="7" cy="6" r="1.3"/><circle cx="12" cy="6" r="1.3"/><circle cx="17" cy="6" r="1.3"/><circle cx="7" cy="11" r="1.3"/><circle cx="12" cy="11" r="1.3"/><circle cx="17" cy="11" r="1.3"/><circle cx="7" cy="16" r="1.3"/><circle cx="12" cy="16" r="1.3"/><circle cx="17" cy="16" r="1.3"/><circle cx="12" cy="20.5" r="1.3"/>',
+  warning: '<path d="M12 4l9 15.5H3z"/><path d="M12 10v4.5"/><circle cx="12" cy="17" r=".5" fill="currentColor"/>',
+  building: '<path d="M4 20.5h16M5.5 20.5v-10M18.5 20.5v-10M9.5 20.5v-10M14.5 20.5v-10M3.5 9L12 4l8.5 5z"/>',
+  flag: '<path d="M5.5 21V4.5M5.5 5h11l-2 4 2 4h-11"/>',
+  undo: '<path d="M9 8.5H5V4.5"/><path d="M5.3 8.3A7.5 7.5 0 1112 19.5"/>',
 };
 
 export function icon(name, { size = 24, label = '', filled = false } = {}) {

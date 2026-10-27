@@ -31,6 +31,8 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
 - `js/screens/documents.js` — zakładka Dokumenty (zwykła, tryb prosty, „Działam jako”).
 - `js/screens/common.js` — Usługi, Kod QR, Szukaj, Więcej, szczegóły dokumentu, ekrany nowych usług.
 - `js/scenes/help.js` — scena Pomoc (pozwolenie, pismo, odpowiedź, podpis PIN-em).
+- `js/scenes/protect.js` — scena Ochrona (telefon od „policjanta”, „Ktoś do mnie dzwoni?”, zablokowana prośba o logowanie, prawdziwy telefon z Zakładu Ubezpieczeń Społecznych z kodem do porównania).
+- `js/scenes/control.js` — scena Kontrola (kod QR wypożyczalni, ekran zgody z trzema poziomami danych, historia „Kto widział moje dane”).
 - `js/letter.js` — fikcyjne pismo, wyjaśnienie i szkic odpowiedzi.
 - `js/assistant.js` — asystent w przeglądarce: pyta `/api/assistant`, a po 8 sekundach bez odpowiedzi przechodzi na przygotowane odpowiedzi.
 - `js/ocr.js` — odczyt tekstu ze zdjęcia (Tesseract.js, polski słownik, w przeglądarce).
@@ -53,7 +55,16 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
 - ✅ Połączenie z PLLuM gotowe w kodzie: wyjaśnienie pisma (JSON w 3 blokach) i szkic odpowiedzi z faktami od Anny. Sprawdzone na udawanym serwerze zgodnym z OpenAI. **Czeka na klucz API od Filipa.**
 - ✅ Odczyt tekstu z prawdziwego zdjęcia (Tesseract.js), sprawdzony na obrazku z polskim tekstem.
 - ✅ Pod każdą odpowiedzią AI uczciwa informacja: „na żywo: PLLuM” albo „tryb awaryjny”.
-- ⏳ Sceny Ochrona i Kontrola — ekrany zastępcze.
+- ✅ **Scena Ochrona** (27.10.2026):
+  - przycisk w przewodniku uruchamia telefon od „policjanta” na telefonie Krystyny (ekran połączenia z napisami i głosem),
+  - Krystyna, nie rozłączając się, sprawdza w „Ktoś do mnie dzwoni?”, czy dzwoni policja → „Żadna instytucja nie dzwoni teraz do Ciebie. Rozłącz się”, Anna dostaje ostrzeżenie,
+  - po rozłączeniu oszust wysyła prośbę o logowanie, której Krystyna nie zaczęła — nie ma przycisku „Zatwierdź”, można ją tylko odrzucić,
+  - wersja pozytywna: dzwoni naprawdę Zakład Ubezpieczeń Społecznych → aplikacja pokazuje urzędniczkę, sprawę i kod do porównania.
+- ✅ **Scena Kontrola** (27.10.2026):
+  - Anna skanuje kod QR wypożyczalni (fikcyjne AutoMorze), wybiera jeden z trzech poziomów danych (domyślnie „Dane podstawowe”, bo wystarczą) i widzi, czego nie przekaże,
+  - wpis w historii z „Cofnij zgodę” i „Zgłoś”,
+  - u Krystyny „Kto widział moje dane” zbiera wszystkie trzy sceny: co zrobiła Anna, zablokowane próby, udostępnienia, oraz „Odwołaj pomoc Anny”.
+- ⏳ Przewodnik: podsumowanie liczników na końcu i porównanie z pierwowzorem.
 
 ## Zasady
 - Bez godła, oznaczeń i zdjęć z prototypu Cieszyńskiego. Dane i osoby fikcyjne.
