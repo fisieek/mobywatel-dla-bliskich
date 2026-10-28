@@ -36,15 +36,16 @@
     <!-- Wąski ekran: przełącznik telefonów i następny krok przewodnika (przewodnik jest wtedy pod telefonem) -->
     <div class="mobile-top" data-mobile-top>
       <div class="mobile-switch" role="group" aria-label="Który telefon pokazać">
-        <button data-show-persona="krystyna" aria-pressed="true">Telefon Krystyny <span class="badge"></span></button>
-        <button data-show-persona="anna" aria-pressed="false">Telefon Anny <span class="badge"></span></button>
+        <button data-show-persona="krystyna" aria-pressed="true">Krystyna <span class="badge"></span></button>
+        <button data-show-persona="anna" aria-pressed="false">Anna <span class="badge"></span></button>
+        <button data-show-persona="zosia" aria-pressed="false">Zosia <span class="badge"></span></button>
       </div>
       <div class="next-step" data-next-step aria-live="polite"></div>
     </div>
 
     <main class="stage">
       <section class="phone" data-persona="krystyna" aria-label="Telefon Krystyny">
-        <p class="phone-caption">Krystyna, 71 lat · tryb prosty</p>
+        <p class="phone-caption" data-caption="krystyna">Krystyna, 71 lat</p>
         <div class="phone-frame">
           <span class="hw hw-action" aria-hidden="true"></span>
           <span class="hw hw-volume-up" aria-hidden="true"></span>
@@ -61,7 +62,24 @@
       </section>
 
       <section class="phone" data-persona="anna" aria-label="Telefon Anny">
-        <p class="phone-caption">Anna, 34 lata · córka Krystyny</p>
+        <p class="phone-caption" data-caption="anna">Anna, 34 lata · córka Krystyny, sama wychowuje Zosię i Antka</p>
+        <div class="phone-frame">
+          <span class="hw hw-action" aria-hidden="true"></span>
+          <span class="hw hw-volume-up" aria-hidden="true"></span>
+          <span class="hw hw-volume-down" aria-hidden="true"></span>
+          <span class="hw hw-side" aria-hidden="true"></span>
+          <span class="hw hw-camera" aria-hidden="true"></span>
+          <div class="phone-glass">
+            <div class="phone-screen"></div>
+            <span class="crease" aria-hidden="true"></span>
+            <span class="camera-cutout" aria-hidden="true"></span>
+            <span class="home-indicator" aria-hidden="true"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="phone" data-persona="zosia" aria-label="Telefon Zosi">
+        <p class="phone-caption" data-caption="zosia">Zosia, 11 lat · mObywatel Junior</p>
         <div class="phone-frame">
           <span class="hw hw-action" aria-hidden="true"></span>
           <span class="hw hw-volume-up" aria-hidden="true"></span>

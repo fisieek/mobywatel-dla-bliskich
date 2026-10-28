@@ -3,6 +3,7 @@
 
 const K = 'krystyna';
 const A = 'anna';
+const Z = 'zosia';
 
 // Przerwa po kroku, żeby było widać, co się stało
 const STEP_PAUSE_MS = 1400;
@@ -11,10 +12,22 @@ const HIGHLIGHT_MS = 900;
 // Najdłużej czekamy na przycisk, np. gdy asystent myśli (do 8 s) albo przychodzi powiadomienie
 const WAIT_LIMIT_MS = 15000;
 
-// Krok: [telefon albo null dla przewodnika, selektor, przerwa po kroku w ms]
+// Krok: [telefon albo null dla przewodnika, selektor, przerwa po kroku w ms].
+// `scene` to numer sceny w przewodniku (od 0), żeby przewodnik podświetlał to, co właśnie widać.
 const scenes = [
   {
+    name: 'Tryb prosty',
+    scene: 0,
+    group: 'core',
+    steps: [
+      [K, '.offer-card', 1800],
+      [K, '[data-action="enable"]', 2600],
+    ],
+  },
+  {
     name: 'Pomoc',
+    scene: 1,
+    group: 'core',
     steps: [
       [K, '.row[data-go="helpers"]'],
       [K, 'button[data-go="helpersChoose"]'],
@@ -43,6 +56,8 @@ const scenes = [
   },
   {
     name: 'Ochrona',
+    scene: 2,
+    group: 'core',
     steps: [
       [null, '[data-guide-action="scamCall"]', 1800],
       [K, '[data-call="answer"]', 5000],
@@ -57,6 +72,8 @@ const scenes = [
   },
   {
     name: 'Kontrola',
+    scene: 3,
+    group: 'core',
     steps: [
       [A, '[data-tab="qr"]'],
       [A, '.row[data-go="qrScan"]'],
@@ -66,11 +83,70 @@ const scenes = [
       [K, '.row[data-go="myData"]', 3000],
     ],
   },
+  {
+    name: 'Moje leki',
+    scene: 4,
+    group: 'family',
+    steps: [
+      [null, '[data-guide-action="medsLow"]', 1800],
+      [K, '[data-notification-go="meds"]'],
+      [K, '[data-action="refill"]'],
+      [K, '[data-action="askAnnaMeds"]', 1800],
+      [A, '[data-notification-go="mamaMeds"]', 1800],
+      [A, '[data-action="orderRx"]', 4200],
+      [K, '[data-notification-go="medsPharmacy"]', 3000],
+      [K, '.btn[data-home]'],
+      [A, '[data-tab="documents"]'],
+    ],
+  },
+  {
+    name: 'Upoważnienie',
+    scene: 5,
+    group: 'family',
+    steps: [
+      [A, '.row[data-go="authorize"]', 1800],
+      [A, '[data-action="authorizeConfirm"]', 2400],
+      [K, '[data-notification-go="pickupPass"]', 2000],
+      [K, '[data-action="teacherScan"]', 3200],
+      [K, '.btn[data-home]'],
+      [A, '[data-tab="documents"]', 1800],
+    ],
+  },
+  {
+    name: 'Ktoś do mnie pisze?',
+    scene: 6,
+    group: 'family',
+    steps: [
+      [null, '[data-guide-action="strangerChat"]', 5000],
+      [Z, '[data-chat="minimize"]'],
+      [Z, '.row[data-go="whoIsWriting"]'],
+      [Z, '[data-action="situation"][data-id="threat"]', 3200],
+      [Z, '[data-action="tellMom"]', 2400],
+      [A, '[data-notification-go="call-zosia"]', 2600],
+      [A, '.btn[data-home]'],
+    ],
+  },
+  {
+    name: 'Zgoda dla szkoły',
+    scene: 7,
+    group: 'family',
+    steps: [
+      [Z, '[data-tab="documents"]'],
+      [Z, '.row[data-go="schoolConsentScan"]'],
+      [Z, '.btn[data-action="scanSchool"]', 1600],
+      [Z, '[data-action="askConsent"]', 1800],
+      [A, '[data-notification-go="schoolConsentReview"]', 1800],
+      [A, '[data-action="signConsent"]', 3000],
+    ],
+  },
 ];
 
-const allSteps = scenes.flatMap((scene) => scene.steps.map((step) => ({ scene: scene.name, step })));
+const stepsFor = (group) =>
+  scenes
+    .filter((scene) => group === 'all' || scene.group === group)
+    .flatMap((scene) => scene.steps.map((step) => ({ scene: scene.name, sceneIndex: scene.scene, step })));
 
-// Bieżący pokaz: null albo { index, total, scene }
+// Bieżący pokaz: null albo { index, total, scene, sceneIndex, failed }
 let run = null;
 let runId = 0;
 const listeners = new Set();
@@ -117,20 +193,23 @@ export function stopAutoplay() {
   emit();
 }
 
-// reset — zaczyna demo od nowa; showPersona — na wąskim ekranie pokazuje telefon, którego dotyczy krok
-export async function startAutoplay({ reset, showPersona }) {
+// group — 'core' (tryb prosty i trzy filary), 'family' (cała rodzina) albo 'all'.
+// reset — zaczyna demo od nowa; prepare — ustawia stan początkowy części; showPersona — pokazuje telefon, którego dotyczy krok
+export async function startAutoplay({ group = 'core', reset, prepare, showPersona }) {
   stopAutoplay();
   const id = ++runId;
-  run = { index: 0, total: allSteps.length, scene: allSteps[0].scene, failed: false };
+  const allSteps = stepsFor(group);
+  run = { index: 0, total: allSteps.length, scene: allSteps[0].scene, sceneIndex: allSteps[0].sceneIndex, failed: false };
   emit();
   reset();
+  prepare?.();
   await sleep(800);
 
   for (let i = 0; i < allSteps.length; i++) {
     if (id !== runId) return;
-    const { scene, step } = allSteps[i];
+    const { scene, sceneIndex, step } = allSteps[i];
     const [persona, selector, pause = STEP_PAUSE_MS] = step;
-    run = { ...run, index: i + 1, scene };
+    run = { ...run, index: i + 1, scene, sceneIndex };
     emit();
     if (persona) showPersona(persona);
 

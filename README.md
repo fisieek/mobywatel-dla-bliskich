@@ -33,6 +33,7 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
 - `js/screens/common.js` — Usługi, Kod QR, Szukaj, Więcej, szczegóły dokumentu, ekrany nowych usług.
 - `js/scenes/help.js` — scena Pomoc (pozwolenie, pismo, odpowiedź, podpis PIN-em).
 - `js/scenes/protect.js` — scena Ochrona (telefon od „policjanta” z podpisem numeru, „Ktoś do mnie dzwoni?”, zablokowana prośba o logowanie, prawdziwy telefon z Zakładu Ubezpieczeń Społecznych z kodem do porównania, logowanie kodem QR z liczbą do porównania).
+- `js/scenes/meds.js`, `js/scenes/pickup.js`, `js/scenes/junior.js` — sceny „Cała rodzina”: Moje leki, Upoważnij babcię, Ktoś do mnie pisze? i Zgoda dla szkoły.
 - `js/scenes/control.js` — scena Kontrola (kod QR wypożyczalni, ekran zgody z trzema poziomami danych, historia „Kto widział moje dane”).
 - `js/letter.js` — fikcyjne pismo, wyjaśnienie i szkic odpowiedzi.
 - `js/assistant.js` — asystent w przeglądarce: pyta `/api/assistant`, a po 8 sekundach bez odpowiedzi przechodzi na przygotowane odpowiedzi.
@@ -97,6 +98,14 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
   - „▶ Pokaż sam (ok. 2 min)”: pokaz wszystkich trzech scen od nowa, z podświetleniem każdego dotknięcia; dotknięcie człowieka albo „Zatrzymaj pokaz” oddaje stery,
   - na telefonie (poniżej 860 px) pasek „Teraz · Telefon Anny: …” nad aplikacją, który sam przełącza telefon, gdy krok przechodzi na drugą osobę, z przyciskiem „Pokaż sam”,
   - podsumowanie po trzech scenach: dziś vs u nas dla pisma, telefonu od oszusta, wynajmu auta i historii (z liczbą wpisów z sesji).
+- ✅ **Tryb prosty jako scena i „Cała rodzina”** (28.10.2026):
+  - **Tryb prosty** to pierwsza scena: Krystyna zaczyna w zwykłym mObywatelu i włącza go z karty „Wolisz większe litery i mniej przycisków?”,
+  - **Moje leki** (Krystyna): leki z e-recept opisane po ludzku, ostrzeżenie 5 dni przed końcem tabletek, prośba do Anny, Anna prosi przychodnię o receptę i widzi tylko ten jeden lek, kod do apteki na jednym ekranie,
+  - **Upoważnij babcię** (Anna): upoważnienie mamy do odbioru Zosi ze szkoły (i wizyty Antka u lekarza) z terminem, kod QR u Krystyny, szkoła widzi tylko to, co potrzebne, Anna wie o odbiorze w tej samej chwili,
+  - **Ktoś do mnie pisze?** (Zosia, mObywatel Junior): obcy w czacie gry chce zdjęć i straszy, trzy duże przyciski, rada po dziecięcemu, Zosia sama wybiera: 116 111, „Powiedz: Mama” albo Dyżurnet.pl; mama nie dostaje nic bez jej zgody,
+  - **Zgoda dla szkoły** (Zosia → Anna): Zosia skanuje kod z kartki od wychowawczyni, Anna podpisuje zgodę w pracy,
+  - trzeci telefon (Zosia, mObywatel Junior z trzema zakładkami); na komputerze w scenach Zosi zastępuje telefon Krystyny, przełącznik nad telefonem,
+  - „Pokaż sam” w dwóch częściach: „Tryb prosty i trzy filary” i „Cała rodzina” (po ok. 2 min).
 - ⏳ Film 90 s z „Pokaż sam” do zgłoszenia.
 
 ## Zasady
