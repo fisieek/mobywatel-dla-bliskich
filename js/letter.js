@@ -1,13 +1,18 @@
 // Fikcyjne papierowe pismo do sceny Pomoc i gotowe odpowiedzi asystenta.
 // Pismo ma znak wodny „pismo fikcyjne”, żeby nikt nie wziął go za prawdziwe.
+import { daysFromToday, shortDate, longDate } from './dates.js';
+
+// Pismo wysłane 6 dni temu, doręczone 2 dni temu; 14 dni na odpowiedź liczone od doręczenia
+const sentOn = daysFromToday(-6);
+const deadline = daysFromToday(-2 + 14);
 
 export const letter = {
   office: 'Urząd Miejski w Wejherowie',
   officeShort: 'Urząd Miejski',
   department: 'Wydział Finansowy',
-  sign: 'FN.3120.412.2026',
-  date: '20.11.2026',
-  deadline: '8 grudnia 2026',
+  sign: `FN.3120.412.${sentOn.getFullYear()}`,
+  date: shortDate(sentOn),
+  deadline: longDate(deadline),
   title: 'WEZWANIE',
   body: [
     'Na podstawie przepisów ustawy – Ordynacja podatkowa wzywam do złożenia wyjaśnień dotyczących informacji o nieruchomościach i obiektach budowlanych (IN-1) złożonej dla nieruchomości położonej przy ul. Klonowej 7 w Wejherowie.',
@@ -42,7 +47,7 @@ export function sampleLetterText() {
 }
 
 // Szkic odpowiedzi, który asystent przygotowuje dla Anny
-export const replyDraft = `Wejherowo, 26.11.2026
+export const replyDraft = `Wejherowo, ${shortDate(new Date())}
 
 Krystyna Nowak
 ul. Klonowa 7, 84-200 Wejherowo
@@ -52,7 +57,7 @@ ${letter.department}
 
 Dotyczy: wezwania z ${letter.date}, znak ${letter.sign}
 
-W odpowiedzi na wezwanie wyjaśniam, że różnica między powierzchnią podaną w informacji IN-1 (98,00 m²) a powierzchnią z ewidencji (120,40 m²) wynika z poddasza o wysokości poniżej 1,40 m (ok. 22,4 m²). Zgodnie z art. 4 ust. 2 ustawy o podatkach i opłatach lokalnych powierzchnię o wysokości poniżej 1,40 m pomija się przy ustalaniu powierzchni użytkowej.
+W odpowiedzi na wezwanie wyjaśniam, że różnica między powierzchnią podaną w informacji IN-1 (98,00 m²) a powierzchnią z ewidencji (120,40 m²) wynika z poddasza o wysokości poniżej 1,40 m (ok. 22,4 m²). Powierzchni o wysokości poniżej 1,40 m nie wlicza się do powierzchni użytkowej budynku.
 
 Z poważaniem
 Krystyna Nowak`;

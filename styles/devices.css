@@ -385,8 +385,17 @@
     background: var(--mo-blue-wash);
   }
 
-  [data-device='duo-open'] .read-aloud {
-    bottom: 24px;
+  /* Tryb prosty nie ma bocznego menu — dwa duże przyciski są na dole, jak na telefonie */
+  [data-device='duo-open'] .simple .phone-screen {
+    padding-left: 0;
+  }
+
+  [data-device='duo-open'] .simple .statusbar {
+    margin-left: 0;
+  }
+
+  [data-device='duo-open'] .simple .banners {
+    left: calc(50% - 190px);
   }
 
   /* Powiadomienia na środku obszaru treści */
@@ -406,7 +415,8 @@
   .phone-frame {
     zoom: 1;
     width: 100%;
-    height: calc(100dvh - 50px);
+    /* Ekran minus pasek u góry (przełącznik telefonów i następny krok) — wysokość ustawia app.js */
+    height: calc(100dvh - var(--mobile-top-h, 50px));
     padding: 0;
     border-radius: 0;
     background: none;

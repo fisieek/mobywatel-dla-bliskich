@@ -5,7 +5,8 @@
   --mo-surface: #ffffff;
   --mo-text: #121318;
   --mo-text-2: #5f6270;
-  --mo-text-3: #8b8e9a;
+  /* Przyciemnione z #8b8e9a (3,0:1) do kontrastu ok. 5,3:1 na tle aplikacji — wymóg WCAG AA dla zwykłego tekstu */
+  --mo-text-3: #666a77;
   --mo-hair: #e6e8ef;
 
   --mo-blue: #1a5cf5;

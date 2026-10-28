@@ -157,7 +157,7 @@ button:disabled {
   color: var(--mo-text-2);
 }
 
-.mobile-switch {
+.mobile-top {
   display: none;
 }
 
@@ -217,6 +217,88 @@ button:disabled {
   color: var(--mo-text-3);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+/* Sceny na później są przygaszone, bieżąca wyraźna */
+.scene-later .scene-name,
+.scene-later .scene-desc {
+  color: var(--mo-text-2);
+}
+
+.scene-later .scene-number {
+  background: var(--mo-hair);
+  color: var(--mo-text-2);
+}
+
+/* Karty „Kto już to robi” zwinięte po scenie */
+.guide-details {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.guide-details summary {
+  cursor: pointer;
+  color: var(--mo-blue);
+  font-weight: 600;
+}
+
+/* „Pokaż sam” */
+.autoplay {
+  display: grid;
+  gap: 4px;
+}
+
+.autoplay-running {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--mo-blue-wash);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Podświetlenie miejsca, którego dotyka pokaz */
+.demo-tap {
+  outline: 4px solid rgba(26, 92, 245, 0.85);
+  outline-offset: 3px;
+  animation: demo-pulse 0.9s ease-out;
+}
+
+@keyframes demo-pulse {
+  from {
+    outline-offset: 14px;
+    outline-color: rgba(26, 92, 245, 0);
+  }
+  to {
+    outline-offset: 3px;
+    outline-color: rgba(26, 92, 245, 0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-tap {
+    animation: none;
+  }
+}
+
+/* Podsumowanie po trzech scenach */
+.guide-summary {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--mo-info-wash);
+  font-size: 14px;
+}
+
+.summary-row {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(26, 92, 245, 0.15);
+}
+
+.summary-what {
+  font-weight: 700;
 }
 
 .guide-try {
@@ -1270,6 +1352,92 @@ label.btn {
   box-shadow: var(--focus-ring);
 }
 
+/* Logowanie kodem QR z liczbą do porównania */
+
+.login-number {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--mo-text);
+}
+
+.number-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.number-choice {
+  min-height: 72px;
+  border-radius: var(--radius-card);
+  background: var(--mo-surface);
+  box-shadow: var(--shadow-card);
+  border: 2px solid var(--mo-hair);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--mo-text);
+}
+
+.number-choice:active {
+  border-color: var(--mo-blue);
+}
+
+/* Moi bliscy: własna nazwa dla bliskiej osoby */
+
+.field-label {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: -6px;
+}
+
+.text-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--mo-hair);
+  border-radius: var(--radius-card);
+  font: inherit;
+  font-size: 17px;
+  background: var(--mo-surface);
+  flex-shrink: 0;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: var(--mo-blue);
+  box-shadow: var(--focus-ring);
+}
+
+/* Powiadomienia, które zniknęły z ekranu */
+
+.notification-item {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding: 12px 14px;
+}
+
+.notification-item + .notification-item {
+  border-top: 1px solid var(--mo-hair);
+}
+
+.notification-title {
+  font-weight: 600;
+}
+
+.notification-danger .notification-title {
+  color: var(--mo-red);
+}
+
+.notification-body {
+  font-size: 14px;
+  color: var(--mo-text-2);
+}
+
+.notification-item .btn {
+  margin-top: 6px;
+}
+
 /* PIN podpisu */
 
 .pin-head {
@@ -1560,16 +1728,50 @@ label.btn {
   color: rgba(255, 255, 255, 0.8);
 }
 
-.call-to-app {
-  display: flex;
+.call-id {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--mo-text);
-  font-size: 14px;
+  justify-self: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  font-size: 15px;
   font-weight: 600;
+}
+
+.call-id-warn {
+  background: rgba(255, 159, 10, 0.22);
+  color: #ffd27a;
+}
+
+.call-id-ok {
+  background: rgba(52, 199, 89, 0.22);
+  color: #8ff0a9;
+}
+
+.call-id-source {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Systemowy gest wyjścia z ekranu rozmowy (nie przycisk aplikacji) */
+.call-swipe {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 6px 12px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+  text-align: center;
+}
+
+.call-swipe-bar {
+  width: 120px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .call-pill {
@@ -1987,21 +2189,127 @@ label.btn {
   border-left-color: var(--mo-amber);
 }
 
-.read-aloud {
-  position: absolute;
-  right: 14px;
-  bottom: calc(var(--safe-bottom) + 62px);
+.simple-status-ok {
+  border-left-color: var(--mo-green);
+}
+
+/* Karta stanu jako przycisk do jedynej następnej czynności */
+.simple-status-tap {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  color: inherit;
+  cursor: pointer;
+}
+
+.simple-status-danger.simple-status-tap {
+  color: var(--mo-red);
+}
+
+.simple-status-cta {
+  display: block;
+  padding: 14px 16px;
+  border-radius: var(--radius-btn);
+  background: var(--mo-blue);
+  color: #fff;
+  font-size: 19px;
+  text-align: center;
+}
+
+.simple-status-danger .simple-status-cta {
+  background: var(--mo-red);
+}
+
+.simple-status-ok .simple-status-cta {
+  background: var(--mo-green-wash);
+  color: var(--mo-green);
+}
+
+/* Tryb prosty: dwa duże przyciski zamiast pięciu zakładek */
+.simple-dock {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 8px;
+  padding: 8px 14px var(--safe-bottom);
+  background: var(--mo-bg);
+}
+
+.simple-dock button {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  min-height: 56px;
+  padding: 8px 12px;
+  border-radius: var(--radius-btn);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.15;
+}
+
+.dock-start {
+  background: var(--mo-surface);
+  color: var(--mo-text);
+  box-shadow: var(--shadow-card);
+}
+
+.dock-help {
+  background: var(--mo-text);
+  color: #fff;
+}
+
+.simple .footnote {
+  font-size: 16px;
+}
+
+.simple .ai-source {
+  font-size: 15px;
+}
+
+.simple .link {
+  font-size: 18px;
+  padding: 10px;
+}
+
+/* Przypomnienie już ustawione */
+.pill-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--mo-green-wash);
+  color: var(--mo-green);
+}
+
+/* Czytanie na głos: stały pasek nad dolnym menu, w układzie ekranu — nie zasłania treści */
+.read-aloud-bar {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  background: var(--mo-bg);
+  border-top: 1px solid var(--mo-hair);
+}
+
+.read-aloud {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
   padding: 12px 16px;
-  border-radius: 26px;
+  border-radius: var(--radius-btn);
   background: var(--mo-blue);
   color: #fff;
   font-weight: 600;
-  font-size: 16px;
-  box-shadow: 0 8px 20px -6px rgba(26, 92, 245, 0.55);
-  z-index: 3;
+  font-size: 18px;
+}
+
+.read-aloud-stop {
+  background: var(--mo-text);
 }
 
 .simple .ai-block p,
@@ -2086,13 +2394,46 @@ label.btn {
     gap: 16px;
   }
 
-  .mobile-switch {
-    display: flex;
+  .mobile-top {
+    display: block;
     position: sticky;
     top: 0;
     z-index: 10;
     background: var(--mo-surface);
     border-bottom: 1px solid var(--mo-hair);
+  }
+
+  .mobile-switch {
+    display: flex;
+  }
+
+  /* Następny krok przewodnika nad telefonem */
+  .next-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px 10px;
+    font-size: 13px;
+    line-height: 1.35;
+    background: var(--mo-info-wash);
+  }
+
+  .next-step p {
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .next-step-play {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: var(--mo-surface);
+    color: var(--mo-blue);
+    font-weight: 600;
+    font-size: 13px;
   }
 
   .mobile-switch button {
@@ -2136,8 +2477,8 @@ label.btn {
     padding-bottom: max(env(safe-area-inset-bottom), 8px);
   }
 
-  .read-aloud {
-    bottom: 72px;
+  .simple-dock {
+    padding-bottom: max(env(safe-area-inset-bottom), 8px);
   }
 
   .guide {

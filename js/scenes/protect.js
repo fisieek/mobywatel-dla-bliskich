@@ -2,10 +2,17 @@
 // 2a: dzwoni „policjant”, Krystyna sprawdza w aplikacji, kto dzwoni, i słyszy: rozłącz się. Anna dostaje ostrzeżenie.
 // 2b: oszust próbuje dalej — przychodzi prośba o logowanie, której Krystyna nie zaczęła. Można ją tylko odrzucić.
 // Wersja pozytywna: dzwoni naprawdę Zakład Ubezpieczeń Społecznych — aplikacja pokazuje urzędniczkę i kod do porównania.
-import { store, go, home, notify, patch, addHistory } from '../store.js';
+import { store, go, home, replace, notify, patch, addHistory, withBiometric, openTab } from '../store.js';
 import { icon } from '../icons.js';
 import { speak, stopSpeaking } from '../speech.js';
 import { list, row, newBadge, sectionTitle, serviceHeader, infoBox } from '../ui.js';
+import { contactName } from '../personas.js';
+import { clock } from '../dates.js';
+import { qrSvg } from './control.js';
+
+// Imiona bez odmiany: „Anna Nowak, Córka” na telefonie Krystyny, „Mama” na telefonie Anny
+const annaFor = (state) => contactName(state, 'krystyna', 'anna');
+const mamaFor = (state) => contactName(state, 'anna', 'krystyna');
 
 // Po rozłączeniu oszust próbuje dalej: prośba o logowanie przychodzi po chwili
 const PUSH_DELAY_MS = 2500;
@@ -14,6 +21,8 @@ const callers = {
   scam: {
     number: 'Nieznany numer',
     label: 'policja',
+    // Podpis numeru od mObywatela, widoczny już przy dzwonieniu (iOS 18: Live Caller ID Lookup, Android: filtrowanie połączeń)
+    callerId: { text: 'Numer niepotwierdzony przez żadną instytucję', tone: 'warn' },
     lines: [
       'Dzień dobry, komisarz Adam Nowicki, Komenda Policji.',
       'Pani wnuczek spowodował wypadek. Żeby nie trafił do aresztu, potrzebna jest kaucja.',
@@ -23,6 +32,7 @@ const callers = {
   zus: {
     number: '+48 58 000 00 00',
     label: 'Zakład Ubezpieczeń Społecznych',
+    callerId: { text: 'Zakład Ubezpieczeń Społecznych · numer sprawdzony', tone: 'ok' },
     lines: [
       'Dzień dobry, Magdalena Wiśniewska, Zakład Ubezpieczeń Społecznych w Gdyni.',
       'Dzwonię w sprawie wniosku, który złożyła Pani w zeszłym tygodniu.',
@@ -49,6 +59,16 @@ const guardianAlerts = (state) => state.guardian === 'active' && state.guardianS
 export function startScamCall() {
   stopSpeaking();
   patch({ call: { caller: 'scam', status: 'ringing', minimized: false, since: Date.now() }, callCheck: null });
+}
+
+// Logowanie, które zaczyna sama Krystyna: na komputerze strona eZUS z kodem QR i liczbą do porównania
+const loginSite = { name: 'eZUS', owner: 'Zakład Ubezpieczeń Społecznych', number: '72', choices: ['38', '72', '15'] };
+
+export function startLogin() {
+  stopSpeaking();
+  patch({ login: 'scanning' });
+  openTab('krystyna', 'documents');
+  go('krystyna', 'loginScan');
 }
 
 export function startRealCall() {
@@ -127,7 +147,7 @@ export function callOverlay(state, persona) {
         <div class="call-head">
           <p class="call-kind">Połączenie przychodzące</p>
           <p class="call-number">${caller.number}</p>
-          <p class="call-sub">telefon komórkowy</p>
+          ${callerIdLabel(caller)}
         </div>
         <div class="call-answer-row">
           <button class="call-round call-decline" data-call="decline" aria-label="Odrzuć">${icon('call', { size: 30 })}</button>
@@ -147,6 +167,7 @@ export function callOverlay(state, persona) {
     <div class="call-screen" role="dialog" aria-label="Rozmowa telefoniczna">
       <div class="call-head">
         <p class="call-number">${caller.number}</p>
+        ${callerIdLabel(caller)}
         <p class="call-sub">rozmowa trwa</p>
       </div>
       <div class="call-transcript" aria-live="polite">
@@ -158,11 +179,20 @@ export function callOverlay(state, persona) {
         <span class="call-tool">${icon('keypad', { size: 26 })}<i>klawiatura</i></span>
         <span class="call-tool">${icon('speaker', { size: 26 })}<i>głośnik</i></span>
       </div>
-      <button class="call-to-app" data-call="minimize">
-        <span class="banner-app" aria-hidden="true">m</span> Przejdź do mObywatela — rozmowa trwa dalej
-      </button>
       <button class="call-round call-decline call-end" data-call="hangup" aria-label="Rozłącz">${icon('call', { size: 30 })}</button>
+      <button class="call-swipe" data-call="minimize">
+        <span class="call-swipe-bar" aria-hidden="true"></span>
+        Przesuń w górę, żeby wyjść z ekranu rozmowy. Rozmowa trwa dalej.
+      </button>
     </div>`;
+}
+
+// Aplikacja nie może dodać przycisków do systemowego ekranu rozmowy, ale może podpisać numer.
+// Taki podpis pokazują dziś aplikacje do rozpoznawania numerów; tu podpisuje mObywatel.
+function callerIdLabel(caller) {
+  return `
+    <p class="call-id call-id-${caller.callerId.tone}">${icon(caller.callerId.tone === 'ok' ? 'checkCircle' : 'warning', { size: 16 })} ${caller.callerId.text}</p>
+    <p class="call-id-source">Podpis numeru: mObywatel</p>`;
 }
 
 // Zielona pigułka w miejscu godziny, gdy rozmowa trwa w tle
@@ -171,11 +201,27 @@ export function callPill(state, persona) {
   return `<button class="call-pill" data-call="expand" aria-label="Wróć do rozmowy">${icon('call', { size: 13 })} Rozmowa</button>`;
 }
 
-// Zdanie na górze ekranu głównego w trybie prostym
+// Zdanie na górze ekranu głównego w trybie prostym. Karta z „go” jest przyciskiem do następnej czynności.
 export function protectionStatus(state) {
-  if (state.protection.push === 'pending') return { text: 'Ktoś chce zalogować się na Twoje konto. Niczego nie zatwierdzaj.', tone: 'danger' };
-  if (state.call?.status === 'talking') return { text: 'Rozmawiasz przez telefon. Nie wiesz, kto dzwoni? Dotknij „Ktoś do mnie dzwoni?”.', tone: 'attention' };
+  if (state.protection.push === 'pending') {
+    return { text: 'Ktoś chce zalogować się na Twoje konto. Niczego nie zatwierdzaj.', tone: 'danger', go: 'loginRequest', cta: 'Sprawdź i odrzuć' };
+  }
+  if (state.call?.status === 'talking') {
+    return { text: 'Rozmawiasz przez telefon. Nie wiesz, kto dzwoni?', tone: 'attention', go: 'whoIsCalling', cta: 'Sprawdź, kto dzwoni' };
+  }
   return null;
+}
+
+// Po zablokowanym ataku ekran główny mówi o tym do końca dnia, zamiast „wszystko w porządku”
+export function blockedToday(state) {
+  const at = state.protection.blockedAt;
+  return Boolean(at) && new Date(at).toDateString() === new Date().toDateString();
+}
+
+export function blockedStatus(state) {
+  if (!blockedToday(state)) return null;
+  const who = guardianAlerts(state) ? ` Ostrzeżenie dostała: ${annaFor(state)}.` : '';
+  return { text: `Dziś o ${clock(state.protection.blockedAt)} zablokowaliśmy próbę oszustwa. Jesteś bezpieczna.${who}`, tone: 'ok', go: 'myData', cta: 'Zobacz szczegóły' };
 }
 
 // ---------- Ekrany ----------
@@ -193,7 +239,7 @@ function scamResult(state, check) {
   const onCall = Boolean(state.call);
   const other = state.call?.caller === 'zus' && check.institution !== 'zus' ? infoBox('Teraz dzwoni do Ciebie tylko <strong>Zakład Ubezpieczeń Społecznych</strong>. Wybierz go, żeby sprawdzić rozmówcę.') : '';
   const annaInfo = guardianAlerts(state)
-    ? infoBox('<strong>Anna już wie.</strong> Wysłaliśmy jej ostrzeżenie. Zaraz może do Ciebie zadzwonić.')
+    ? infoBox(`<strong>Ostrzeżenie dostała: ${annaFor(state)}.</strong> Zaraz może do Ciebie zadzwonić.`)
     : infoBox('Gdy pozwolisz bliskiej osobie pomagać, dostanie w takiej chwili ostrzeżenie.');
   return `
     <div class="alert-full alert-danger" role="alert">
@@ -263,10 +309,10 @@ export const protectScreens = {
           }
           if (guardianAlerts(state)) {
             notify('anna', {
-              title: `Mama sprawdza podejrzany telefon${fromText}`,
-              body: 'Aplikacja kazała jej się rozłączyć. Zadzwoń do niej.',
+              title: mamaFor(state),
+              body: `Sprawdza podejrzany telefon${fromText}. Aplikacja kazała jej się rozłączyć. Zadzwoń do niej.`,
               tone: 'danger',
-              action: { label: 'Zadzwoń do mamy', go: 'callContact' },
+              action: { label: `Zadzwoń do ${mamaFor(state)}`, go: 'callContact' },
             });
           }
         }
@@ -304,7 +350,7 @@ export const protectScreens = {
           <div class="success">
             <span class="success-icon">${icon('shieldLock', { size: 40 })}</span>
             <h2 class="service-title">Zablokowane</h2>
-            <p class="service-desc">Nikt nie zalogował się na Twoje konto.${guardianAlerts(state) ? ' Anna dostała ostrzeżenie.' : ''}</p>
+            <p class="service-desc">Nikt nie zalogował się na Twoje konto.${guardianAlerts(state) ? ` Ostrzeżenie dostała: ${annaFor(state)}.` : ''}</p>
           </div>
           <button class="btn btn-primary" data-home>Gotowe</button>`;
       }
@@ -329,6 +375,7 @@ export const protectScreens = {
         const state = store.get();
         store.update((s) => {
           s.protection.push = 'blocked';
+          s.protection.blockedAt = new Date().toISOString();
           return s;
         });
         addHistory({ persona, actor: 'blocked', text: 'Ktoś próbował zalogować się na Twoje konto z innego urządzenia. Prośbę odrzuciłaś' });
@@ -339,13 +386,100 @@ export const protectScreens = {
             return s;
           });
           notify('anna', {
-            title: 'Ktoś próbował zalogować się na konto mamy',
-            body: 'Prośba została zablokowana. Mama ją odrzuciła.',
+            title: mamaFor(state),
+            body: 'Ktoś próbował zalogować się na to konto. Prośba została odrzucona i zablokowana.',
             tone: 'danger',
-            action: { label: 'Zadzwoń do mamy', go: 'callContact' },
+            action: { label: `Zadzwoń do ${mamaFor(state)}`, go: 'callContact' },
           });
         }
         if (store.get().simpleMode[persona]) speak('Zablokowane. Nikt nie zalogował się na Twoje konto.');
+      },
+    },
+  },
+
+  // Wersja pozytywna logowania: Krystyna sama skanuje kod na komputerze i porównuje liczbę
+  loginScan: {
+    kind: 'inner',
+    hideReadAloud: true,
+    title: 'Zaloguj się',
+    speech: () => `Na komputerze otworzyłaś stronę ${loginSite.name}. Skieruj aparat na kod QR na ekranie komputera i dotknij przycisku Zeskanuj kod.`,
+    render: () => `
+      <p class="service-desc">Na komputerze otwarta jest strona ${loginSite.name} z kodem QR. Logowanie zaczynasz Ty: skanujesz kod.</p>
+      <div class="viewfinder viewfinder-qr">
+        <button class="counter-card login-screen" data-action="scanLogin" aria-label="Zeskanuj kod QR ze strony ${loginSite.name}">
+          <span class="counter-brand">${icon('building', { size: 18 })} ${loginSite.name} · Zaloguj się</span>
+          ${qrSvg(120)}
+          <span class="login-number">${loginSite.number}</span>
+          <span class="counter-sub">Liczba na ekranie komputera</span>
+        </button>
+        <span class="viewfinder-frame" aria-hidden="true"></span>
+        <span class="scan-line" aria-hidden="true"></span>
+      </div>
+      <button class="btn btn-primary" data-action="scanLogin">${icon('qr', { size: 20 })} Zeskanuj kod</button>`,
+    actions: {
+      scanLogin: (el, persona) => {
+        patch({ login: 'matching' });
+        replace(persona, 'loginConfirm');
+      },
+    },
+  },
+
+  loginConfirm: {
+    kind: 'inner',
+    title: 'Zaloguj się',
+    speech: (state) =>
+      state.login === 'wrong'
+        ? 'Ta liczba się nie zgadza. Nie loguj się.'
+        : `Logujesz się do ${loginSite.name}. To logowanie zaczęłaś Ty. Jaką liczbę widzisz na ekranie komputera? Wybierz: ${loginSite.choices.join(', ')}.`,
+    render: (state) => {
+      if (state.login === 'wrong') {
+        return `
+          <div class="alert-full alert-danger" role="alert">
+            <span class="alert-icon">${icon('warning', { size: 40 })}</span>
+            <h2>Ta liczba się nie zgadza</h2>
+            <p class="alert-do">Nie loguj się. Ktoś mógł podmienić stronę.</p>
+          </div>
+          <p class="footnote">Zamknij stronę na komputerze i wpisz adres sama albo poproś o pomoc bliską osobę.</p>
+          <button class="btn btn-primary" data-home>Gotowe</button>`;
+      }
+      if (state.login === 'done') {
+        return `
+          <div class="success">
+            <span class="success-icon">${icon('check', { size: 40 })}</span>
+            <h2 class="service-title">Zalogowano</h2>
+            <p class="service-desc">Jesteś zalogowana do ${loginSite.name} na komputerze. Logowanie zaczęłaś Ty i liczba się zgadzała.</p>
+          </div>
+          <button class="btn btn-primary" data-home>Gotowe</button>`;
+      }
+      return `
+        <div class="requester">
+          <span class="service-icon tint-violet">${icon('building', { size: 26 })}</span>
+          <div>
+            <h2 class="requester-name">Logujesz się do ${loginSite.name}</h2>
+            <p class="verified">${icon('checkCircle', { size: 16 })} ${loginSite.owner} · zweryfikowany</p>
+          </div>
+        </div>
+        ${infoBox(`<strong>To logowanie zaczęłaś Ty</strong> — zeskanowałaś kod na ekranie komputera. ${newBadge()}`)}
+        <h2 class="service-title">Jaką liczbę widzisz na ekranie komputera?</h2>
+        <div class="number-choices">
+          ${loginSite.choices.map((n) => `<button class="number-choice" data-action="pick" data-id="${n}">${n}</button>`).join('')}
+        </div>
+        <p class="footnote">Jeśli żadna się nie zgadza, nie loguj się.</p>
+        <button class="btn btn-secondary" data-home>Nie loguj</button>`;
+    },
+    actions: {
+      pick: (el, persona) => {
+        if (el.dataset.id !== loginSite.number) {
+          patch({ login: 'wrong' });
+          addHistory({ persona, actor: 'blocked', text: `Logowanie do ${loginSite.name} przerwane: liczba na komputerze się nie zgadzała` });
+          if (store.get().simpleMode[persona]) speak('Ta liczba się nie zgadza. Nie loguj się.');
+          return;
+        }
+        withBiometric(persona, () => {
+          patch({ login: 'done' });
+          addHistory({ persona, text: `Zalogowałaś się do ${loginSite.name} na komputerze. Logowanie zaczęłaś Ty, liczba się zgadzała` });
+          if (store.get().simpleMode[persona]) speak(`Zalogowano do ${loginSite.name}.`);
+        });
       },
     },
   },
