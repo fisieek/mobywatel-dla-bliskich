@@ -2,7 +2,7 @@
 // więc to, co zrobi Anna, od razu widzi Krystyna (i odwrotnie).
 import { defaultNicknames } from './personas.js';
 
-const STORAGE_KEY = 'mobywatel-dla-bliskich:v9';
+const STORAGE_KEY = 'mobywatel-dla-bliskich:v10';
 
 function initialState() {
   return {
@@ -27,7 +27,7 @@ function initialState() {
     // Cyfry wpisane w PIN podpisu
     pin: '',
     // Chwilowa nakładka na telefonie (np. Face ID): { krystyna: null, anna: null }
-    overlay: { krystyna: null, anna: null },
+    overlay: { krystyna: null, anna: null, zosia: null },
     // Za kogo działa Anna: 'ja' | 'mama' | 'antek'
     actingAs: 'ja',
     // Czy Anna przełączyła się na mamę sama (przez przełącznik), czy zrobiła to aplikacja przy otwarciu pisma.
@@ -37,20 +37,22 @@ function initialState() {
     nicknames: structuredClone(defaultNicknames),
     // Nazwa wpisywana, ale jeszcze niezapisana: { 'krystyna:anna': 'Ania' }
     nicknameDrafts: {},
-    // Tryb prosty (nowa opcja w Więcej): Krystyna ma go włączonego
-    simpleMode: { krystyna: true, anna: false },
+    // Tryb prosty (nowość). Krystyna zaczyna w zwykłym mObywatelu i włącza go w pierwszej scenie.
+    simpleMode: { krystyna: false, anna: false, zosia: false },
+    // Czy tryb prosty zaproponowała bliska osoba (zmienia opis na ekranie propozycji)
+    simpleOffered: false,
     // Na jakim ekranie ktoś dotknął „Nie wiem, co zrobić”
-    helpFrom: { krystyna: '', anna: '' },
+    helpFrom: { krystyna: '', anna: '', zosia: '' },
     // Czy na ekranie zgody w trybie prostym ktoś otworzył „Inne możliwości”
-    consentAdvanced: { krystyna: false, anna: false },
+    consentAdvanced: { krystyna: false, anna: false, zosia: false },
     // „Przypomnij mi” przy terminie pisma — osobno na każdym telefonie
-    reminders: { krystyna: false, anna: false },
+    reminders: { krystyna: false, anna: false, zosia: false },
     // Stos ekranów osobno dla każdego telefonu; pierwszy element to aktywna zakładka
-    nav: { krystyna: ['documents'], anna: ['documents'] },
+    nav: { krystyna: ['documents'], anna: ['documents'], zosia: ['documents'] },
     // Powiadomienia wyświetlane teraz na danym telefonie (na ekranie najwyżej jedno, najnowsze)
-    notifications: { krystyna: [], anna: [] },
+    notifications: { krystyna: [], anna: [], zosia: [] },
     // Wszystkie powiadomienia z sesji — zostają w Powiadomieniach (dzwonek), gdy znikną z ekranu
-    notificationLog: { krystyna: [], anna: [] },
+    notificationLog: { krystyna: [], anna: [], zosia: [] },
     // Połączenie telefoniczne na telefonie Krystyny (scena 2):
     // null | { caller: 'scam' | 'zus', status: 'ringing' | 'talking', minimized, since }
     call: null,
@@ -61,14 +63,27 @@ function initialState() {
     callCheck: null,
     // Wersja pozytywna sceny 2: dzwoni naprawdę Zakład Ubezpieczeń Społecznych: 'none' | 'verified'
     realCall: 'none',
+    // --- Cała rodzina ---
+    // Moje leki (Krystyna): 'ok' → 'low' → 'requested' (prośba do Anny) → 'ordered' (Anna poprosiła przychodnię) → 'refilled'
+    meds: 'ok',
+    medsShown: false,
+    // Upoważnienie od Anny dla Krystyny: null | { school, doctor, until, status: 'active' | 'used' | 'revoked', usedAt }
+    pickup: null,
+    // Wybór na ekranie upoważnienia, zanim Anna je potwierdzi
+    pickupDraft: { school: true, doctor: false, until: 'today' },
+    // Ktoś do mnie pisze? (Zosia): czat od obcego na ekranie Zosi i to, co Zosia wybrała
+    chat: null,
+    writing: { situation: null, told: false, called: false, reported: false },
+    // Zgoda dla szkoły (Zosia → Anna): 'none' → 'scanned' → 'requested' → 'signed' | 'declined'
+    school: 'none',
     // Logowanie, które zaczyna sama Krystyna (kod QR na komputerze + liczba do porównania):
     // 'none' → 'scanning' → 'matching' → 'done' | 'wrong'
     login: 'none',
     // Scena 3: prośba o dane po zeskanowaniu kodu QR (Anna — wypożyczalnia, Krystyna — hotel):
     // 'none' → 'scanned' → 'shared'
-    consent: { krystyna: 'none', anna: 'none' },
+    consent: { krystyna: 'none', anna: 'none', zosia: 'none' },
     // Poziom danych na ekranie zgody: 'confirm' | 'basic' | 'full'
-    consentLevel: { krystyna: 'basic', anna: 'basic' },
+    consentLevel: { krystyna: 'basic', anna: 'basic', zosia: 'basic' },
     // Czy Krystyna obejrzała historię po udostępnieniu danych przez Annę (koniec sceny 3)
     historySeen: false,
     // Historia „jak w banku” (scena 3), wspólna dla obu osób.

@@ -89,6 +89,7 @@ const pastEntries = {
     { daysAgo: 41, actor: 'shared', who: 'Operator komórkowy Fala', text: 'Cały dowód osobisty, w tym PESEL i adres — przy podpisaniu umowy', consent: true },
     { daysAgo: 64, actor: 'institution', who: 'Urząd Miasta Gdyni', text: 'Sprawdził Twoje dane przy zgłoszeniu wymiany dowodu' },
   ],
+  zosia: [],
 };
 
 // ---------- Kod QR (rysowany, nie do zeskanowania) ----------
