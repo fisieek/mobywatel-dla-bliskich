@@ -39,7 +39,8 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
 - `js/ocr.js` — odczyt tekstu ze zdjęcia (Tesseract.js, polski słownik, w przeglądarce).
 - `api/assistant.js` + `api/_lib/pllum.js` — funkcja na serwerze: PLLuM-12B-instruct-2512 przez Featherless (klucz tylko na serwerze, limit długości, pamięć podręczna).
 - `dev-server.mjs` — lokalny serwer: pliki + `/api/assistant`.
-- `js/guide.js` — przewodnik dla jury (następny krok, karty po scenie).
+- `js/guide.js` — przewodnik dla jury (jedno „Teraz”, zwinięte karty po scenie, podsumowanie na końcu, krok dla paska na telefonie).
+- `js/autoplay.js` — „Pokaż sam”: pokaz całego demo (ok. 2 min), który klika te same przyciski co człowiek, z podświetleniem dotknięcia.
 - `js/speech.js` — „Przeczytaj na głos” w trybie prostym.
 - `js/icons.js` — własne ikony obrysowe (bez plików z aplikacji).
 
@@ -91,7 +92,12 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
   - Antek: opis oparty na tym, co istnieje (mObywatel Junior), z wyraźnym „Nowość” dla młodszych dzieci,
   - szkic odpowiedzi w trybie awaryjnym bez numeru przepisu, zgodnie z zasadą dla PLLuM (numer tylko, gdy jest w piśmie albo w faktach od Anny),
   - „Nie rozpoznajesz? Zgłoś” mówi, dokąd trafia zgłoszenie (inspektor ochrony danych, CERT Polska, a przy działaniu Anny — pytanie do niej i „Odwołaj pomoc”).
-- ⏳ Przewodnik: podsumowanie liczników na końcu i porównanie z pierwowzorem.
+- ✅ **Poprawki P3: pokaz dla jury** (28.10.2026):
+  - w przewodniku jedno „Teraz” — kolejne sceny są przygaszone jako „Potem”, a karty „Kto już to robi” po scenie zwinięte (rozwinięta tylko ostatnio skończona),
+  - „▶ Pokaż sam (ok. 2 min)”: pokaz wszystkich trzech scen od nowa, z podświetleniem każdego dotknięcia; dotknięcie człowieka albo „Zatrzymaj pokaz” oddaje stery,
+  - na telefonie (poniżej 860 px) pasek „Teraz · Telefon Anny: …” nad aplikacją, który sam przełącza telefon, gdy krok przechodzi na drugą osobę, z przyciskiem „Pokaż sam”,
+  - podsumowanie po trzech scenach: dziś vs u nas dla pisma, telefonu od oszusta, wynajmu auta i historii (z liczbą wpisów z sesji).
+- ⏳ Film 90 s z „Pokaż sam” do zgłoszenia.
 
 ## Zasady
 - **Imion nigdy nie odmieniamy.** Bliską osobę pokazujemy zawsze jako „Imię Nazwisko, Relacja” (np. „Anna Nowak, Córka”) albo pod nazwą nadaną na ekranie Więcej → Moi bliscy (np. „Mama”) — w tej samej formie w każdym zdaniu: „Zadzwoń do Mama”, „Poproś o pomoc: Anna Nowak, Córka”. Zdania budujemy tak, żeby imię stało w mianowniku (podmiot, etykieta po dwukropku albo tytuł powiadomienia). Wszystko idzie przez `contactName` w `js/personas.js`.

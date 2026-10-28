@@ -33,9 +33,13 @@
       </div>
     </header>
 
-    <div class="mobile-switch" role="group" aria-label="Który telefon pokazać">
-      <button data-show-persona="krystyna" aria-pressed="true">Telefon Krystyny <span class="badge"></span></button>
-      <button data-show-persona="anna" aria-pressed="false">Telefon Anny <span class="badge"></span></button>
+    <!-- Wąski ekran: przełącznik telefonów i następny krok przewodnika (przewodnik jest wtedy pod telefonem) -->
+    <div class="mobile-top" data-mobile-top>
+      <div class="mobile-switch" role="group" aria-label="Który telefon pokazać">
+        <button data-show-persona="krystyna" aria-pressed="true">Telefon Krystyny <span class="badge"></span></button>
+        <button data-show-persona="anna" aria-pressed="false">Telefon Anny <span class="badge"></span></button>
+      </div>
+      <div class="next-step" data-next-step aria-live="polite"></div>
     </div>
 
     <main class="stage">

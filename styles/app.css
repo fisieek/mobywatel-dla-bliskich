@@ -157,7 +157,7 @@ button:disabled {
   color: var(--mo-text-2);
 }
 
-.mobile-switch {
+.mobile-top {
   display: none;
 }
 
@@ -217,6 +217,88 @@ button:disabled {
   color: var(--mo-text-3);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+/* Sceny na później są przygaszone, bieżąca wyraźna */
+.scene-later .scene-name,
+.scene-later .scene-desc {
+  color: var(--mo-text-2);
+}
+
+.scene-later .scene-number {
+  background: var(--mo-hair);
+  color: var(--mo-text-2);
+}
+
+/* Karty „Kto już to robi” zwinięte po scenie */
+.guide-details {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.guide-details summary {
+  cursor: pointer;
+  color: var(--mo-blue);
+  font-weight: 600;
+}
+
+/* „Pokaż sam” */
+.autoplay {
+  display: grid;
+  gap: 4px;
+}
+
+.autoplay-running {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--mo-blue-wash);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Podświetlenie miejsca, którego dotyka pokaz */
+.demo-tap {
+  outline: 4px solid rgba(26, 92, 245, 0.85);
+  outline-offset: 3px;
+  animation: demo-pulse 0.9s ease-out;
+}
+
+@keyframes demo-pulse {
+  from {
+    outline-offset: 14px;
+    outline-color: rgba(26, 92, 245, 0);
+  }
+  to {
+    outline-offset: 3px;
+    outline-color: rgba(26, 92, 245, 0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-tap {
+    animation: none;
+  }
+}
+
+/* Podsumowanie po trzech scenach */
+.guide-summary {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--mo-info-wash);
+  font-size: 14px;
+}
+
+.summary-row {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(26, 92, 245, 0.15);
+}
+
+.summary-what {
+  font-weight: 700;
 }
 
 .guide-try {
@@ -2312,13 +2394,46 @@ label.btn {
     gap: 16px;
   }
 
-  .mobile-switch {
-    display: flex;
+  .mobile-top {
+    display: block;
     position: sticky;
     top: 0;
     z-index: 10;
     background: var(--mo-surface);
     border-bottom: 1px solid var(--mo-hair);
+  }
+
+  .mobile-switch {
+    display: flex;
+  }
+
+  /* Następny krok przewodnika nad telefonem */
+  .next-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px 10px;
+    font-size: 13px;
+    line-height: 1.35;
+    background: var(--mo-info-wash);
+  }
+
+  .next-step p {
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .next-step-play {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: var(--mo-surface);
+    color: var(--mo-blue);
+    font-weight: 600;
+    font-size: 13px;
   }
 
   .mobile-switch button {
