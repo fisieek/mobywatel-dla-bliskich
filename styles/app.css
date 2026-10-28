@@ -750,7 +750,9 @@ button:disabled {
 
 .segmented {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* Tyle kolumn, ile osób (Ja, Mama, Zosia, Antek) */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 2px;
   padding: 2px;
   border-radius: 10px;
@@ -2487,5 +2489,301 @@ label.btn {
 
   .stage-footer {
     padding: 16px;
+  }
+}
+
+/* ---------- Tryb prosty jako scena: propozycja na ekranie zwykłego mObywatela ---------- */
+
+.offer-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-card);
+  background: var(--mo-blue-wash);
+  border: 1.5px solid rgba(26, 92, 245, 0.25);
+  text-align: left;
+}
+
+.offer-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--mo-blue);
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+/* ---------- Scena: trzeci telefon (Zosia) i podpisy nad telefonami ---------- */
+
+@media (min-width: 861px) {
+  .phone-off-stage {
+    display: none;
+  }
+}
+
+.caption-switch {
+  margin-left: 8px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: var(--mo-surface);
+  color: var(--mo-blue);
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: var(--shadow-card);
+}
+
+/* ---------- Przewodnik: grupy scen i dwa pokazy ---------- */
+
+.scene-group {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mo-text-3);
+}
+
+.autoplay-title {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.autoplay-buttons {
+  display: grid;
+  gap: 6px;
+}
+
+/* ---------- Moje leki ---------- */
+
+.m-warning,
+.m-ok {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: var(--radius-card);
+}
+
+.m-warning {
+  background: var(--mo-amber-wash);
+  color: var(--mo-amber);
+}
+
+.m-ok {
+  background: var(--mo-green-wash);
+  color: var(--mo-green);
+}
+
+.m-warning svg,
+.m-ok svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.med-list {
+  display: grid;
+  gap: 10px;
+}
+
+.med-card {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  background: var(--mo-surface);
+  box-shadow: var(--shadow-card);
+  text-align: left;
+}
+
+.med-plain {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.med-dose {
+  font-size: 14px;
+  color: var(--mo-text-2);
+}
+
+.med-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mo-blue);
+}
+
+.simple .med-plain {
+  font-size: 22px;
+}
+
+.simple .med-dose,
+.simple .med-more {
+  font-size: 17px;
+}
+
+.pharmacy,
+.pass {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 20px 16px;
+  border-radius: var(--radius-card);
+  background: var(--mo-surface);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+
+.pharmacy-code {
+  display: flex;
+  gap: 8px;
+}
+
+.pharmacy-code span {
+  width: 48px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--mo-bg);
+  font-size: 30px;
+  font-weight: 700;
+}
+
+/* ---------- Upoważnienie: co zobaczyła szkoła ---------- */
+
+.teacher-view {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  background: var(--mo-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.teacher-view dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 15px;
+}
+
+.teacher-view dt {
+  color: var(--mo-text-2);
+}
+
+.teacher-view dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* ---------- Zosia: czat od obcego (ekran innej aplikacji) ---------- */
+
+.chat-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: calc(var(--statusbar-h) + 12px) 16px calc(var(--safe-bottom) + 20px);
+  background: linear-gradient(180deg, #2b1d4f 0%, #1a1233 100%);
+  color: #fff;
+}
+
+.chat-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.chat-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #7b5cd6;
+  font-weight: 700;
+}
+
+.chat-from {
+  font-weight: 700;
+}
+
+.chat-app {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.chat-thread {
+  flex: 1;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.chat-bubble {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 16px 16px 16px 4px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 15px;
+  line-height: 1.35;
+  opacity: 0;
+  animation: line-in 0.4s ease-out forwards;
+}
+
+.chat-swipe {
+  align-self: center;
+}
+
+/* ---------- Ktoś do mnie pisze? ---------- */
+
+.big-choices {
+  display: grid;
+  gap: 10px;
+}
+
+.big-choice {
+  width: 100%;
+  min-height: 64px;
+  padding: 14px 18px;
+  border-radius: var(--radius-card);
+  background: var(--mo-surface);
+  box-shadow: var(--shadow-card);
+  border: 2px solid var(--mo-violet-wash);
+  font-size: 18px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.alert-calm {
+  background: var(--mo-violet);
+  text-align: left;
+  justify-items: start;
+}
+
+.alert-calm p {
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-bubble {
+    animation: none;
+    opacity: 1;
   }
 }

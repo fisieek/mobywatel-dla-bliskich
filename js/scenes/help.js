@@ -208,6 +208,7 @@ export const helpScreens = {
     actions: {
       revoke: () => revokeGuardian(),
       offerSimple: () => {
+        patch({ simpleOffered: true });
         notify('krystyna', {
           title: annaFor(store.get()),
           body: 'Proponuje Ci tryb prosty: większe litery, mniej przycisków, czytanie na głos.',
