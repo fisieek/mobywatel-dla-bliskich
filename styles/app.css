@@ -1270,6 +1270,36 @@ label.btn {
   box-shadow: var(--focus-ring);
 }
 
+/* Logowanie kodem QR z liczbą do porównania */
+
+.login-number {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--mo-text);
+}
+
+.number-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.number-choice {
+  min-height: 72px;
+  border-radius: var(--radius-card);
+  background: var(--mo-surface);
+  box-shadow: var(--shadow-card);
+  border: 2px solid var(--mo-hair);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--mo-text);
+}
+
+.number-choice:active {
+  border-color: var(--mo-blue);
+}
+
 /* Moi bliscy: własna nazwa dla bliskiej osoby */
 
 .field-label {
@@ -1616,16 +1646,50 @@ label.btn {
   color: rgba(255, 255, 255, 0.8);
 }
 
-.call-to-app {
-  display: flex;
+.call-id {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--mo-text);
-  font-size: 14px;
+  justify-self: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  font-size: 15px;
   font-weight: 600;
+}
+
+.call-id-warn {
+  background: rgba(255, 159, 10, 0.22);
+  color: #ffd27a;
+}
+
+.call-id-ok {
+  background: rgba(52, 199, 89, 0.22);
+  color: #8ff0a9;
+}
+
+.call-id-source {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Systemowy gest wyjścia z ekranu rozmowy (nie przycisk aplikacji) */
+.call-swipe {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 6px 12px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+  text-align: center;
+}
+
+.call-swipe-bar {
+  width: 120px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .call-pill {

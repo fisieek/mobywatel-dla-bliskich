@@ -7,7 +7,7 @@ import { fullName, actingAsPeople } from './personas.js';
 import { documentsScreen, callContactScreen } from './screens/documents.js';
 import { resolveCommonScreen } from './screens/common.js';
 import { helpScreens, onPhotoSelected } from './scenes/help.js';
-import { protectScreens, callOverlay, callPill, callAction, startScamCall, startRealCall } from './scenes/protect.js';
+import { protectScreens, callOverlay, callPill, callAction, startScamCall, startRealCall, startLogin } from './scenes/protect.js';
 import { controlScreens } from './scenes/control.js';
 import { renderGuide } from './guide.js';
 import { initDevices, biometric } from './device.js';
@@ -280,10 +280,11 @@ function handleClick(event) {
     return;
   }
 
-  // Przyciski w przewodniku: telefon od „policjanta” albo od prawdziwego urzędu
+  // Przyciski w przewodniku: telefon od „policjanta”, od prawdziwego urzędu albo logowanie, które zaczyna Krystyna
   if (target.dataset.guideAction) {
     mobilePersona = 'krystyna';
-    return target.dataset.guideAction === 'realCall' ? startRealCall() : startScamCall();
+    const start = { realCall: startRealCall, login: startLogin }[target.dataset.guideAction] ?? startScamCall;
+    return start();
   }
 
   if (target.dataset.showPersona) {

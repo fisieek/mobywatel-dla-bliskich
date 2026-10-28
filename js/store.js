@@ -2,7 +2,7 @@
 // więc to, co zrobi Anna, od razu widzi Krystyna (i odwrotnie).
 import { defaultNicknames } from './personas.js';
 
-const STORAGE_KEY = 'mobywatel-dla-bliskich:v8';
+const STORAGE_KEY = 'mobywatel-dla-bliskich:v9';
 
 function initialState() {
   return {
@@ -61,6 +61,9 @@ function initialState() {
     callCheck: null,
     // Wersja pozytywna sceny 2: dzwoni naprawdę Zakład Ubezpieczeń Społecznych: 'none' | 'verified'
     realCall: 'none',
+    // Logowanie, które zaczyna sama Krystyna (kod QR na komputerze + liczba do porównania):
+    // 'none' → 'scanning' → 'matching' → 'done' | 'wrong'
+    login: 'none',
     // Scena 3: prośba o dane po zeskanowaniu kodu QR (Anna — wypożyczalnia, Krystyna — hotel):
     // 'none' → 'scanned' → 'shared'
     consent: { krystyna: 'none', anna: 'none' },

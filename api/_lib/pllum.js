@@ -12,7 +12,7 @@ Zasady:
 - Piszesz prostym językiem, zrozumiałym dla osoby po 8–9 latach nauki. Krótkie zdania, strona czynna, bez urzędniczego żargonu.
 - Zwracasz się do adresata pisma na „Ty”, w formie zgodnej z podaną płcią adresata.
 - Opierasz się wyłącznie na treści pisma i faktach podanych przez użytkownika. Niczego nie wymyślasz.
-- Nie podajesz numerów przepisów, których nie ma w piśmie.`;
+- Nie podajesz numerów przepisów, których nie ma w piśmie ani w faktach podanych przez użytkownika.`;
 
 const cache = new Map();
 
@@ -57,7 +57,7 @@ Pismo z urzędu:
 ${letterText}
 """
 Fakty, które adresat chce przekazać w odpowiedzi: ${facts}
-Napisz krótką, uprzejmą odpowiedź na to pismo w imieniu adresata, gotową do wysłania. Zacznij od miejscowości i daty, podaj dane adresata, adresata pisma (urząd), znak sprawy, jeśli jest w piśmie, i podpis. Bez numerów przepisów, których nie ma w piśmie. Zwróć sam tekst odpowiedzi.`,
+Napisz krótką, uprzejmą odpowiedź na to pismo w imieniu adresata, gotową do wysłania. Zacznij od miejscowości i daty, podaj dane adresata, adresata pisma (urząd), znak sprawy, jeśli jest w piśmie, i podpis. Bez numerów przepisów, których nie ma w piśmie ani w faktach powyżej. Zwróć sam tekst odpowiedzi.`,
     },
   ];
 }

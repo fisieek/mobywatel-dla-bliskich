@@ -62,7 +62,7 @@ function annaContent(state) {
   }
   if (state.actingAs === 'antek') {
     return infoBox(
-      `${actingAsLabel(state, 'antek')}: brak dokumentów w aplikacji. Jako rodzic działasz w imieniu dziecka bez osobnego pełnomocnictwa: widzisz jego recepty, numer PESEL i sprawy.`,
+      `${actingAsLabel(state, 'antek')}: brak dokumentów w aplikacji. Już dziś rodzic może dodać do swojego mObywatela legitymację szkolną dziecka (mObywatel Junior). <strong>Nowość:</strong> to samo dla młodszych dzieci — sprawy i dokumenty dziecka w jednym miejscu, bez osobnego pełnomocnictwa, bo rejestr zna relację rodzic–dziecko.`,
     );
   }
   const summary = mamaSummary(state);

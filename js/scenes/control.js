@@ -93,7 +93,7 @@ const pastEntries = {
 
 // ---------- Kod QR (rysowany, nie do zeskanowania) ----------
 
-function qrSvg(size = 140) {
+export function qrSvg(size = 140) {
   const n = 21;
   let seed = 7;
   const rand = () => {
@@ -391,12 +391,25 @@ export const controlScreens = {
         }
         notify(persona, { title: 'Zgoda cofnięta', body: `Wysłaliśmy informację do: ${entry.who}. Nie może dalej korzystać z Twoich danych na podstawie tej zgody.` });
       },
-      report: (el, persona) =>
-        notify(persona, { title: 'Dziękujemy za zgłoszenie', body: 'Sprawdzimy je i odpowiemy w Skrzynce. W prototypie nic nie wysyłamy.' }),
+      report: (el, persona) => {
+        const state = store.get();
+        const entry = entriesFor(state, persona).find((e) => e.id === el.dataset.id);
+        notify(persona, { title: 'Dziękujemy za zgłoszenie', body: `${reportRecipient(entry, state)} Odpowiedź dostaniesz w Skrzynce. W prototypie nic nie wysyłamy.` });
+      },
       revokeGuardian: () => revokeGuardian(),
     },
   },
 };
+
+// Kto dostaje zgłoszenie „Nie rozpoznajesz? Zgłoś” — zależnie od tego, kto widział dane
+function reportRecipient(entry, state) {
+  if (!entry) return 'Zgłoszenie trafi do zespołu mObywatela.';
+  if (entry.actor === 'anna') {
+    return `Zapytamy o to: ${annaFor(state)}. Jeśli to nie ona, odwołasz pomoc jednym przyciskiem.`;
+  }
+  if (entry.actor === 'institution') return `Zgłoszenie trafi do inspektora ochrony danych w: ${entry.who}.`;
+  return `Zgłoszenie trafi do inspektora ochrony danych w: ${entry.who}, a jeśli to wygląda na oszustwo — także do CERT Polska.`;
+}
 
 function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
