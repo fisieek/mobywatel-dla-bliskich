@@ -53,11 +53,11 @@ function realCallStep(state) {
 }
 
 function controlSceneStep(state) {
-  if (state.consent === 'none') {
+  if (state.consent.anna === 'none') {
     const prefix = state.actingAs === 'ja' ? '' : 'Wróć do siebie („Działam jako: Ja”). ';
-    return { phone: 'Telefon Anny', text: `${prefix}Anna wynajmuje auto. Otwórz zakładkę „Kod QR” → „Zeskanuj kod QR”.` };
+    return { phone: 'Telefon Anny', text: `${prefix}Anna wynajmuje auto. Otwórz zakładkę „Kod QR” → „Zeskanuj kod QR” i dotknij „Zeskanuj kod”.` };
   }
-  if (state.consent === 'scanned') return { phone: 'Telefon Anny', text: 'Wybierz, ile danych pokazać wypożyczalni, i udostępnij.' };
+  if (state.consent.anna === 'scanned') return { phone: 'Telefon Anny', text: 'Wybierz, ile danych pokazać wypożyczalni, i udostępnij.' };
   if (!state.historySeen) {
     return { phone: 'Telefon Krystyny', text: 'Na ekranie głównym dotknij „Kto widział moje dane”. Widać tam pomoc Anny, zablokowany atak i wszystkie udostępnienia.' };
   }
@@ -114,8 +114,13 @@ function protectSceneDone(state) {
     <p class="guide-note">Sprawdzanie połączeń wymaga, żeby instytucje zgłaszały swoje telefony do obywateli. To kierunek, nie gotowa usługa. Blokada próśb, których użytkownik nie zaczął, działa już w Estonii i Danii.</p>`;
 }
 
-function controlSceneDone() {
+function controlSceneDone(state) {
+  const hotel =
+    state.consent.krystyna === 'shared'
+      ? '<p class="guide-try">✓ Krystyna zameldowała się w hotelu bez podawania numeru PESEL i adresu.</p>'
+      : '<p class="guide-try"><strong>Zobacz też:</strong> Krystyna melduje się w hotelu. Na jej telefonie: Kod QR → Zeskanuj kod QR.</p>';
   return `
+    ${hotel}
     ${whoDoesIt([
       ['Hiszpania, MiDNI', 'trzy poziomy pokazania dowodu i krótko ważny kod QR.'],
       ['Australia, Trust Exchange', 'zapis, komu i jakie dane przekazano.'],
@@ -149,7 +154,7 @@ function sceneItem({ number, name, desc, step, current, done }) {
 export function renderGuide(state) {
   const steps = [helpSceneStep(state), protectSceneStep(state), controlSceneStep(state)];
   // Bieżąca scena: ta, w której coś się dzieje (np. dzwoni telefon), a jeśli nic — pierwsza niezakończona
-  const inProgress = state.call || ['queued', 'pending'].includes(state.protection.push) ? 1 : state.consent === 'scanned' ? 2 : -1;
+  const inProgress = state.call || ['queued', 'pending'].includes(state.protection.push) ? 1 : state.consent.anna === 'scanned' ? 2 : -1;
   const current = inProgress >= 0 ? inProgress : steps.findIndex(Boolean);
   const allDone = current === -1;
 
@@ -178,7 +183,7 @@ export function renderGuide(state) {
         desc: 'Wypożyczalnia dostaje tylko to, czego potrzebuje. Wszystko widać w historii.',
         step: steps[2],
         current: current === 2,
-        done: controlSceneDone(),
+        done: controlSceneDone(state),
       })}
     </ol>
     ${allDone ? '<p class="guide-try"><strong>Pomoc · ochrona · kontrola.</strong> To ten sam mObywatel — dodaliśmy tylko to, czego brakuje rodzinie.</p>' : ''}

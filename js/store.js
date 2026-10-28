@@ -1,7 +1,7 @@
 // Wspólny stan obu telefonów. Oba telefony działają na jednej stronie,
 // więc to, co zrobi Anna, od razu widzi Krystyna (i odwrotnie).
 
-const STORAGE_KEY = 'mobywatel-dla-bliskich:v5';
+const STORAGE_KEY = 'mobywatel-dla-bliskich:v6';
 
 function initialState() {
   return {
@@ -45,10 +45,11 @@ function initialState() {
     callCheck: null,
     // Wersja pozytywna sceny 2: dzwoni naprawdę Zakład Ubezpieczeń Społecznych: 'none' | 'verified'
     realCall: 'none',
-    // Scena 3: prośba wypożyczalni o dane: 'none' → 'scanned' → 'shared'
-    consent: 'none',
+    // Scena 3: prośba o dane po zeskanowaniu kodu QR (Anna — wypożyczalnia, Krystyna — hotel):
+    // 'none' → 'scanned' → 'shared'
+    consent: { krystyna: 'none', anna: 'none' },
     // Poziom danych na ekranie zgody: 'confirm' | 'basic' | 'full'
-    consentLevel: 'basic',
+    consentLevel: { krystyna: 'basic', anna: 'basic' },
     // Czy Krystyna obejrzała historię po udostępnieniu danych przez Annę (koniec sceny 3)
     historySeen: false,
     // Historia „jak w banku” (scena 3), wspólna dla obu osób.

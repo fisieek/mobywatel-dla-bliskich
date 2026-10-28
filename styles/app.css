@@ -946,7 +946,8 @@ button:disabled {
 @media (prefers-reduced-motion: reduce) {
   .banner-new,
   .call-screen-new,
-  .call-accept {
+  .call-accept,
+  .scan-line {
     animation: none;
   }
 }
@@ -1201,6 +1202,7 @@ label.btn {
 .viewfinder-frame {
   position: absolute;
   inset: 8px;
+  pointer-events: none;
   border: 3px solid rgba(255, 255, 255, 0.85);
   border-radius: 14px;
 }
@@ -1663,16 +1665,9 @@ label.btn {
   padding: 28px 18px;
 }
 
-.viewfinder-empty {
-  min-height: 260px;
-  display: grid;
-  place-items: center;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
-}
-
 .counter-card {
   width: 210px;
+  cursor: pointer;
   padding: 14px;
   border-radius: 14px;
   background: #fff;
@@ -1686,6 +1681,7 @@ label.btn {
 
 .counter-brand {
   display: flex;
+  font-size: 16px;
   align-items: center;
   gap: 6px;
   font-weight: 700;
@@ -1693,12 +1689,32 @@ label.btn {
 }
 
 .counter-sub {
+  display: block;
   font-size: 11px;
   color: var(--mo-text-2);
 }
 
-.qr-target {
-  border-radius: 6px;
+.counter-card:hover {
+  box-shadow: 0 0 0 3px rgba(26, 92, 245, 0.6), 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Linia „skanowania” przesuwa się po wizjerze */
+.scan-line {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 18px;
+  height: 2px;
+  background: rgba(52, 199, 89, 0.9);
+  box-shadow: 0 0 10px rgba(52, 199, 89, 0.9);
+  pointer-events: none;
+  animation: scan 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes scan {
+  to {
+    top: calc(100% - 20px);
+  }
 }
 
 .qr-code {
