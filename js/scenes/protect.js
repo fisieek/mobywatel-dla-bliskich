@@ -6,6 +6,12 @@ import { store, go, home, notify, patch, addHistory } from '../store.js';
 import { icon } from '../icons.js';
 import { speak, stopSpeaking } from '../speech.js';
 import { list, row, newBadge, sectionTitle, serviceHeader, infoBox } from '../ui.js';
+import { contactName } from '../personas.js';
+import { clock } from '../dates.js';
+
+// Imiona bez odmiany: „Anna Nowak, Córka” na telefonie Krystyny, „Mama” na telefonie Anny
+const annaFor = (state) => contactName(state, 'krystyna', 'anna');
+const mamaFor = (state) => contactName(state, 'anna', 'krystyna');
 
 // Po rozłączeniu oszust próbuje dalej: prośba o logowanie przychodzi po chwili
 const PUSH_DELAY_MS = 2500;
@@ -171,11 +177,27 @@ export function callPill(state, persona) {
   return `<button class="call-pill" data-call="expand" aria-label="Wróć do rozmowy">${icon('call', { size: 13 })} Rozmowa</button>`;
 }
 
-// Zdanie na górze ekranu głównego w trybie prostym
+// Zdanie na górze ekranu głównego w trybie prostym. Karta z „go” jest przyciskiem do następnej czynności.
 export function protectionStatus(state) {
-  if (state.protection.push === 'pending') return { text: 'Ktoś chce zalogować się na Twoje konto. Niczego nie zatwierdzaj.', tone: 'danger' };
-  if (state.call?.status === 'talking') return { text: 'Rozmawiasz przez telefon. Nie wiesz, kto dzwoni? Dotknij „Ktoś do mnie dzwoni?”.', tone: 'attention' };
+  if (state.protection.push === 'pending') {
+    return { text: 'Ktoś chce zalogować się na Twoje konto. Niczego nie zatwierdzaj.', tone: 'danger', go: 'loginRequest', cta: 'Sprawdź i odrzuć' };
+  }
+  if (state.call?.status === 'talking') {
+    return { text: 'Rozmawiasz przez telefon. Nie wiesz, kto dzwoni?', tone: 'attention', go: 'whoIsCalling', cta: 'Sprawdź, kto dzwoni' };
+  }
   return null;
+}
+
+// Po zablokowanym ataku ekran główny mówi o tym do końca dnia, zamiast „wszystko w porządku”
+export function blockedToday(state) {
+  const at = state.protection.blockedAt;
+  return Boolean(at) && new Date(at).toDateString() === new Date().toDateString();
+}
+
+export function blockedStatus(state) {
+  if (!blockedToday(state)) return null;
+  const who = guardianAlerts(state) ? ` Ostrzeżenie dostała: ${annaFor(state)}.` : '';
+  return { text: `Dziś o ${clock(state.protection.blockedAt)} zablokowaliśmy próbę oszustwa. Jesteś bezpieczna.${who}`, tone: 'ok', go: 'myData', cta: 'Zobacz szczegóły' };
 }
 
 // ---------- Ekrany ----------
@@ -193,7 +215,7 @@ function scamResult(state, check) {
   const onCall = Boolean(state.call);
   const other = state.call?.caller === 'zus' && check.institution !== 'zus' ? infoBox('Teraz dzwoni do Ciebie tylko <strong>Zakład Ubezpieczeń Społecznych</strong>. Wybierz go, żeby sprawdzić rozmówcę.') : '';
   const annaInfo = guardianAlerts(state)
-    ? infoBox('<strong>Anna już wie.</strong> Wysłaliśmy jej ostrzeżenie. Zaraz może do Ciebie zadzwonić.')
+    ? infoBox(`<strong>Ostrzeżenie dostała: ${annaFor(state)}.</strong> Zaraz może do Ciebie zadzwonić.`)
     : infoBox('Gdy pozwolisz bliskiej osobie pomagać, dostanie w takiej chwili ostrzeżenie.');
   return `
     <div class="alert-full alert-danger" role="alert">
@@ -263,10 +285,10 @@ export const protectScreens = {
           }
           if (guardianAlerts(state)) {
             notify('anna', {
-              title: `Mama sprawdza podejrzany telefon${fromText}`,
-              body: 'Aplikacja kazała jej się rozłączyć. Zadzwoń do niej.',
+              title: mamaFor(state),
+              body: `Sprawdza podejrzany telefon${fromText}. Aplikacja kazała jej się rozłączyć. Zadzwoń do niej.`,
               tone: 'danger',
-              action: { label: 'Zadzwoń do mamy', go: 'callContact' },
+              action: { label: `Zadzwoń do ${mamaFor(state)}`, go: 'callContact' },
             });
           }
         }
@@ -304,7 +326,7 @@ export const protectScreens = {
           <div class="success">
             <span class="success-icon">${icon('shieldLock', { size: 40 })}</span>
             <h2 class="service-title">Zablokowane</h2>
-            <p class="service-desc">Nikt nie zalogował się na Twoje konto.${guardianAlerts(state) ? ' Anna dostała ostrzeżenie.' : ''}</p>
+            <p class="service-desc">Nikt nie zalogował się na Twoje konto.${guardianAlerts(state) ? ` Ostrzeżenie dostała: ${annaFor(state)}.` : ''}</p>
           </div>
           <button class="btn btn-primary" data-home>Gotowe</button>`;
       }
@@ -329,6 +351,7 @@ export const protectScreens = {
         const state = store.get();
         store.update((s) => {
           s.protection.push = 'blocked';
+          s.protection.blockedAt = new Date().toISOString();
           return s;
         });
         addHistory({ persona, actor: 'blocked', text: 'Ktoś próbował zalogować się na Twoje konto z innego urządzenia. Prośbę odrzuciłaś' });
@@ -339,10 +362,10 @@ export const protectScreens = {
             return s;
           });
           notify('anna', {
-            title: 'Ktoś próbował zalogować się na konto mamy',
-            body: 'Prośba została zablokowana. Mama ją odrzuciła.',
+            title: mamaFor(state),
+            body: 'Ktoś próbował zalogować się na to konto. Prośba została odrzucona i zablokowana.',
             tone: 'danger',
-            action: { label: 'Zadzwoń do mamy', go: 'callContact' },
+            action: { label: `Zadzwoń do ${mamaFor(state)}`, go: 'callContact' },
           });
         }
         if (store.get().simpleMode[persona]) speak('Zablokowane. Nikt nie zalogował się na Twoje konto.');

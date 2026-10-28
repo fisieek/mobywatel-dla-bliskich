@@ -1270,6 +1270,62 @@ label.btn {
   box-shadow: var(--focus-ring);
 }
 
+/* Moi bliscy: własna nazwa dla bliskiej osoby */
+
+.field-label {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: -6px;
+}
+
+.text-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--mo-hair);
+  border-radius: var(--radius-card);
+  font: inherit;
+  font-size: 17px;
+  background: var(--mo-surface);
+  flex-shrink: 0;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: var(--mo-blue);
+  box-shadow: var(--focus-ring);
+}
+
+/* Powiadomienia, które zniknęły z ekranu */
+
+.notification-item {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding: 12px 14px;
+}
+
+.notification-item + .notification-item {
+  border-top: 1px solid var(--mo-hair);
+}
+
+.notification-title {
+  font-weight: 600;
+}
+
+.notification-danger .notification-title {
+  color: var(--mo-red);
+}
+
+.notification-body {
+  font-size: 14px;
+  color: var(--mo-text-2);
+}
+
+.notification-item .btn {
+  margin-top: 6px;
+}
+
 /* PIN podpisu */
 
 .pin-head {
@@ -1987,21 +2043,71 @@ label.btn {
   border-left-color: var(--mo-amber);
 }
 
+.simple-status-ok {
+  border-left-color: var(--mo-green);
+}
+
+/* Karta stanu jako przycisk do jedynej następnej czynności */
+.simple-status-tap {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  color: inherit;
+  cursor: pointer;
+}
+
+.simple-status-danger.simple-status-tap {
+  color: var(--mo-red);
+}
+
+.simple-status-cta {
+  display: block;
+  padding: 14px 16px;
+  border-radius: var(--radius-btn);
+  background: var(--mo-blue);
+  color: #fff;
+  font-size: 19px;
+  text-align: center;
+}
+
+.simple-status-danger .simple-status-cta {
+  background: var(--mo-red);
+}
+
+.simple-status-ok .simple-status-cta {
+  background: var(--mo-green-wash);
+  color: var(--mo-green);
+}
+
+/* Czytanie na głos: stały pasek nad dolnym menu, w układzie ekranu — nie zasłania treści */
+.read-aloud-bar {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  background: var(--mo-bg);
+  border-top: 1px solid var(--mo-hair);
+}
+
 .read-aloud {
-  position: absolute;
-  right: 14px;
-  bottom: calc(var(--safe-bottom) + 62px);
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
   padding: 12px 16px;
-  border-radius: 26px;
+  border-radius: var(--radius-btn);
   background: var(--mo-blue);
   color: #fff;
   font-weight: 600;
-  font-size: 16px;
-  box-shadow: 0 8px 20px -6px rgba(26, 92, 245, 0.55);
-  z-index: 3;
+  font-size: 18px;
+}
+
+.read-aloud-stop {
+  background: var(--mo-text);
 }
 
 .simple .ai-block p,
