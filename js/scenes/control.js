@@ -1,38 +1,78 @@
 // Scena 3 · KONTROLA — „Tylko tyle, ile trzeba. I wiem komu.”
 // 3a: Anna skanuje kod QR wypożyczalni i wybiera, ile danych pokazać (domyślnie najmniej, ile wystarczy).
+//     To samo może zrobić Krystyna przy zameldowaniu w hotelu.
 // 3b: historia jak w banku — u Anny wpis o wypożyczalni, u Krystyny wszystko w jednym miejscu: pomoc Anny, zablokowany atak, udostępnienia.
 import { store, replace, notify, patch, addHistory, withBiometric } from '../store.js';
 import { icon } from '../icons.js';
 import { list, row, newBadge, sectionTitle, serviceHeader, infoBox } from '../ui.js';
 import { revokeGuardian, GUARDIAN_UNTIL } from './help.js';
 
-const RENTAL = 'AutoMorze';
-
-const allFields = ['Imię i nazwisko', 'Prawo jazdy kat. B — ważne', 'Numer PESEL', 'Adres', 'Data urodzenia', 'Zdjęcie', 'Numer dokumentu'];
-
-const levels = {
-  confirm: {
-    title: 'Samo potwierdzenie',
-    desc: '„Ma prawo jazdy kat. B — ważne”',
-    fields: ['Prawo jazdy kat. B — ważne'],
-    note: `${RENTAL} może nie wydać auta bez imienia i nazwiska na umowie.`,
-    short: 'potwierdzenie prawa jazdy kat. B. Bez imienia, nazwiska, PESEL i adresu',
+// Kto prosi o dane: Anna wynajmuje auto, Krystyna melduje się w hotelu.
+// Poziomy danych: samo potwierdzenie → dane podstawowe (wystarczą) → pełny dokument.
+const requesters = {
+  anna: {
+    name: 'AutoMorze',
+    iconName: 'car',
+    place: 'Wynajem aut · Gdynia',
+    asks: 'Cały mDowód i mPrawo jazdy',
+    purpose: 'wynajem auta',
+    keep: '30 dni',
+    hint: 'Do wynajmu auta wystarczą <strong>dane podstawowe</strong>. Nie musisz podawać numeru PESEL ani adresu.',
+    allFields: ['Imię i nazwisko', 'Prawo jazdy kat. B — ważne', 'Numer PESEL', 'Adres', 'Data urodzenia', 'Zdjęcie', 'Numer dokumentu'],
+    levels: {
+      confirm: {
+        desc: '„Ma prawo jazdy kat. B — ważne”',
+        fields: ['Prawo jazdy kat. B — ważne'],
+        note: 'Wypożyczalnia może nie wydać auta bez imienia i nazwiska na umowie.',
+        short: 'potwierdzenie prawa jazdy kat. B. Bez imienia, nazwiska, PESEL i adresu',
+      },
+      basic: {
+        desc: 'Imię, nazwisko, prawo jazdy kat. B',
+        fields: ['Imię i nazwisko', 'Prawo jazdy kat. B — ważne'],
+        note: '',
+        short: 'imię, nazwisko, prawo jazdy kat. B. Bez PESEL i adresu',
+      },
+      full: {
+        desc: 'Wszystkie dane z mDowodu i mPrawa jazdy',
+        note: 'Przekażesz też numer PESEL i adres. Do wynajmu auta nie są potrzebne.',
+        short: 'cały mDowód i mPrawo jazdy, w tym PESEL i adres',
+      },
+    },
   },
-  basic: {
-    title: 'Dane podstawowe',
-    desc: 'Imię, nazwisko, prawo jazdy kat. B',
-    fields: ['Imię i nazwisko', 'Prawo jazdy kat. B — ważne'],
-    note: '',
-    short: 'imię, nazwisko, prawo jazdy kat. B. Bez PESEL i adresu',
-  },
-  full: {
-    title: 'Pełny dokument',
-    desc: 'Wszystkie dane z mDowodu i mPrawa jazdy',
-    fields: allFields,
-    note: 'Przekażesz też numer PESEL i adres. Do wynajmu auta nie są potrzebne.',
-    short: 'cały mDowód i mPrawo jazdy, w tym PESEL i adres',
+  krystyna: {
+    name: 'Hotel Przystań',
+    iconName: 'building',
+    place: 'Recepcja · Jastarnia',
+    asks: 'Cały mDowód',
+    purpose: 'zameldowanie w hotelu',
+    keep: 'do końca pobytu',
+    hint: 'Do zameldowania w hotelu wystarczą <strong>dane podstawowe</strong>. Nie musisz podawać numeru PESEL ani adresu.',
+    allFields: ['Imię i nazwisko', 'Dowód osobisty — ważny', 'Numer PESEL', 'Adres', 'Data urodzenia', 'Zdjęcie', 'Numer dokumentu'],
+    levels: {
+      confirm: {
+        desc: '„Ma ważny dowód osobisty”',
+        fields: ['Dowód osobisty — ważny'],
+        note: 'Hotel może potrzebować imienia i nazwiska, żeby znaleźć Twoją rezerwację.',
+        short: 'potwierdzenie ważnego dowodu. Bez imienia, nazwiska, PESEL i adresu',
+      },
+      basic: {
+        desc: 'Imię, nazwisko, ważny dowód',
+        fields: ['Imię i nazwisko', 'Dowód osobisty — ważny'],
+        note: '',
+        short: 'imię, nazwisko, ważny dowód. Bez PESEL i adresu',
+      },
+      full: {
+        desc: 'Wszystkie dane z mDowodu',
+        note: 'Przekażesz też numer PESEL i adres. Do zameldowania w hotelu nie są potrzebne.',
+        short: 'cały mDowód, w tym PESEL i adres',
+      },
+    },
   },
 };
+
+const levelTitles = { confirm: 'Samo potwierdzenie', basic: 'Dane podstawowe', full: 'Pełny dokument' };
+
+const levelFields = (req, level) => req.levels[level].fields ?? req.allFields;
 
 // Starsze wpisy w historii — tło, żeby historia wyglądała jak prawdziwa
 const pastEntries = {
@@ -147,13 +187,13 @@ function myDataSpeech(state, persona) {
 
 // ---------- Ekrany ----------
 
-function fieldList(level) {
-  const shared = levels[level].fields;
-  const hidden = allFields.filter((f) => !shared.includes(f));
+function fieldList(req, level, { done = false } = {}) {
+  const shared = levelFields(req, level);
+  const hidden = req.allFields.filter((f) => !shared.includes(f));
   return `
     <div class="field-split">
-      <div><p class="ai-label">Przekażesz</p>${shared.map((f) => `<p class="field field-on">${icon('check', { size: 16 })} ${f}</p>`).join('')}</div>
-      ${hidden.length ? `<div><p class="ai-label ai-label-muted">Nie przekażesz</p>${hidden.map((f) => `<p class="field field-off">${icon('close', { size: 16 })} ${f}</p>`).join('')}</div>` : ''}
+      <div><p class="ai-label">${done ? 'Przekazano' : 'Przekażesz'}</p>${shared.map((f) => `<p class="field field-on">${icon('check', { size: 16 })} ${f}</p>`).join('')}</div>
+      ${hidden.length ? `<div><p class="ai-label ai-label-muted">${done ? 'Nie przekazano' : 'Nie przekażesz'}</p>${hidden.map((f) => `<p class="field field-off">${icon('close', { size: 16 })} ${f}</p>`).join('')}</div>` : ''}
     </div>`;
 }
 
@@ -162,32 +202,35 @@ export const controlScreens = {
     kind: 'inner',
     hideReadAloud: true,
     title: 'Zeskanuj kod QR',
+    speech: (state, persona) => `Skieruj aparat na kod QR. Tutaj to kod: ${requesters[persona].name}. Dotknij przycisku Zeskanuj kod.`,
     render: (state, persona) => {
-      if (persona !== 'anna') {
-        return `
-          <div class="viewfinder viewfinder-empty"><span class="viewfinder-frame" aria-hidden="true"></span><p>Skieruj aparat na kod QR</p></div>
-          ${infoBox('W scenie Kontrola kod QR wypożyczalni skanuje Anna, na swoim telefonie.')}`;
-      }
-      if (state.actingAs !== 'ja') {
+      const req = requesters[persona];
+      if (persona === 'anna' && state.actingAs !== 'ja') {
         return `
           ${infoBox('Auto wynajmujesz dla siebie. Wróć do siebie, żeby pokazać swoje dane.')}
           <button class="btn btn-primary" data-action-global="actAsMe">Działaj jako Ja</button>`;
       }
       return `
         <div class="viewfinder viewfinder-qr">
-          <div class="counter-card">
-            <p class="counter-brand">${icon('car', { size: 18 })} ${RENTAL}</p>
-            <p class="counter-sub">Wynajem aut · Gdynia</p>
-            <button class="qr-target" data-action="scan" aria-label="Zeskanuj kod QR wypożyczalni ${RENTAL}">${qrSvg(132)}</button>
-            <p class="counter-sub">Zeskanuj w mObywatelu, żeby potwierdzić dane</p>
-          </div>
+          <button class="counter-card" data-action="scan" aria-label="Zeskanuj kod QR: ${req.name}">
+            <span class="counter-brand">${icon(req.iconName, { size: 18 })} ${req.name}</span>
+            <span class="counter-sub">${req.place}</span>
+            ${qrSvg(132)}
+            <span class="counter-sub">Zeskanuj w mObywatelu, żeby potwierdzić dane</span>
+          </button>
           <span class="viewfinder-frame" aria-hidden="true"></span>
+          <span class="scan-line" aria-hidden="true"></span>
         </div>
-        <p class="footnote center">Dotknij kodu, żeby go zeskanować.</p>`;
+        <p class="footnote center">W prototypie aparat „widzi” kod ${persona === 'anna' ? 'wypożyczalni' : 'z recepcji hotelu'}. Dotknij kodu albo przycisku.</p>
+        <button class="btn btn-primary" data-action="scan">${icon('qr', { size: 20 })} Zeskanuj kod</button>`;
     },
     actions: {
       scan: (el, persona) => {
-        patch({ consent: 'scanned', consentLevel: 'basic' });
+        store.update((s) => {
+          s.consent[persona] = 'scanned';
+          s.consentLevel[persona] = 'basic';
+          return s;
+        });
         replace(persona, 'consent');
       },
     },
@@ -196,17 +239,22 @@ export const controlScreens = {
   consent: {
     kind: 'inner',
     title: 'Potwierdź swoje dane',
-    render: (state) => {
-      if (state.consent === 'none') return infoBox('Najpierw zeskanuj kod QR wypożyczalni.');
-      if (state.consent === 'shared') return infoBox(`Dane dla ${RENTAL} zostały już udostępnione. Zobaczysz je w historii.`);
-      const level = state.consentLevel;
-      const options = Object.entries(levels)
+    speech: (state, persona) => {
+      const req = requesters[persona];
+      return `${req.name} prosi o Twoje dane. Cel: ${req.purpose}. Wybierz, ile pokazać. ${req.hint.replace(/<[^>]+>/g, '')}`;
+    },
+    render: (state, persona) => {
+      const req = requesters[persona];
+      if (state.consent[persona] === 'none') return infoBox('Najpierw zeskanuj kod QR.');
+      if (state.consent[persona] === 'shared') return infoBox(`Dane dla: ${req.name} zostały już udostępnione. Zobaczysz je w historii.`);
+      const level = state.consentLevel[persona];
+      const options = Object.entries(req.levels)
         .map(
           ([id, l]) => `
           <button class="choice ${id === level ? 'choice-on' : ''}" role="radio" aria-checked="${id === level}" data-action="level" data-id="${id}">
             <span class="radio" aria-hidden="true"></span>
             <span class="row-text">
-              <span class="row-title">${l.title}${id === 'basic' ? ' <span class="enough">Wystarczy</span>' : ''}</span>
+              <span class="row-title">${levelTitles[id]}${id === 'basic' ? ' <span class="enough">Wystarczy</span>' : ''}</span>
               <span class="row-desc">${l.desc}</span>
             </span>
           </button>`,
@@ -214,32 +262,40 @@ export const controlScreens = {
         .join('');
       return `
         <div class="requester">
-          <span class="service-icon tint-amber">${icon('car', { size: 26 })}</span>
+          <span class="service-icon tint-amber">${icon(req.iconName, { size: 26 })}</span>
           <div>
-            <h2 class="requester-name">${RENTAL} prosi o Twoje dane</h2>
+            <h2 class="requester-name">${req.name} prosi o Twoje dane</h2>
             <p class="verified">${icon('checkCircle', { size: 16 })} Zweryfikowany odbiorca</p>
           </div>
         </div>
         ${list([
-          row({ title: 'O co prosi', desc: 'Cały mDowód i mPrawo jazdy', trailing: '' }),
-          row({ title: 'W jakim celu', desc: 'Wynajem auta', trailing: '' }),
-          row({ title: 'Jak długo przechowa dane', desc: '30 dni', trailing: '' }),
+          row({ title: 'O co prosi', desc: req.asks, trailing: '' }),
+          row({ title: 'W jakim celu', desc: capitalize(req.purpose), trailing: '' }),
+          row({ title: 'Jak długo przechowa dane', desc: capitalize(req.keep), trailing: '' }),
         ])}
         ${sectionTitle('Co chcesz pokazać?', newBadge())}
         <div class="choices" role="radiogroup" aria-label="Ile danych pokazać">${options}</div>
-        ${infoBox('Do wynajmu auta wystarczą <strong>dane podstawowe</strong>. Nie musisz podawać numeru PESEL ani adresu.')}
-        ${levels[level].note ? `<p class="ai-warning">${levels[level].note}</p>` : ''}
-        ${fieldList(level)}
-        <button class="btn btn-primary" data-action="share">Udostępnij: ${levels[level].title.toLowerCase()}</button>
+        ${infoBox(req.hint)}
+        ${req.levels[level].note ? `<p class="ai-warning">${req.levels[level].note}</p>` : ''}
+        ${fieldList(req, level)}
+        <button class="btn btn-primary" data-action="share">Udostępnij: ${levelTitles[level].toLowerCase()}</button>
         <button class="btn btn-secondary" data-home>Anuluj</button>`;
     },
     actions: {
-      level: (el) => patch({ consentLevel: el.dataset.id }),
+      level: (el, persona) =>
+        store.update((s) => {
+          s.consentLevel[persona] = el.dataset.id;
+          return s;
+        }),
       share: (el, persona) =>
         withBiometric(persona, () => {
-          const level = store.get().consentLevel;
-          patch({ consent: 'shared' });
-          addHistory({ persona: 'anna', actor: 'shared', who: RENTAL, text: `${capitalize(levels[level].short)}. Na 30 dni, cel: wynajem auta`, consent: true, level });
+          const req = requesters[persona];
+          const level = store.get().consentLevel[persona];
+          store.update((s) => {
+            s.consent[persona] = 'shared';
+            return s;
+          });
+          addHistory({ persona, actor: 'shared', who: req.name, text: `${capitalize(req.levels[level].short)}. Cel: ${req.purpose}, przechowa ${req.keep}`, consent: true, level });
           replace(persona, 'consentDone');
         }),
     },
@@ -248,14 +304,19 @@ export const controlScreens = {
   consentDone: {
     kind: 'inner',
     title: 'Udostępniono',
-    render: (state) => {
-      const level = state.consentLevel;
+    speech: (state, persona) => {
+      const req = requesters[persona];
+      return `Gotowe. Do: ${req.name} trafiło tylko to, czego potrzeba: ${req.levels[state.consentLevel[persona]].short}.`;
+    },
+    render: (state, persona) => {
+      const req = requesters[persona];
       return `
         <div class="success">
           <span class="success-icon">${icon('check', { size: 40 })}</span>
-          <h2 class="service-title">${RENTAL} dostało tylko to, czego potrzebuje</h2>
+          <h2 class="service-title">Tylko to, czego potrzeba</h2>
+          <p class="service-desc">Twoje dane trafiły do: ${req.name}. Cel: ${req.purpose}.</p>
         </div>
-        ${fieldList(level)}
+        ${fieldList(req, state.consentLevel[persona], { done: true })}
         ${infoBox('Wpis jest już w Twojej historii. Możesz z niej cofnąć zgodę albo zgłosić nadużycie.')}
         <button class="btn btn-primary" data-go="myData">Zobacz w historii</button>
         <button class="btn btn-secondary" data-home>Gotowe</button>`;
@@ -267,7 +328,7 @@ export const controlScreens = {
     title: 'Kto widział moje dane',
     speech: (state, persona) => myDataSpeech(state, persona),
     onEnter: (state, persona) => {
-      if (persona === 'krystyna' && state.consent === 'shared' && !state.historySeen) patch({ historySeen: true });
+      if (persona === 'krystyna' && state.consent.anna === 'shared' && !state.historySeen) patch({ historySeen: true });
     },
     render: (state, persona) => {
       const head = serviceHeader({

@@ -62,6 +62,7 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
   - wersja pozytywna: dzwoni naprawdę Zakład Ubezpieczeń Społecznych → aplikacja pokazuje urzędniczkę, sprawę i kod do porównania.
 - ✅ **Scena Kontrola** (27.10.2026):
   - Anna skanuje kod QR wypożyczalni (fikcyjne AutoMorze), wybiera jeden z trzech poziomów danych (domyślnie „Dane podstawowe”, bo wystarczą) i widzi, czego nie przekaże,
+  - to samo u Krystyny: zameldowanie w fikcyjnym Hotelu Przystań bez numeru PESEL i adresu,
   - wpis w historii z „Cofnij zgodę” i „Zgłoś”,
   - u Krystyny „Kto widział moje dane” zbiera wszystkie trzy sceny: co zrobiła Anna, zablokowane próby, udostępnienia, oraz „Odwołaj pomoc Anny”.
 - ⏳ Przewodnik: podsumowanie liczników na końcu i porównanie z pierwowzorem.
