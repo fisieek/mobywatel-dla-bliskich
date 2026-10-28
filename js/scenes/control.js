@@ -6,6 +6,11 @@ import { store, replace, notify, patch, addHistory, withBiometric } from '../sto
 import { icon } from '../icons.js';
 import { list, row, newBadge, sectionTitle, serviceHeader, infoBox } from '../ui.js';
 import { revokeGuardian, GUARDIAN_UNTIL } from './help.js';
+import { contactName } from '../personas.js';
+
+// Imiona bez odmiany: „Anna Nowak, Córka” na telefonie Krystyny, „Mama” na telefonie Anny
+const annaFor = (state) => contactName(state, 'krystyna', 'anna');
+const mamaFor = (state) => contactName(state, 'anna', 'krystyna');
 
 // Kto prosi o dane: Anna wynajmuje auto, Krystyna melduje się w hotelu.
 // Poziomy danych: samo potwierdzenie → dane podstawowe (wystarczą) → pełny dokument.
@@ -123,14 +128,14 @@ function entryDate(entry) {
 }
 
 const actorLook = {
-  anna: { iconName: 'people', tint: 'green', title: () => 'Anna (Twoja opiekunka)' },
+  anna: { iconName: 'people', tint: 'green', title: (e, state) => annaFor(state) },
   self: { iconName: 'checkCircle', tint: 'blue', title: () => 'Ty' },
   blocked: { iconName: 'shieldLock', tint: 'red', title: () => 'Zablokowano' },
   institution: { iconName: 'building', tint: 'violet', title: (e) => e.who },
   shared: { iconName: 'idCheck', tint: 'amber', title: (e) => e.who },
 };
 
-function historyItem(entry) {
+function historyItem(entry, state) {
   const look = actorLook[entry.actor] ?? actorLook.self;
   const canRevoke = entry.consent && !entry.revoked;
   const links = entry.actor === 'self' ? '' : `
@@ -142,14 +147,14 @@ function historyItem(entry) {
     <div class="history-item ${entry.revoked ? 'history-revoked' : ''}">
       <span class="row-icon tint-${look.tint}">${icon(look.iconName, { size: 18 })}</span>
       <div class="history-text">
-        <p class="history-title">${look.title(entry)} <span class="history-date">${entryDate(entry)}</span></p>
+        <p class="history-title">${look.title(entry, state)} <span class="history-date">${entryDate(entry)}</span></p>
         <p class="history-desc">${entry.text}${entry.revoked ? ' · <strong>zgoda cofnięta</strong>' : ''}</p>
         ${links}
       </div>
     </div>`;
 }
 
-const historyList = (entries) => `<div class="list-card history">${entries.map(historyItem).join('')}</div>`;
+const historyList = (entries, state) => `<div class="list-card history">${entries.map((e) => historyItem(e, state)).join('')}</div>`;
 
 // Wpisy z bieżącej sesji + starsze wpisy (z id, żeby dało się cofnąć zgodę)
 function entriesFor(state, persona) {
@@ -167,21 +172,21 @@ function krystynaHistory(state) {
     state.guardian === 'active'
       ? `
         ${sectionTitle('Kto Ci pomaga')}
-        ${list([row({ iconName: 'people', tint: 'green', title: 'Anna Nowak (córka)', desc: `Pomaga Ci do ${GUARDIAN_UNTIL}`, go: 'helpersScopeView' })])}
-        <button class="btn btn-secondary btn-danger-text" data-action="revokeGuardian">Odwołaj pomoc Anny</button>
+        ${list([row({ iconName: 'people', tint: 'green', title: annaFor(state), desc: `Pomaga Ci do ${GUARDIAN_UNTIL}`, go: 'helpersScopeView' })])}
+        <button class="btn btn-secondary btn-danger-text" data-action="revokeGuardian">Odwołaj pomoc: ${annaFor(state)}</button>
         <p class="footnote center">Możesz to zrobić w każdej chwili.</p>`
       : '';
   return `
-    ${fromAnna.length ? `${sectionTitle('Co zrobiła Anna')}${historyList(fromAnna)}` : ''}
-    ${blocked.length ? `${sectionTitle('Zablokowane próby')}${historyList(blocked)}` : ''}
+    ${blocked.length ? `${sectionTitle('Zablokowane próby')}${historyList(blocked, state)}` : ''}
+    ${fromAnna.length ? `${sectionTitle('Działania osób, które Ci pomagają')}${historyList(fromAnna, state)}` : ''}
     ${sectionTitle('Udostępnienia i Twoje działania')}
-    ${historyList(rest)}
+    ${historyList(rest, state)}
     ${guardianCard}`;
 }
 
 function myDataSpeech(state, persona) {
   const entries = persona === 'krystyna' ? entriesFor(state, 'krystyna') : entriesFor(state, 'anna');
-  const first = entries.slice(0, 4).map((e) => `${(actorLook[e.actor] ?? actorLook.self).title(e)}: ${e.text}.`);
+  const first = entries.slice(0, 4).map((e) => `${(actorLook[e.actor] ?? actorLook.self).title(e, state)}: ${e.text}.`);
   return `Kto widział Twoje dane. ${first.join(' ')}`;
 }
 
@@ -339,9 +344,9 @@ export const controlScreens = {
         badge: newBadge(),
       });
       if (persona === 'anna' && state.actingAs !== 'ja') {
-        return `${head}${infoBox('Historię mamy widzi tylko mama. Twoje działania w jej imieniu są tam zapisane.')}`;
+        return `${head}${infoBox(`Tę historię widzi tylko: ${mamaFor(state)}. Twoje działania w jej imieniu są tam zapisane.`)}`;
       }
-      return `${head}${persona === 'krystyna' ? krystynaHistory(state) : `${sectionTitle('Twoja historia')}${historyList(entriesFor(state, 'anna'))}`}`;
+      return `${head}${persona === 'krystyna' ? krystynaHistory(state) : `${sectionTitle('Twoja historia')}${historyList(entriesFor(state, 'anna'), state)}`}`;
     },
     actions: {
       revokeConsent: (el, persona) => {

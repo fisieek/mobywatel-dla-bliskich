@@ -1,8 +1,8 @@
 // Zakładki i ekrany wspólne dla obu telefonów, odwzorowane z mObywatela.
 // Nasze nowe usługi są wpięte w istniejące miejsca i oznaczone etykietą „Nowość”.
-import { store } from '../store.js';
+import { store, notify, markNotificationsRead } from '../store.js';
 import { icon } from '../icons.js';
-import { people } from '../personas.js';
+import { people, family, fullName, contactName } from '../personas.js';
 import { documents, list, row, newBadge, sectionTitle, serviceHeader, infoBox, comingSoon } from '../ui.js';
 
 const coreService = (title) => ({ title, go: 'coreService' });
@@ -98,6 +98,7 @@ const moreScreen = {
         trailing: toggle(state.simpleMode[persona]),
       }),
       row({ iconName: 'people', tint: 'green', title: 'Pomoc bliskich', desc: 'Kto może Ci pomagać i w czym', go: 'helpers', badge: newBadge() }),
+      row({ iconName: 'people', tint: 'blue', title: 'Moi bliscy', desc: 'Nazwy, pod którymi widzisz bliskie osoby', go: 'contacts', badge: newBadge() }),
       row({ iconName: 'settings', ...coreService('Ustawienia aplikacji') }),
       row({ iconName: 'info', ...coreService('Pomoc i kontakt') }),
     ])}`,
@@ -160,10 +161,45 @@ const screens = {
       ${comingSoon('Pomoc (asystent wyjaśnia papierowe pismo)')}`,
   },
   inbox: placeholder('Skrzynka', 'Pomoc'),
+  // Powiadomienia, które zniknęły z ekranu, zostają tutaj — razem z przyciskami
   notifications: {
     kind: 'inner',
     title: 'Powiadomienia',
-    render: () => infoBox('Brak nowych powiadomień.'),
+    onEnter: (state, persona) => markNotificationsRead(persona),
+    render: (state, persona) => {
+      const log = state.notificationLog[persona];
+      if (!log.length) return infoBox('Brak powiadomień.');
+      return `<div class="list-card notification-log">${log
+        .map(
+          (n) => `
+          <div class="notification-item notification-${n.tone}">
+            <p class="notification-title">${n.title} <span class="history-date">${new Date(n.at).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}</span></p>
+            <p class="notification-body">${n.body}</p>
+            ${n.action ? `<button class="btn btn-secondary btn-small" data-notification-go="${n.action.go}" data-id="${n.id}">${n.action.label}</button>` : ''}
+          </div>`,
+        )
+        .join('')}</div>`;
+    },
+  },
+
+  // Moi bliscy: lista osób z rejestru i nazwy, które nadał im właściciel telefonu
+  contacts: {
+    kind: 'inner',
+    title: 'Moi bliscy',
+    render: (state, persona) => `
+      ${serviceHeader({
+        iconName: 'people',
+        tint: 'blue',
+        title: 'Moi bliscy',
+        desc: 'Osoby z Twojej rodziny według rejestru stanu cywilnego. Możesz nadać im własną nazwę, np. „Mama”.',
+        badge: newBadge(),
+      })}
+      ${list(
+        family[persona].map(({ id, relation }) =>
+          row({ iconName: 'people', tint: 'green', title: contactName(state, persona, id), desc: `${fullName(id)} · ${relation}`, go: `contact-${id}` }),
+        ),
+      )}
+      <p class="footnote">Imiona i nazwy pokazujemy zawsze w tej samej formie, np. „Zadzwoń do Mama”.</p>`,
   },
 
   // Istniejące usługi, których nie odtwarzamy
@@ -183,7 +219,50 @@ const screens = {
   },
 };
 
+function contactDetail(contactId) {
+  return {
+    kind: 'inner',
+    title: (state, persona) => contactName(state, persona, contactId),
+    render: (state, persona) => {
+      const relation = family[persona].find((f) => f.id === contactId)?.relation ?? '';
+      const nickname = state.nicknames[persona]?.[contactId] ?? '';
+      const draft = state.nicknameDrafts[`${persona}:${contactId}`] ?? nickname;
+      return `
+        ${list([
+          row({ iconName: 'people', tint: 'green', title: fullName(contactId), desc: 'Imię i nazwisko z rejestru', trailing: '' }),
+          row({ iconName: 'people', tint: 'blue', title: relation, desc: 'Kim jest dla Ciebie', trailing: '' }),
+        ])}
+        <label class="field-label" for="nickname-${contactId}">Twoja nazwa dla tej osoby</label>
+        <input class="text-input" id="nickname-${contactId}" data-nickname data-keep-focus maxlength="30" placeholder="np. Mama" value="${draft.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}">
+        <p class="footnote">Nazwa pokazuje się zawsze w tej samej formie, np. „Zadzwoń do ${nickname || 'Mama'}”. Bez nazwy zobaczysz: ${fullName(contactId)}, ${relation}.</p>
+        <button class="btn btn-primary" data-action="saveNickname">Zapisz</button>
+        ${nickname ? '<button class="btn btn-secondary" data-action="clearNickname">Usuń nazwę</button>' : ''}`;
+    },
+    actions: {
+      saveNickname: (el, persona) => {
+        // Nazwa trafia do treści ekranów, więc bez znaków, które przeglądarka czyta jako kod
+        const value = (document.querySelector(`[data-persona="${persona}"] [data-nickname]`)?.value ?? '').replace(/[<>&"]/g, '').trim();
+        store.update((s) => {
+          s.nicknames[persona][contactId] = value;
+          delete s.nicknameDrafts[`${persona}:${contactId}`];
+          return s;
+        });
+        notify(persona, { title: 'Zapisano', body: `Ta osoba będzie widoczna jako: ${contactName(store.get(), persona, contactId)}.` });
+      },
+      clearNickname: (el, persona) => {
+        store.update((s) => {
+          s.nicknames[persona][contactId] = '';
+          delete s.nicknameDrafts[`${persona}:${contactId}`];
+          return s;
+        });
+        notify(persona, { title: 'Nazwa usunięta', body: `Ta osoba będzie widoczna jako: ${contactName(store.get(), persona, contactId)}.` });
+      },
+    },
+  };
+}
+
 export function resolveCommonScreen(id) {
   if (id.startsWith('doc-')) return docDetail(id.slice(4));
+  if (id.startsWith('contact-')) return contactDetail(id.slice(8));
   return screens[id];
 }

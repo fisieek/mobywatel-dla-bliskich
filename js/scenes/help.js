@@ -6,16 +6,22 @@ import { store, replace, notify, patch, addHistory, withBiometric } from '../sto
 import { icon } from '../icons.js';
 import { speak } from '../speech.js';
 import { list, row, newBadge, sectionTitle, serviceHeader, infoBox } from '../ui.js';
-import { people } from '../personas.js';
+import { people, contactName, fullName } from '../personas.js';
 import { explanation as sampleExplanation, explanationSpeech, paperHtml, sampleLetterText } from '../letter.js';
 import { explainLetter, draftReply } from '../assistant.js';
 import { readTextFromPhoto } from '../ocr.js';
+import { shortDate, monthsFromToday } from '../dates.js';
 
-export const GUARDIAN_UNTIL = '27.10.2027';
+// Pozwolenie jest ważne 12 miesięcy od dnia pokazu
+export const GUARDIAN_UNTIL = shortDate(monthsFromToday(12));
 // Poniżej tej długości odczyt zdjęcia uznajemy za nieudany
 const MIN_OCR_CHARS = 150;
 
 const recipient = { name: 'Krystyna Nowak', form: people.krystyna.grammaticalForm };
+
+// Jak kto kogo widzi w aplikacji — zawsze bez odmiany imion („Anna Nowak, Córka”, „Mama”)
+const annaFor = (state) => contactName(state, 'krystyna', 'anna'); // na telefonie Krystyny
+const mamaFor = (state) => contactName(state, 'anna', 'krystyna'); // na telefonie Anny
 
 // Zdjęcie zrobione przez użytkownika — tylko w pamięci strony, nie zapisujemy go nigdzie
 let photoUrl = null;
@@ -54,21 +60,15 @@ function scopeSummary(state) {
 
 function scopeSpeech(state) {
   const allowed = scopeItems.filter((i) => state.guardianScope[i.key]).map((i) => i.title.toLowerCase());
-  return `Anna będzie mogła: ${allowed.join(', ')}. Niczego nie wyśle ani nie podpisze bez Ciebie. Pozwolenie jest ważne 12 miesięcy. Możesz je odwołać w każdej chwili jednym przyciskiem.`;
+  return `${annaFor(store.get())}. Będzie mogła: ${allowed.join(', ')}. Niczego nie wyśle ani nie podpisze bez Ciebie. Pozwolenie jest ważne 12 miesięcy. Możesz je odwołać w każdej chwili jednym przyciskiem.`;
 }
 
+// Na telefonie tylko prosta prośba o sprawdzenie. Czy odpowiedź przyszła na żywo z PLLuM,
+// czy z trybu awaryjnego, pokazuje przewodnik dla jury (guide.js).
 const SOURCE_NOTES = {
-  explain: {
-    live: 'Wyjaśnienie przygotował na żywo Wirtualny Asystent na polskim modelu PLLuM. Sprawdź treść pisma.',
-    scripted: 'Wyjaśnienie przygotowane wcześniej — tryb awaryjny, bez połączenia z PLLuM. Sprawdź treść pisma.',
-  },
-  draft: {
-    live: 'Szkic przygotował na żywo Wirtualny Asystent na polskim modelu PLLuM. Sprawdź go przed wysłaniem.',
-    scripted: 'Szkic przygotowany wcześniej — tryb awaryjny, bez połączenia z PLLuM. Sprawdź go przed wysłaniem.',
-  },
+  explain: 'Wyjaśnienie przygotował Wirtualny Asystent. Sprawdź je z treścią pisma.',
+  draft: 'Szkic przygotował Wirtualny Asystent. Sprawdź go przed wysłaniem.',
 };
-
-const sourceNote = (kind, source) => SOURCE_NOTES[kind][source === 'live' ? 'live' : 'scripted'];
 
 function explanationBlocks(state) {
   const e = currentExplanation(state);
@@ -83,7 +83,7 @@ function explanationBlocks(state) {
       </div>
       ${e.warning ? `<p class="ai-warning">${escapeHtml(e.warning)}</p>` : ''}
     </div>
-    <p class="ai-source">${icon('assistant', { size: 16 })} ${sourceNote('explain', state.aiSource.explain)}</p>`;
+    <p class="ai-source">${icon('assistant', { size: 16 })} ${SOURCE_NOTES.explain}</p>`;
 }
 
 // Odczyt pisma: tekst ze zdjęcia (albo przykładowy) → PLLuM → trzy bloki
@@ -145,8 +145,9 @@ function successBlock(title, body) {
 
 export function revokeGuardian() {
   patch({ guardian: 'none', actingAs: 'ja' });
-  addHistory({ persona: 'krystyna', text: 'Odwołałaś pomoc Anny' });
-  notify('anna', { title: 'Mama odwołała Twoją pomoc', body: 'Nie widzisz już jej pism.' });
+  const state = store.get();
+  addHistory({ persona: 'krystyna', text: `Odwołałaś pomoc: ${annaFor(state)}` });
+  notify('anna', { title: mamaFor(state), body: 'Odwołała Twoją pomoc. Nie widzisz już jej pism.' });
 }
 
 function helpersForKrystyna(state) {
@@ -158,24 +159,24 @@ function helpersForKrystyna(state) {
   const annaRow = row({
     iconName: 'people',
     tint: 'green',
-    title: 'Anna Nowak (córka)',
-    desc: state.guardian === 'pending' ? 'Czeka, aż Anna przyjmie prośbę' : `Pomaga Ci do ${GUARDIAN_UNTIL}`,
+    title: annaFor(state),
+    desc: state.guardian === 'pending' ? 'Czeka na przyjęcie prośby' : `Pomaga Ci do ${GUARDIAN_UNTIL}`,
     go: 'helpersScopeView',
   });
   return `
     ${sectionTitle('Kto Ci pomaga')}
     ${list([annaRow])}
-    ${state.guardian === 'active' ? '<button class="btn btn-secondary btn-danger-text" data-action="revoke">Odwołaj pomoc Anny</button>' : ''}`;
+    ${state.guardian === 'active' ? `<button class="btn btn-secondary btn-danger-text" data-action="revoke">Odwołaj pomoc: ${annaFor(state)}</button>` : ''}`;
 }
 
 function helpersForAnna(state) {
   if (state.guardian === 'pending') {
-    return `${sectionTitle('Prośby o pomoc')}${list([row({ iconName: 'people', tint: 'green', title: 'Mama prosi Cię o pomoc', desc: 'Krystyna Nowak', go: 'helpersInvite' })])}`;
+    return `${sectionTitle('Prośby o pomoc')}${list([row({ iconName: 'people', tint: 'green', title: mamaFor(state), desc: 'Prosi Cię o pomoc w sprawach urzędowych', go: 'helpersInvite' })])}`;
   }
   if (state.guardian === 'active') {
-    return `${sectionTitle('Komu pomagasz')}${list([row({ iconName: 'people', tint: 'green', title: 'Mama — Krystyna Nowak', desc: `Do ${GUARDIAN_UNTIL} · pisma, odpowiedzi, ostrzeżenia`, go: 'mamaLetter' })])}`;
+    return `${sectionTitle('Komu pomagasz')}${list([row({ iconName: 'people', tint: 'green', title: mamaFor(state), desc: `${fullName('krystyna')} · do ${GUARDIAN_UNTIL} · pisma, odpowiedzi, ostrzeżenia`, go: 'mamaLetter' })])}`;
   }
-  return infoBox('Nikt nie poprosił Cię jeszcze o pomoc. Gdy mama da Ci pozwolenie, zobaczysz to tutaj.');
+  return infoBox('Nikt nie poprosił Cię jeszcze o pomoc. Gdy bliska osoba da Ci pozwolenie, zobaczysz to tutaj.');
 }
 
 export const helpScreens = {
@@ -202,7 +203,7 @@ export const helpScreens = {
     render: () => `
       <p class="service-desc">Osoby z Twojej rodziny według rejestru stanu cywilnego. Nie musisz wpisywać numeru PESEL.</p>
       ${list([
-        row({ iconName: 'people', tint: 'green', title: 'Anna Nowak', desc: 'córka', go: 'helpersScope' }),
+        row({ iconName: 'people', tint: 'green', title: fullName('anna'), desc: 'Córka', go: 'helpersScope' }),
         row({ iconName: 'people', tint: 'blue', title: 'Inna osoba', desc: 'Podaj jej numer PESEL', go: 'coreService' }),
       ])}`,
   },
@@ -212,7 +213,8 @@ export const helpScreens = {
     title: 'Zakres pomocy',
     speech: (state) => scopeSpeech(state),
     render: (state) => `
-      <h2 class="service-title">W czym Anna może Ci pomagać?</h2>
+      <h2 class="service-title">${annaFor(state)}</h2>
+      <p class="service-desc">W czym może Ci pomagać?</p>
       ${list(
         scopeItems.map((item) =>
           row({
@@ -225,7 +227,7 @@ export const helpScreens = {
         ),
       )}
       ${list([row({ iconName: 'history', title: 'Ważne 12 miesięcy', desc: `Do ${GUARDIAN_UNTIL}. Możesz to odwołać w każdej chwili, jednym przyciskiem.`, trailing: '' })])}
-      ${infoBox('Po każdym działaniu Anny dostaniesz powiadomienie. Wszystko zobaczysz też w historii.')}
+      ${infoBox('Po każdym jej działaniu dostaniesz powiadomienie. Wszystko zobaczysz też w historii.')}
       <button class="btn btn-secondary" data-speak>${icon('speaker', { size: 20 })} Przeczytaj mi to</button>
       <button class="btn btn-primary" data-action="confirm">Potwierdź</button>`,
     actions: {
@@ -237,10 +239,11 @@ export const helpScreens = {
       confirm: (el, persona) =>
         withBiometric(persona, () => {
           patch({ guardian: 'pending' });
-          addHistory({ persona: 'krystyna', text: 'Poprosiłaś Annę o pomoc w sprawach urzędowych' });
+          const state = store.get();
+          addHistory({ persona: 'krystyna', text: `Poprosiłaś o pomoc w sprawach urzędowych: ${annaFor(state)}` });
           notify('anna', {
-            title: 'Mama prosi Cię o pomoc',
-            body: 'Krystyna Nowak chce, żebyś pomagała jej w sprawach urzędowych.',
+            title: mamaFor(state),
+            body: 'Prosi Cię o pomoc w sprawach urzędowych.',
             action: { label: 'Zobacz', go: 'helpersInvite' },
           });
           replace(persona, 'helpersSent');
@@ -250,9 +253,9 @@ export const helpScreens = {
 
   helpersScopeView: {
     kind: 'inner',
-    title: 'Anna Nowak',
+    title: (state) => annaFor(state),
     render: (state) => `
-      <h2 class="service-title">W czym pomaga Anna</h2>
+      <h2 class="service-title">W czym Ci pomaga</h2>
       ${scopeSummary(state)}
       <p class="footnote">Ważne do ${GUARDIAN_UNTIL}.</p>`,
   },
@@ -262,8 +265,8 @@ export const helpScreens = {
     title: 'Pomoc bliskich',
     render: (state) =>
       state.guardian === 'active'
-        ? `${successBlock('Anna może Ci pomagać', 'Niczego nie wyśle ani nie podpisze bez Ciebie.')}<button class="btn btn-primary" data-home>Gotowe</button>`
-        : `${successBlock('Wysłaliśmy prośbę do Anny', 'Gdy ją przyjmie, dostaniesz powiadomienie.')}<button class="btn btn-primary" data-home>Gotowe</button>`,
+        ? `${successBlock(annaFor(state), 'Może Ci teraz pomagać. Niczego nie wyśle ani nie podpisze bez Ciebie.')}<button class="btn btn-primary" data-home>Gotowe</button>`
+        : `${successBlock('Prośba wysłana', `Do: ${annaFor(state)}. Gdy ją przyjmie, dostaniesz powiadomienie.`)}<button class="btn btn-primary" data-home>Gotowe</button>`,
   },
 
   helpersInvite: {
@@ -271,14 +274,14 @@ export const helpScreens = {
     title: 'Prośba o pomoc',
     render: (state) => {
       if (state.guardian === 'active') {
-        return `${successBlock('Pomagasz mamie', 'Przełącz się na „Mama” na ekranie Dokumenty, żeby zobaczyć jej pisma.')}<button class="btn btn-primary" data-home>Gotowe</button>`;
+        return `${successBlock(`Pomagasz: ${mamaFor(state)}`, `Przełącz się na „${mamaFor(state)}” na ekranie Dokumenty, żeby zobaczyć jej pisma.`)}<button class="btn btn-primary" data-home>Gotowe</button>`;
       }
       if (state.guardian !== 'pending') return infoBox('Ta prośba nie jest już aktualna.');
       return `
-        <h2 class="service-title">Mama prosi Cię o pomoc</h2>
-        <p class="service-desc">Krystyna Nowak chce, żebyś pomagała jej w sprawach urzędowych do ${GUARDIAN_UNTIL}.</p>
+        <h2 class="service-title">${mamaFor(state)}</h2>
+        <p class="service-desc">Prosi Cię o pomoc w sprawach urzędowych do ${GUARDIAN_UNTIL}.</p>
         ${scopeSummary(state)}
-        ${infoBox('Mama dostanie powiadomienie po każdym Twoim działaniu. Może odwołać pomoc w każdej chwili.')}
+        ${infoBox('Po każdym Twoim działaniu dostanie powiadomienie. Pomoc może odwołać w każdej chwili.')}
         <button class="btn btn-primary" data-action="accept">Przyjmuję</button>`;
     },
     actions: {
@@ -287,8 +290,8 @@ export const helpScreens = {
           patch({ guardian: 'active' });
           addHistory({ persona: 'krystyna', actor: 'anna', text: 'Przyjęła prośbę i może Ci pomagać' });
           notify('krystyna', {
-            title: 'Anna może Ci teraz pomagać',
-            body: 'Niczego nie wyśle ani nie podpisze bez Ciebie.',
+            title: annaFor(store.get()),
+            body: 'Może Ci teraz pomagać. Niczego nie wyśle ani nie podpisze bez Ciebie.',
           });
         }),
     },
@@ -361,10 +364,10 @@ export const helpScreens = {
       requestHelp: () => {
         const state = store.get();
         patch({ letter: 'requested' });
-        addHistory({ persona: 'krystyna', text: 'Poprosiłaś Annę o pomoc z pismem z urzędu' });
+        addHistory({ persona: 'krystyna', text: `Poprosiłaś o pomoc z pismem z urzędu: ${annaFor(state)}` });
         notify('anna', {
-          title: 'Mama prosi o pomoc z pismem',
-          body: `${officeName(state)}. ${deadlineText(state)}.`,
+          title: mamaFor(state),
+          body: `Prosi o pomoc z pismem: ${officeName(state)}. ${deadlineText(state)}.`,
           action: { label: 'Otwórz', go: 'mamaLetter' },
         });
       },
@@ -376,16 +379,16 @@ export const helpScreens = {
   replyReview: {
     kind: 'inner',
     title: 'Odpowiedź do urzędu',
-    speech: (state) => `Anna przygotowała odpowiedź do urzędu. Oto ona. ${state.reply.replace(/\n+/g, ' ')}`,
+    speech: (state) => `Odpowiedź do urzędu przygotowała: ${annaFor(state)}. Oto ona. ${state.reply.replace(/\n+/g, ' ')}`,
     render: (state) => {
       if (state.letter === 'signed') return `${successBlock('Wysłane', 'Urząd otrzymał Twoją odpowiedź.')}<button class="btn btn-primary" data-home>Gotowe</button>`;
       return `
-        <h2 class="service-title">Anna przygotowała odpowiedź</h2>
-        <p class="service-desc">Przeczytaj ją albo posłuchaj. Wyślesz ją tylko Ty.</p>
+        <h2 class="service-title">Odpowiedź jest gotowa</h2>
+        <p class="service-desc">Przygotowała: ${annaFor(state)}. Przeczytaj ją albo posłuchaj. Wyślesz ją tylko Ty.</p>
         <button class="btn btn-secondary" data-speak>${icon('speaker', { size: 20 })} Przeczytaj mi na głos</button>
         <div class="reply-paper">${escapeHtml(state.reply)}</div>
         <button class="btn btn-primary" data-go="signPin">Zgadzam się, podpisz i wyślij</button>
-        <button class="btn btn-secondary" data-go="callContact">Mam pytanie — zadzwoń do Anny</button>`;
+        <button class="btn btn-secondary" data-go="callContact">Mam pytanie — zadzwoń do ${annaFor(state)}</button>`;
     },
   },
 
@@ -415,8 +418,8 @@ export const helpScreens = {
         if (pin.length === 4) {
           setTimeout(() => {
             patch({ letter: 'signed', pin: '' });
-            addHistory({ persona: 'krystyna', text: 'Podpisałaś i wysłałaś odpowiedź przygotowaną przez Annę' });
-            notify('anna', { title: 'Mama podpisała i wysłała ✓', body: `Odpowiedź trafiła do: ${officeName(store.get())}.` });
+            addHistory({ persona: 'krystyna', text: 'Podpisałaś i wysłałaś odpowiedź do urzędu' });
+            notify('anna', { title: mamaFor(store.get()), body: `Podpisała i wysłała odpowiedź ✓ Trafiła do: ${officeName(store.get())}.` });
             replace(persona, 'signDone');
           }, 350);
         }
@@ -431,7 +434,7 @@ export const helpScreens = {
     render: (state) => `
       ${successBlock('Wysłane', `Odpowiedź trafiła do: ${escapeHtml(officeName(state))}. Potwierdzenie znajdziesz w Skrzynce.`)}
       ${list([
-        row({ iconName: 'people', tint: 'green', title: 'Anna przygotowała', trailing: '' }),
+        row({ iconName: 'people', tint: 'green', title: annaFor(state), desc: 'Przygotowała odpowiedź', trailing: '' }),
         row({ iconName: 'signature', tint: 'blue', title: 'Ty podpisałaś i wysłałaś', desc: nowLabel(), trailing: '' }),
       ])}
       <button class="btn btn-primary" data-home>Gotowe</button>`,
@@ -440,18 +443,19 @@ export const helpScreens = {
   // Telefon Anny: pismo mamy
   mamaLetter: {
     kind: 'inner',
-    title: 'Pismo mamy',
+    title: 'Pismo z urzędu',
     onEnter: (state) => {
-      if (state.actingAs !== 'mama' && state.guardian === 'active') patch({ actingAs: 'mama' });
+      // Aplikacja sama przełącza Annę na mamę; po wyjściu z pisma Anna wróci do siebie (store.js)
+      if (state.actingAs !== 'mama' && state.guardian === 'active') patch({ actingAs: 'mama', autoActing: true });
       if (state.letter === 'requested') {
         patch({ letter: 'opened' });
         addHistory({ persona: 'krystyna', actor: 'anna', text: 'Przeczytała pismo z urzędu' });
-        notify('krystyna', { title: 'Anna otworzyła Twoje pismo', body: `${officeName(state)}.` });
+        notify('krystyna', { title: annaFor(state), body: `Otworzyła Twoje pismo: ${officeName(state)}.` });
       }
     },
     render: (state) => {
-      if (state.guardian !== 'active') return infoBox('Mama nie dała Ci jeszcze pozwolenia na pomoc.');
-      if (!letterAtLeast(state, 'requested')) return infoBox('Mama nie prosiła jeszcze o pomoc z żadnym pismem.');
+      if (state.guardian !== 'active') return infoBox(`${mamaFor(state)}: brak pozwolenia na pomoc.`);
+      if (!letterAtLeast(state, 'requested')) return infoBox(`${mamaFor(state)}: brak pism, przy których prosi o pomoc.`);
       return `
         <p class="letter-from">${icon('letter', { size: 18 })} ${escapeHtml(officeName(state))}</p>
         <details class="paper-details"><summary>Zobacz zdjęcie pisma</summary>${letterPhoto(state)}</details>
@@ -459,7 +463,7 @@ export const helpScreens = {
         ${replySectionForAnna(state)}`;
     },
     actions: {
-      remind: () => notify('anna', { title: 'Przypomnienie ustawione', body: `Przypomnimy Ci i mamie przed terminem (${deadlineText(store.get())}).` }),
+      remind: () => notify('anna', { title: 'Przypomnienie ustawione', body: `Przed terminem (${deadlineText(store.get())}) przypomnimy: Tobie i ${mamaFor(store.get())}.` }),
       draft: () => {
         const state = store.get();
         patch({ letter: 'drafting' });
@@ -478,8 +482,8 @@ export const helpScreens = {
         patch({ letter: 'awaiting', reply: text });
         addHistory({ persona: 'krystyna', actor: 'anna', text: 'Przygotowała odpowiedź do urzędu' });
         notify('krystyna', {
-          title: 'Anna przygotowała odpowiedź',
-          body: 'Przeczytać Ci?',
+          title: annaFor(store.get()),
+          body: 'Przygotowała odpowiedź do urzędu. Przeczytać Ci?',
           action: { label: 'Przeczytaj', go: 'replyReview' },
         });
       },
@@ -493,13 +497,13 @@ function letterStatusForKrystyna(state) {
     case 'explained':
       return deadlineText(state);
     case 'requested':
-      return 'Poprosiłaś Annę o pomoc';
+      return `Poprosiłaś o pomoc: ${annaFor(state)}`;
     case 'opened':
     case 'drafting':
     case 'drafted':
-      return 'Anna przygotowuje odpowiedź';
+      return `Odpowiedź przygotowuje: ${annaFor(state)}`;
     case 'awaiting':
-      return 'Anna przygotowała odpowiedź — przeczytaj ją';
+      return 'Odpowiedź jest gotowa — przeczytaj ją';
     case 'signed':
       return 'Wysłane ✓';
     default:
@@ -508,15 +512,19 @@ function letterStatusForKrystyna(state) {
 }
 
 function letterActionsForKrystyna(state) {
-  if (letterAtLeast(state, 'requested')) {
+  if (state.letter === 'awaiting') {
     return `
-      ${infoBox(`<strong>${letterStatusForKrystyna(state)}.</strong> Dostaniesz powiadomienie, gdy odpowiedź będzie gotowa.`)}
-      ${state.letter === 'awaiting' ? '<button class="btn btn-primary" data-go="replyReview">Przeczytaj odpowiedź</button>' : ''}`;
+      ${infoBox(`<strong>Odpowiedź jest gotowa.</strong> Przygotowała: ${annaFor(state)}. Wyślesz ją tylko Ty.`)}
+      <button class="btn btn-primary" data-go="replyReview">Przeczytaj odpowiedź</button>`;
+  }
+  if (state.letter === 'signed') return infoBox('<strong>Wysłane ✓</strong> Potwierdzenie znajdziesz w Skrzynce.');
+  if (letterAtLeast(state, 'requested')) {
+    return infoBox(`<strong>${letterStatusForKrystyna(state)}.</strong> Dostaniesz powiadomienie, gdy odpowiedź będzie gotowa.`);
   }
   const askAnna =
     state.guardian === 'active'
-      ? '<button class="btn btn-primary" data-action="requestHelp">Poproś Annę o pomoc</button>'
-      : `${infoBox('Chcesz, żeby pomogła Ci Anna? Najpierw daj jej pozwolenie w usłudze Pomoc bliskich.')}<button class="btn btn-secondary" data-go="helpers">Pomoc bliskich</button>`;
+      ? `<button class="btn btn-primary" data-action="requestHelp">Poproś o pomoc: ${annaFor(state)}</button>`
+      : `${infoBox('Chcesz, żeby pomogła Ci bliska osoba? Najpierw daj jej pozwolenie w usłudze Pomoc bliskich.')}<button class="btn btn-secondary" data-go="helpers">Pomoc bliskich</button>`;
   return `
     ${askAnna}
     <button class="btn btn-secondary" data-go="assistant">Załatw to ze mną</button>`;
@@ -527,8 +535,8 @@ function replySectionForAnna(state) {
     case 'requested':
     case 'opened':
       return `
-        ${sectionTitle('Co mama chce wyjaśnić?')}
-        <textarea class="facts" data-facts data-keep-focus aria-label="Co mama chce wyjaśnić">${escapeHtml(state.replyFacts)}</textarea>
+        ${sectionTitle('Co trzeba wyjaśnić w odpowiedzi?')}
+        <textarea class="facts" data-facts data-keep-focus aria-label="Co trzeba wyjaśnić w odpowiedzi">${escapeHtml(state.replyFacts)}</textarea>
         <p class="footnote">Asystent użyje tylko tego, co tu wpiszesz, i treści pisma. Niczego nie wymyśli.</p>
         <button class="btn btn-primary" data-action="draft">${icon('assistant', { size: 20 })} Przygotuj odpowiedź z asystentem</button>`;
     case 'drafting':
@@ -537,13 +545,13 @@ function replySectionForAnna(state) {
       return `
         ${sectionTitle('Szkic odpowiedzi')}
         <textarea class="draft" data-draft data-keep-focus aria-label="Szkic odpowiedzi">${escapeHtml(state.reply)}</textarea>
-        <p class="ai-source">${icon('assistant', { size: 16 })} ${sourceNote('draft', state.aiSource.draft)}</p>
-        ${infoBox('Sprawdź i popraw. Mama zobaczy odpowiedź i sama zdecyduje, czy ją wysłać.')}
-        <button class="btn btn-primary" data-action="sendToMama">Wyślij mamie do zatwierdzenia</button>`;
+        <p class="ai-source">${icon('assistant', { size: 16 })} ${SOURCE_NOTES.draft}</p>
+        ${infoBox(`Sprawdź i popraw. Zanim cokolwiek trafi do urzędu, odpowiedź przeczyta i zatwierdzi: ${mamaFor(state)}.`)}
+        <button class="btn btn-primary" data-action="sendToMama">Wyślij do zatwierdzenia: ${mamaFor(state)}</button>`;
     case 'awaiting':
-      return infoBox('<strong>Czeka na mamę.</strong> Bez jej podpisu odpowiedź nie trafi do urzędu.');
+      return infoBox(`<strong>Czeka na podpis: ${mamaFor(state)}.</strong> Bez podpisu odpowiedź nie trafi do urzędu.`);
     case 'signed':
-      return successBlock('Mama wysłała ✓', 'Ty przygotowałaś, mama podpisała i wysłała.');
+      return successBlock('Wysłane ✓', `Ty przygotowałaś odpowiedź. Podpisała i wysłała: ${mamaFor(state)}.`);
     default:
       return '';
   }

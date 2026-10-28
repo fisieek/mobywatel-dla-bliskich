@@ -1,14 +1,15 @@
 // Przewodnik dla jury: podpowiada następny krok, a po scenie pokazuje „Kto już to robi” i licznik.
+import { contactName } from './personas.js';
 
 function helpSceneStep(state) {
   if (state.guardian === 'none') return { phone: 'Telefon Krystyny', text: 'Otwórz Usługi → Pomoc bliskich i pozwól Annie pomagać.' };
-  if (state.guardian === 'pending') return { phone: 'Telefon Anny', text: 'Otwórz powiadomienie od mamy i przyjmij prośbę.' };
+  if (state.guardian === 'pending') return { phone: 'Telefon Anny', text: 'Otwórz powiadomienie od mamy (albo dzwonek u góry) i przyjmij prośbę.' };
   switch (state.letter) {
     case 'none':
     case 'reading':
       return { phone: 'Telefon Krystyny', text: 'Krystyna dostała papierowe pismo. Na ekranie głównym dotknij „Moje pisma” i sfotografuj je.' };
     case 'explained':
-      return { phone: 'Telefon Krystyny', text: 'Posłuchaj wyjaśnienia i dotknij „Poproś Annę o pomoc”.' };
+      return { phone: 'Telefon Krystyny', text: `Posłuchaj wyjaśnienia i dotknij „Poproś o pomoc: ${contactName(state, 'krystyna', 'anna')}”.` };
     case 'requested':
     case 'opened':
     case 'drafting':
@@ -16,7 +17,7 @@ function helpSceneStep(state) {
     case 'drafted':
       return { phone: 'Telefon Anny', text: 'Popraw szkic, jeśli chcesz, i wyślij go mamie do zatwierdzenia.' };
     case 'awaiting':
-      return { phone: 'Telefon Krystyny', text: 'Przeczytaj odpowiedź i podpisz ją PIN-em podpisu.' };
+      return { phone: 'Telefon Krystyny', text: 'Dotknij „Przeczytaj odpowiedź” na ekranie głównym i podpisz ją PIN-em podpisu.' };
     default:
       return null;
   }
@@ -27,12 +28,12 @@ function protectSceneStep(state) {
   if (call?.caller === 'scam') {
     if (call.status === 'ringing') return { phone: 'Telefon Krystyny', text: 'Dzwoni „policjant”. Odbierz połączenie.' };
     if (!protection.checked) {
-      return { phone: 'Telefon Krystyny', text: 'Nie rozłączaj się. Przejdź do mObywatela, dotknij „Ktoś do mnie dzwoni?” i wybierz „Policja”.' };
+      return { phone: 'Telefon Krystyny', text: 'Nie rozłączaj się. Przejdź do mObywatela, dotknij „Sprawdź, kto dzwoni” i wybierz „Policja”.' };
     }
     return { phone: 'Telefon Krystyny', text: 'Aplikacja mówi: rozłącz się. Dotknij „Rozłącz się”. Anna dostała już ostrzeżenie.' };
   }
   if (protection.push === 'queued') return { phone: 'Telefon Krystyny', text: 'Oszust się nie poddaje… Poczekaj chwilę.' };
-  if (protection.push === 'pending') return { phone: 'Telefon Krystyny', text: 'Przyszła prośba o logowanie, której Krystyna nie zaczęła. Otwórz ją z powiadomienia.' };
+  if (protection.push === 'pending') return { phone: 'Telefon Krystyny', text: 'Przyszła prośba o logowanie, której Krystyna nie zaczęła. Otwórz ją z powiadomienia albo z czerwonej karty na ekranie głównym.' };
   if (protection.push === 'none' && !protection.checked) {
     return { text: 'Zobacz, co się dzieje, gdy do Krystyny dzwoni oszust.', button: { action: 'scamCall', label: 'Zadzwoń do Krystyny jako „policjant”' } };
   }
@@ -130,7 +131,16 @@ function controlSceneDone(state) {
     <p class="guide-note">Kierunek, który państwo już obrało (weryfikacja wieku, Europejski Portfel Tożsamości Cyfrowej), rozszerzamy poza sam wiek.</p>`;
 }
 
-function sceneItem({ number, name, desc, step, current, done }) {
+// Czy asystent odpowiadał na żywo (PLLuM), czy z przygotowanych odpowiedzi — uczciwie, ale w przewodniku, nie na telefonie
+function aiSourceNote(state) {
+  const sources = [state.aiSource.explain, state.aiSource.draft].filter(Boolean);
+  if (!sources.length) return '';
+  return sources.every((source) => source === 'live')
+    ? '<p class="guide-note">Asystent: odpowiedzi na żywo z polskiego modelu PLLuM ✓</p>'
+    : '<p class="guide-note">Asystent: tryb awaryjny — przygotowane wcześniej odpowiedzi, bez połączenia z PLLuM.</p>';
+}
+
+function sceneItem({ number, name, desc, step, current, done, note = '' }) {
   let status;
   if (step) {
     status = `
@@ -147,6 +157,7 @@ function sceneItem({ number, name, desc, step, current, done }) {
         <p class="scene-name">${name}</p>
         <p class="scene-desc">${desc}</p>
         ${status}
+        ${note}
       </div>
     </li>`;
 }
@@ -168,6 +179,7 @@ export function renderGuide(state) {
         step: steps[0],
         current: current === 0,
         done: helpSceneDone(),
+        note: aiSourceNote(state),
       })}
       ${sceneItem({
         number: 2,

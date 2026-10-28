@@ -2,8 +2,8 @@
 // Każdy telefon to ta sama aplikacja mObywatel: nagłówek, treść, dolny pasek z pięcioma zakładkami.
 import { store, go, back, home, openTab, currentScreen, dismissNotification } from './store.js';
 import { icon } from './icons.js';
-import { speak, canSpeak, stopSpeaking } from './speech.js';
-import { actingAsOptions } from './personas.js';
+import { speak, canSpeak, stopSpeaking, isSpeaking, onSpeakingChange } from './speech.js';
+import { fullName, actingAsPeople } from './personas.js';
 import { documentsScreen, callContactScreen } from './screens/documents.js';
 import { resolveCommonScreen } from './screens/common.js';
 import { helpScreens, onPhotoSelected } from './scenes/help.js';
@@ -33,7 +33,7 @@ let mobilePersona = 'krystyna';
 const lastScreen = { krystyna: null, anna: null };
 
 function tabHeader(screen, state, persona) {
-  const unread = state.notifications[persona].length > 0;
+  const unread = state.notificationLog[persona].some((n) => n.unread);
   return `
     <header class="app-top">
       <button class="app-mark" data-home aria-label="Strona główna"><span>m</span></button>
@@ -61,10 +61,9 @@ function innerHeader(screen, state, persona) {
 
 function actingBanner(state, persona) {
   if (persona !== 'anna' || state.actingAs === 'ja') return '';
-  const who = actingAsOptions[state.actingAs];
   return `
     <div class="acting-banner" role="status">
-      <span>Działasz jako: <strong>${who.full}</strong></span>
+      <span>Działasz jako: <strong>${fullName(actingAsPeople[state.actingAs])}</strong></span>
       <button class="link link-light" data-action-global="actAsMe">Wróć do siebie</button>
     </div>`;
 }
@@ -88,8 +87,10 @@ function tabbar(state, persona) {
 // Powiadomienie wjeżdża i wibruje tylko raz — nie przy każdym przerysowaniu telefonu
 const shownBanners = new Set();
 
+// Na ekranie najwyżej jedno, najnowsze powiadomienie. Starsze są w Powiadomieniach (dzwonek).
 function banners(state, persona) {
   return state.notifications[persona]
+    .slice(-1)
     .map((n) => {
       const isNew = !shownBanners.has(n.id);
       shownBanners.add(n.id);
@@ -107,9 +108,13 @@ function banners(state, persona) {
     .join('');
 }
 
+// Stały pasek nad dolnym menu (nie pływa nad treścią, więc niczego nie zasłania)
 function readAloudButton(state, persona, screen) {
   if (!canSpeak || !state.simpleMode[persona] || screen.hideReadAloud) return '';
-  return `<button class="read-aloud" data-speak>${icon('speaker', { size: 22 })}<span>Przeczytaj na głos</span></button>`;
+  if (isSpeaking()) {
+    return `<div class="read-aloud-bar"><button class="read-aloud read-aloud-stop" data-stop-speaking>${icon('stop', { size: 22 })}<span>Zatrzymaj czytanie</span></button></div>`;
+  }
+  return `<div class="read-aloud-bar"><button class="read-aloud" data-speak>${icon('speaker', { size: 22 })}<span>Przeczytaj na głos</span></button></div>`;
 }
 
 // Pasek stanu jak w iOS: godzina (albo zielona pigułka trwającej rozmowy), zasięg, Wi-Fi, bateria
@@ -226,6 +231,7 @@ function handleClick(event) {
     if ('back' in target.dataset) return back(persona);
     if ('home' in target.dataset) return home(persona);
     if ('speak' in target.dataset) return speak(screenSpeech(persona));
+    if ('stopSpeaking' in target.dataset) return stopSpeaking();
     if (dismiss) return dismissNotification(persona, dismiss);
     if (notificationGo) {
       dismissNotification(persona, target.dataset.id);
@@ -267,6 +273,13 @@ document.addEventListener('input', (event) => {
       s.reply = event.target.value;
     });
   }
+  if (event.target.matches('[data-nickname]')) {
+    const persona = event.target.closest('[data-persona]').dataset.persona;
+    const contactId = event.target.id.replace('nickname-', '');
+    store.quietly((s) => {
+      s.nicknameDrafts[`${persona}:${contactId}`] = event.target.value;
+    });
+  }
   if (event.target.matches('[data-facts]')) {
     store.quietly((s) => {
       s.replyFacts = event.target.value;
@@ -279,5 +292,6 @@ document.addEventListener('change', (event) => {
   }
 });
 store.subscribe(render);
+onSpeakingChange(() => render(store.get()));
 render(store.get());
 initDevices(() => render(store.get()));

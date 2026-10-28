@@ -27,7 +27,8 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
 - `styles/app.css` — szkielet aplikacji (nagłówek, karty dokumentów, listy, dolny pasek) i tryb prosty.
 - `js/store.js` — wspólny stan obu telefonów: nawigacja, powiadomienia między telefonami, tryb prosty, „Działam jako”, historia. Zapis w `sessionStorage`.
 - `js/ui.js` — klocki interfejsu mObywatela (stos kart, wiersz listy, nagłówek usługi, ramka informacyjna, etykieta „Nowość”).
-- `js/personas.js` — fikcyjne osoby i ich dokumenty.
+- `js/personas.js` — fikcyjne osoby, ich dokumenty i bliscy (`family`), nazwy nadane bliskim i `contactName` — jedyne miejsce, które decyduje, jak pokazujemy bliską osobę.
+- `js/dates.js` — daty liczone od dnia pokazu (pismo, termin, ważność pozwolenia).
 - `js/screens/documents.js` — zakładka Dokumenty (zwykła, tryb prosty, „Działam jako”).
 - `js/screens/common.js` — Usługi, Kod QR, Szukaj, Więcej, szczegóły dokumentu, ekrany nowych usług.
 - `js/scenes/help.js` — scena Pomoc (pozwolenie, pismo, odpowiedź, podpis PIN-em).
@@ -65,9 +66,20 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
   - to samo u Krystyny: zameldowanie w fikcyjnym Hotelu Przystań bez numeru PESEL i adresu,
   - wpis w historii z „Cofnij zgodę” i „Zgłoś”,
   - u Krystyny „Kto widział moje dane” zbiera wszystkie trzy sceny: co zrobiła Anna, zablokowane próby, udostępnienia, oraz „Odwołaj pomoc Anny”.
+- ✅ **Poprawki P0 po przeglądzie** (28.10.2026):
+  - „Przeczytaj na głos” to stały pasek nad dolnym menu (nie zasłania treści) i zmienia się w „Zatrzymaj czytanie”; spokojniejsze tempo,
+  - koniec sprzecznego „Odpowiedź gotowa… dostaniesz powiadomienie, gdy będzie gotowa”,
+  - po zablokowanym ataku ekran Krystyny mówi o tym do końca dnia, a wiersz mamy u Anny pokazuje godzinę blokady,
+  - karta stanu w trybie prostym jest przyciskiem do następnej czynności („Sprawdź, kto dzwoni”, „Przeczytaj odpowiedź”, „Sprawdź i odrzuć”),
+  - na ekranie najwyżej jedno powiadomienie; po 7–10 s przechodzi do Powiadomień (dzwonek z kropką), razem z przyciskiem,
+  - informacja „na żywo: PLLuM” / „tryb awaryjny” jest w przewodniku, a na telefonie tylko „Sprawdź z treścią pisma”,
+  - daty pisma, terminu i pozwolenia liczone od dnia pokazu,
+  - Anna po wyjściu z pisma mamy sama wraca do „Działam jako: Ja”,
+  - imiona bez odmiany i nowy ekran Więcej → Moi bliscy (nazwy bliskich).
 - ⏳ Przewodnik: podsumowanie liczników na końcu i porównanie z pierwowzorem.
 
 ## Zasady
+- **Imion nigdy nie odmieniamy.** Bliską osobę pokazujemy zawsze jako „Imię Nazwisko, Relacja” (np. „Anna Nowak, Córka”) albo pod nazwą nadaną na ekranie Więcej → Moi bliscy (np. „Mama”) — w tej samej formie w każdym zdaniu: „Zadzwoń do Mama”, „Poproś o pomoc: Anna Nowak, Córka”. Zdania budujemy tak, żeby imię stało w mianowniku (podmiot, etykieta po dwukropku albo tytuł powiadomienia). Wszystko idzie przez `contactName` w `js/personas.js`.
 - Bez godła, oznaczeń i zdjęć z prototypu Cieszyńskiego. Dane i osoby fikcyjne.
 - Bez bibliotek i bez kroku budowania, żeby prototyp działał stabilnie bez logowania przez cały czas oceny.
 - Niewidoczny w wyszukiwarkach i bez śledzenia: `noindex` w `index.html` i w nagłówku `X-Robots-Tag` (`vercel.json`), bez analityki i bez Google Fonts (czcionki systemowe). Jedyne zewnętrzne zapytanie z przeglądarki to biblioteka odczytu tekstu z cdn.jsdelivr.net, i to dopiero przy zdjęciu własnego pisma.
