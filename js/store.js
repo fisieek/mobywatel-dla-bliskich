@@ -1,7 +1,8 @@
 // Wspólny stan obu telefonów. Oba telefony działają na jednej stronie,
 // więc to, co zrobi Anna, od razu widzi Krystyna (i odwrotnie).
+import { defaultNicknames } from './personas.js';
 
-const STORAGE_KEY = 'mobywatel-dla-bliskich:v6';
+const STORAGE_KEY = 'mobywatel-dla-bliskich:v9';
 
 function initialState() {
   return {
@@ -29,22 +30,40 @@ function initialState() {
     overlay: { krystyna: null, anna: null },
     // Za kogo działa Anna: 'ja' | 'mama' | 'antek'
     actingAs: 'ja',
+    // Czy Anna przełączyła się na mamę sama (przez przełącznik), czy zrobiła to aplikacja przy otwarciu pisma.
+    // W tym drugim wypadku po wyjściu z pisma wraca do siebie.
+    autoActing: false,
+    // Nazwy nadane bliskim na ekranie „Moi bliscy” (bez odmiany, np. „Mama”)
+    nicknames: structuredClone(defaultNicknames),
+    // Nazwa wpisywana, ale jeszcze niezapisana: { 'krystyna:anna': 'Ania' }
+    nicknameDrafts: {},
     // Tryb prosty (nowa opcja w Więcej): Krystyna ma go włączonego
     simpleMode: { krystyna: true, anna: false },
+    // Na jakim ekranie ktoś dotknął „Nie wiem, co zrobić”
+    helpFrom: { krystyna: '', anna: '' },
+    // Czy na ekranie zgody w trybie prostym ktoś otworzył „Inne możliwości”
+    consentAdvanced: { krystyna: false, anna: false },
+    // „Przypomnij mi” przy terminie pisma — osobno na każdym telefonie
+    reminders: { krystyna: false, anna: false },
     // Stos ekranów osobno dla każdego telefonu; pierwszy element to aktywna zakładka
     nav: { krystyna: ['documents'], anna: ['documents'] },
-    // Powiadomienia czekające na wyświetlenie na danym telefonie
+    // Powiadomienia wyświetlane teraz na danym telefonie (na ekranie najwyżej jedno, najnowsze)
     notifications: { krystyna: [], anna: [] },
+    // Wszystkie powiadomienia z sesji — zostają w Powiadomieniach (dzwonek), gdy znikną z ekranu
+    notificationLog: { krystyna: [], anna: [] },
     // Połączenie telefoniczne na telefonie Krystyny (scena 2):
     // null | { caller: 'scam' | 'zus', status: 'ringing' | 'talking', minimized, since }
     call: null,
     // Scena 2: czy Krystyna sprawdziła telefon, co z prośbą o logowanie, której nie zaczęła
-    // push: 'none' → 'queued' → 'pending' → 'blocked'
-    protection: { checked: false, push: 'none' },
+    // push: 'none' → 'queued' → 'pending' → 'blocked'; blockedAt — kiedy Krystyna odrzuciła prośbę
+    protection: { checked: false, push: 'none', blockedAt: null },
     // Wynik ostatniego sprawdzenia „Ktoś do mnie dzwoni?”: { institution, verified }
     callCheck: null,
     // Wersja pozytywna sceny 2: dzwoni naprawdę Zakład Ubezpieczeń Społecznych: 'none' | 'verified'
     realCall: 'none',
+    // Logowanie, które zaczyna sama Krystyna (kod QR na komputerze + liczba do porównania):
+    // 'none' → 'scanning' → 'matching' → 'done' | 'wrong'
+    login: 'none',
     // Scena 3: prośba o dane po zeskanowaniu kodu QR (Anna — wypożyczalnia, Krystyna — hotel):
     // 'none' → 'scanned' → 'shared'
     consent: { krystyna: 'none', anna: 'none' },
@@ -111,40 +130,54 @@ export const store = {
 
 // Nawigacja
 
-export function go(persona, screen) {
+// Anna wraca do siebie, gdy wychodzi z pisma mamy, które aplikacja otworzyła jej „jako mama”
+function leaveAutoActing(s, persona) {
+  const top = s.nav[persona][s.nav[persona].length - 1];
+  if (persona !== 'anna' || !s.autoActing || top === 'mamaLetter') return false;
+  s.autoActing = false;
+  s.actingAs = 'ja';
+  return true;
+}
+
+function navigate(persona, change) {
+  let returned = false;
   store.update((s) => {
-    s.nav[persona].push(screen);
+    change(s);
+    returned = leaveAutoActing(s, persona);
     return s;
+  });
+  if (returned) notify('anna', { title: 'Wróciłaś do swojego konta', body: 'Działasz teraz jako Ty.' });
+}
+
+export function go(persona, screen) {
+  navigate(persona, (s) => {
+    s.nav[persona].push(screen);
   });
 }
 
 // Zamienia bieżący ekran na inny (bez możliwości powrotu do poprzedniego kroku)
 export function replace(persona, screen) {
-  store.update((s) => {
+  navigate(persona, (s) => {
     s.nav[persona].pop();
     s.nav[persona].push(screen);
-    return s;
   });
 }
 
 export function back(persona) {
-  store.update((s) => {
+  navigate(persona, (s) => {
     if (s.nav[persona].length > 1) s.nav[persona].pop();
-    return s;
   });
 }
 
 export function home(persona) {
-  store.update((s) => {
+  navigate(persona, (s) => {
     s.nav[persona] = [s.nav[persona][0]];
-    return s;
   });
 }
 
 export function openTab(persona, tab) {
-  store.update((s) => {
+  navigate(persona, (s) => {
     s.nav[persona] = [tab];
-    return s;
   });
 }
 
@@ -158,15 +191,27 @@ export function currentScreen(persona) {
 let nextId = 1;
 
 const AUTO_HIDE_MS = 7000;
+// Powiadomienie z przyciskiem zostaje dłużej, potem przechodzi do Powiadomień (dzwonek z kropką)
+const AUTO_HIDE_ACTION_MS = 10000;
 
 export function notify(persona, { title, body, tone = 'info', action = null }) {
   const id = `${Date.now()}-${nextId++}`;
   store.update((s) => {
     s.notifications[persona].push({ id, title, body, tone, action });
+    s.notificationLog[persona].unshift({ id, title, body, tone, action, at: new Date().toISOString(), unread: true });
     return s;
   });
-  // Powiadomienia bez przycisku znikają same, jak w telefonie
-  if (!action) setTimeout(() => dismissNotification(persona, id), AUTO_HIDE_MS);
+  setTimeout(() => dismissNotification(persona, id), action ? AUTO_HIDE_ACTION_MS : AUTO_HIDE_MS);
+}
+
+export function markNotificationsRead(persona) {
+  if (!state.notificationLog[persona].some((n) => n.unread)) return;
+  store.update((s) => {
+    s.notificationLog[persona].forEach((n) => {
+      n.unread = false;
+    });
+    return s;
+  });
 }
 
 export function dismissNotification(persona, id) {

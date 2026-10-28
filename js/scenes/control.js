@@ -6,6 +6,11 @@ import { store, replace, notify, patch, addHistory, withBiometric } from '../sto
 import { icon } from '../icons.js';
 import { list, row, newBadge, sectionTitle, serviceHeader, infoBox } from '../ui.js';
 import { revokeGuardian, GUARDIAN_UNTIL } from './help.js';
+import { contactName } from '../personas.js';
+
+// Imiona bez odmiany: „Anna Nowak, Córka” na telefonie Krystyny, „Mama” na telefonie Anny
+const annaFor = (state) => contactName(state, 'krystyna', 'anna');
+const mamaFor = (state) => contactName(state, 'anna', 'krystyna');
 
 // Kto prosi o dane: Anna wynajmuje auto, Krystyna melduje się w hotelu.
 // Poziomy danych: samo potwierdzenie → dane podstawowe (wystarczą) → pełny dokument.
@@ -88,7 +93,7 @@ const pastEntries = {
 
 // ---------- Kod QR (rysowany, nie do zeskanowania) ----------
 
-function qrSvg(size = 140) {
+export function qrSvg(size = 140) {
   const n = 21;
   let seed = 7;
   const rand = () => {
@@ -123,14 +128,14 @@ function entryDate(entry) {
 }
 
 const actorLook = {
-  anna: { iconName: 'people', tint: 'green', title: () => 'Anna (Twoja opiekunka)' },
+  anna: { iconName: 'people', tint: 'green', title: (e, state) => annaFor(state) },
   self: { iconName: 'checkCircle', tint: 'blue', title: () => 'Ty' },
   blocked: { iconName: 'shieldLock', tint: 'red', title: () => 'Zablokowano' },
   institution: { iconName: 'building', tint: 'violet', title: (e) => e.who },
   shared: { iconName: 'idCheck', tint: 'amber', title: (e) => e.who },
 };
 
-function historyItem(entry) {
+function historyItem(entry, state) {
   const look = actorLook[entry.actor] ?? actorLook.self;
   const canRevoke = entry.consent && !entry.revoked;
   const links = entry.actor === 'self' ? '' : `
@@ -142,14 +147,14 @@ function historyItem(entry) {
     <div class="history-item ${entry.revoked ? 'history-revoked' : ''}">
       <span class="row-icon tint-${look.tint}">${icon(look.iconName, { size: 18 })}</span>
       <div class="history-text">
-        <p class="history-title">${look.title(entry)} <span class="history-date">${entryDate(entry)}</span></p>
+        <p class="history-title">${look.title(entry, state)} <span class="history-date">${entryDate(entry)}</span></p>
         <p class="history-desc">${entry.text}${entry.revoked ? ' · <strong>zgoda cofnięta</strong>' : ''}</p>
         ${links}
       </div>
     </div>`;
 }
 
-const historyList = (entries) => `<div class="list-card history">${entries.map(historyItem).join('')}</div>`;
+const historyList = (entries, state) => `<div class="list-card history">${entries.map((e) => historyItem(e, state)).join('')}</div>`;
 
 // Wpisy z bieżącej sesji + starsze wpisy (z id, żeby dało się cofnąć zgodę)
 function entriesFor(state, persona) {
@@ -167,21 +172,21 @@ function krystynaHistory(state) {
     state.guardian === 'active'
       ? `
         ${sectionTitle('Kto Ci pomaga')}
-        ${list([row({ iconName: 'people', tint: 'green', title: 'Anna Nowak (córka)', desc: `Pomaga Ci do ${GUARDIAN_UNTIL}`, go: 'helpersScopeView' })])}
-        <button class="btn btn-secondary btn-danger-text" data-action="revokeGuardian">Odwołaj pomoc Anny</button>
+        ${list([row({ iconName: 'people', tint: 'green', title: annaFor(state), desc: `Pomaga Ci do ${GUARDIAN_UNTIL}`, go: 'helpersScopeView' })])}
+        <button class="btn btn-secondary btn-danger-text" data-action="revokeGuardian">Odwołaj pomoc: ${annaFor(state)}</button>
         <p class="footnote center">Możesz to zrobić w każdej chwili.</p>`
       : '';
   return `
-    ${fromAnna.length ? `${sectionTitle('Co zrobiła Anna')}${historyList(fromAnna)}` : ''}
-    ${blocked.length ? `${sectionTitle('Zablokowane próby')}${historyList(blocked)}` : ''}
+    ${blocked.length ? `${sectionTitle('Zablokowane próby')}${historyList(blocked, state)}` : ''}
+    ${fromAnna.length ? `${sectionTitle('Działania osób, które Ci pomagają')}${historyList(fromAnna, state)}` : ''}
     ${sectionTitle('Udostępnienia i Twoje działania')}
-    ${historyList(rest)}
+    ${historyList(rest, state)}
     ${guardianCard}`;
 }
 
 function myDataSpeech(state, persona) {
   const entries = persona === 'krystyna' ? entriesFor(state, 'krystyna') : entriesFor(state, 'anna');
-  const first = entries.slice(0, 4).map((e) => `${(actorLook[e.actor] ?? actorLook.self).title(e)}: ${e.text}.`);
+  const first = entries.slice(0, 4).map((e) => `${(actorLook[e.actor] ?? actorLook.self).title(e, state)}: ${e.text}.`);
   return `Kto widział Twoje dane. ${first.join(' ')}`;
 }
 
@@ -195,6 +200,23 @@ function fieldList(req, level, { done = false } = {}) {
       <div><p class="ai-label">${done ? 'Przekazano' : 'Przekażesz'}</p>${shared.map((f) => `<p class="field field-on">${icon('check', { size: 16 })} ${f}</p>`).join('')}</div>
       ${hidden.length ? `<div><p class="ai-label ai-label-muted">${done ? 'Nie przekazano' : 'Nie przekażesz'}</p>${hidden.map((f) => `<p class="field field-off">${icon('close', { size: 16 })} ${f}</p>`).join('')}</div>` : ''}
     </div>`;
+}
+
+// Tryb prosty: jedna decyzja. Pokazujemy tylko to, co wystarczy; trzy poziomy są pod „Inne możliwości”.
+function simpleConsent(req) {
+  return `
+    <div class="requester">
+      <span class="service-icon tint-amber">${icon(req.iconName, { size: 26 })}</span>
+      <div>
+        <h2 class="requester-name">${req.name} chce sprawdzić, że to Ty</h2>
+        <p class="verified">${icon('checkCircle', { size: 16 })} Zweryfikowany odbiorca</p>
+      </div>
+    </div>
+    <p class="service-desc">Cel: ${req.purpose}. Pokażemy tylko to, co wystarczy.</p>
+    ${fieldList(req, 'basic')}
+    <button class="btn btn-primary" data-action="share">Pokaż tylko to</button>
+    <button class="btn btn-secondary" data-home>Nie pokazuj</button>
+    <button class="link center" data-action="advanced">Inne możliwości</button>`;
 }
 
 export const controlScreens = {
@@ -229,6 +251,7 @@ export const controlScreens = {
         store.update((s) => {
           s.consent[persona] = 'scanned';
           s.consentLevel[persona] = 'basic';
+          s.consentAdvanced[persona] = false;
           return s;
         });
         replace(persona, 'consent');
@@ -241,12 +264,16 @@ export const controlScreens = {
     title: 'Potwierdź swoje dane',
     speech: (state, persona) => {
       const req = requesters[persona];
+      if (state.simpleMode[persona] && !state.consentAdvanced[persona]) {
+        return `${req.name} chce sprawdzić, że to Ty. Cel: ${req.purpose}. Pokażemy tylko: ${req.levels.basic.fields.join(', ')}. Nie pokażemy numeru PESEL ani adresu. Dotknij Pokaż tylko to albo Nie pokazuj.`;
+      }
       return `${req.name} prosi o Twoje dane. Cel: ${req.purpose}. Wybierz, ile pokazać. ${req.hint.replace(/<[^>]+>/g, '')}`;
     },
     render: (state, persona) => {
       const req = requesters[persona];
       if (state.consent[persona] === 'none') return infoBox('Najpierw zeskanuj kod QR.');
       if (state.consent[persona] === 'shared') return infoBox(`Dane dla: ${req.name} zostały już udostępnione. Zobaczysz je w historii.`);
+      if (state.simpleMode[persona] && !state.consentAdvanced[persona]) return simpleConsent(req);
       const level = state.consentLevel[persona];
       const options = Object.entries(req.levels)
         .map(
@@ -285,6 +312,11 @@ export const controlScreens = {
       level: (el, persona) =>
         store.update((s) => {
           s.consentLevel[persona] = el.dataset.id;
+          return s;
+        }),
+      advanced: (el, persona) =>
+        store.update((s) => {
+          s.consentAdvanced[persona] = true;
           return s;
         }),
       share: (el, persona) =>
@@ -339,9 +371,9 @@ export const controlScreens = {
         badge: newBadge(),
       });
       if (persona === 'anna' && state.actingAs !== 'ja') {
-        return `${head}${infoBox('Historię mamy widzi tylko mama. Twoje działania w jej imieniu są tam zapisane.')}`;
+        return `${head}${infoBox(`Tę historię widzi tylko: ${mamaFor(state)}. Twoje działania w jej imieniu są tam zapisane.`)}`;
       }
-      return `${head}${persona === 'krystyna' ? krystynaHistory(state) : `${sectionTitle('Twoja historia')}${historyList(entriesFor(state, 'anna'))}`}`;
+      return `${head}${persona === 'krystyna' ? krystynaHistory(state) : `${sectionTitle('Twoja historia')}${historyList(entriesFor(state, 'anna'), state)}`}`;
     },
     actions: {
       revokeConsent: (el, persona) => {
@@ -359,12 +391,25 @@ export const controlScreens = {
         }
         notify(persona, { title: 'Zgoda cofnięta', body: `Wysłaliśmy informację do: ${entry.who}. Nie może dalej korzystać z Twoich danych na podstawie tej zgody.` });
       },
-      report: (el, persona) =>
-        notify(persona, { title: 'Dziękujemy za zgłoszenie', body: 'Sprawdzimy je i odpowiemy w Skrzynce. W prototypie nic nie wysyłamy.' }),
+      report: (el, persona) => {
+        const state = store.get();
+        const entry = entriesFor(state, persona).find((e) => e.id === el.dataset.id);
+        notify(persona, { title: 'Dziękujemy za zgłoszenie', body: `${reportRecipient(entry, state)} Odpowiedź dostaniesz w Skrzynce. W prototypie nic nie wysyłamy.` });
+      },
       revokeGuardian: () => revokeGuardian(),
     },
   },
 };
+
+// Kto dostaje zgłoszenie „Nie rozpoznajesz? Zgłoś” — zależnie od tego, kto widział dane
+function reportRecipient(entry, state) {
+  if (!entry) return 'Zgłoszenie trafi do zespołu mObywatela.';
+  if (entry.actor === 'anna') {
+    return `Zapytamy o to: ${annaFor(state)}. Jeśli to nie ona, odwołasz pomoc jednym przyciskiem.`;
+  }
+  if (entry.actor === 'institution') return `Zgłoszenie trafi do inspektora ochrony danych w: ${entry.who}.`;
+  return `Zgłoszenie trafi do inspektora ochrony danych w: ${entry.who}, a jeśli to wygląda na oszustwo — także do CERT Polska.`;
+}
 
 function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);

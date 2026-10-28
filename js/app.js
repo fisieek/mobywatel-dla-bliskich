@@ -2,14 +2,15 @@
 // Każdy telefon to ta sama aplikacja mObywatel: nagłówek, treść, dolny pasek z pięcioma zakładkami.
 import { store, go, back, home, openTab, currentScreen, dismissNotification } from './store.js';
 import { icon } from './icons.js';
-import { speak, canSpeak, stopSpeaking } from './speech.js';
-import { actingAsOptions } from './personas.js';
+import { speak, canSpeak, stopSpeaking, isSpeaking, onSpeakingChange } from './speech.js';
+import { fullName, actingAsPeople } from './personas.js';
 import { documentsScreen, callContactScreen } from './screens/documents.js';
 import { resolveCommonScreen } from './screens/common.js';
 import { helpScreens, onPhotoSelected } from './scenes/help.js';
-import { protectScreens, callOverlay, callPill, callAction, startScamCall, startRealCall } from './scenes/protect.js';
+import { protectScreens, callOverlay, callPill, callAction, startScamCall, startRealCall, startLogin } from './scenes/protect.js';
 import { controlScreens } from './scenes/control.js';
-import { renderGuide } from './guide.js';
+import { renderGuide, currentStep } from './guide.js';
+import { startAutoplay, stopAutoplay, autoplayState, onAutoplayChange } from './autoplay.js';
 import { initDevices, biometric } from './device.js';
 
 const tabs = [
@@ -33,14 +34,19 @@ let mobilePersona = 'krystyna';
 const lastScreen = { krystyna: null, anna: null };
 
 function tabHeader(screen, state, persona) {
-  const unread = state.notifications[persona].length > 0;
+  const unread = state.notificationLog[persona].some((n) => n.unread);
+  // W trybie prostym nie ma ikon bez podpisów — Powiadomienia i Asystent są wierszami na ekranie głównym
+  const icons = state.simpleMode[persona]
+    ? ''
+    : `
+      <button class="icon-btn" data-go="assistant" aria-label="Wirtualny Asystent">${icon('assistant')}</button>
+      <button class="icon-btn" data-go="inbox" aria-label="Skrzynka">${icon('envelope')}</button>
+      <button class="icon-btn" data-go="notifications" aria-label="Powiadomienia">${icon('bell')}${unread ? '<i class="dot"></i>' : ''}</button>`;
   return `
     <header class="app-top">
       <button class="app-mark" data-home aria-label="Strona główna"><span>m</span></button>
       <span class="spacer"></span>
-      <button class="icon-btn" data-go="assistant" aria-label="Wirtualny Asystent">${icon('assistant')}</button>
-      <button class="icon-btn" data-go="inbox" aria-label="Skrzynka">${icon('envelope')}</button>
-      <button class="icon-btn" data-go="notifications" aria-label="Powiadomienia">${icon('bell')}${unread ? '<i class="dot"></i>' : ''}</button>
+      ${icons}
     </header>
     ${actingBanner(state, persona)}
     <div class="large-title-row">
@@ -61,15 +67,24 @@ function innerHeader(screen, state, persona) {
 
 function actingBanner(state, persona) {
   if (persona !== 'anna' || state.actingAs === 'ja') return '';
-  const who = actingAsOptions[state.actingAs];
   return `
     <div class="acting-banner" role="status">
-      <span>Działasz jako: <strong>${who.full}</strong></span>
+      <span>Działasz jako: <strong>${fullName(actingAsPeople[state.actingAs])}</strong></span>
       <button class="link link-light" data-action-global="actAsMe">Wróć do siebie</button>
     </div>`;
 }
 
+// Tryb prosty: zamiast pięciu małych zakładek dwa duże przyciski — powrót na start i stałe wyjście „Nie wiem, co zrobić”
+function simpleDock() {
+  return `
+    <nav class="simple-dock" aria-label="Menu">
+      <button class="dock-start" data-simple-start>${icon('cards', { size: 22 })}<span>Start</span></button>
+      <button class="dock-help" data-help-me>${icon('help', { size: 22 })}<span>Nie wiem, co zrobić</span></button>
+    </nav>`;
+}
+
 function tabbar(state, persona) {
+  if (state.simpleMode[persona]) return simpleDock();
   const active = state.nav[persona][0];
   return `
     <nav class="tabbar" aria-label="Menu główne">
@@ -88,8 +103,10 @@ function tabbar(state, persona) {
 // Powiadomienie wjeżdża i wibruje tylko raz — nie przy każdym przerysowaniu telefonu
 const shownBanners = new Set();
 
+// Na ekranie najwyżej jedno, najnowsze powiadomienie. Starsze są w Powiadomieniach (dzwonek).
 function banners(state, persona) {
   return state.notifications[persona]
+    .slice(-1)
     .map((n) => {
       const isNew = !shownBanners.has(n.id);
       shownBanners.add(n.id);
@@ -107,9 +124,13 @@ function banners(state, persona) {
     .join('');
 }
 
+// Stały pasek nad dolnym menu (nie pływa nad treścią, więc niczego nie zasłania)
 function readAloudButton(state, persona, screen) {
   if (!canSpeak || !state.simpleMode[persona] || screen.hideReadAloud) return '';
-  return `<button class="read-aloud" data-speak>${icon('speaker', { size: 22 })}<span>Przeczytaj na głos</span></button>`;
+  if (isSpeaking()) {
+    return `<div class="read-aloud-bar"><button class="read-aloud read-aloud-stop" data-stop-speaking>${icon('stop', { size: 22 })}<span>Zatrzymaj czytanie</span></button></div>`;
+  }
+  return `<div class="read-aloud-bar"><button class="read-aloud" data-speak>${icon('speaker', { size: 22 })}<span>Przeczytaj na głos</span></button></div>`;
 }
 
 // Pasek stanu jak w iOS: godzina (albo zielona pigułka trwającej rozmowy), zasięg, Wi-Fi, bateria
@@ -193,11 +214,50 @@ function renderMobileSwitch(state) {
   });
 }
 
+const MOBILE_MAX = 860;
+// Telefon, którego dotyczył poprzedni krok — przełączamy telefon tylko wtedy, gdy krok przechodzi na drugą osobę
+let lastStepPersona = null;
+
+// Wąski ekran: pasek „Teraz” nad telefonem. Gdy krok przechodzi na drugą osobę, pokazujemy jej telefon.
+function renderNextStep(state) {
+  const bar = document.querySelector('[data-next-step]');
+  const step = currentStep(state);
+  const run = autoplayState();
+  const play = run && !run.failed
+    ? '<button class="next-step-play" data-autoplay="stop">Zatrzymaj</button>'
+    : '<button class="next-step-play" data-autoplay="start">▶ Pokaż sam</button>';
+  bar.innerHTML = step
+    ? `<p><strong>Teraz${step.phone ? ` · ${step.phone}` : ''}:</strong> ${step.text}</p>${play}`
+    : `<p><strong>Gotowe.</strong> Podsumowanie jest pod telefonem.</p>${play}`;
+
+  if (step?.persona && step.persona !== lastStepPersona && window.innerWidth <= MOBILE_MAX) {
+    mobilePersona = step.persona;
+  }
+  lastStepPersona = step?.persona ?? lastStepPersona;
+  // Wysokość telefonu = ekran minus pasek u góry (pasek ma 1–3 linie tekstu)
+  const top = document.querySelector('[data-mobile-top]');
+  document.documentElement.style.setProperty('--mobile-top-h', `${top.offsetHeight}px`);
+}
+
 function render(state) {
   renderPhone('krystyna', state);
   renderPhone('anna', state);
+  renderNextStep(state);
   renderMobileSwitch(state);
-  document.querySelector('[data-guide]').innerHTML = renderGuide(state);
+  document.querySelector('[data-guide]').innerHTML = renderGuide(state, autoplayState());
+}
+
+function resetDemo() {
+  stopSpeaking();
+  mobilePersona = 'krystyna';
+  lastStepPersona = null;
+  store.reset();
+}
+
+function showPersona(persona) {
+  if (mobilePersona === persona) return;
+  mobilePersona = persona;
+  renderMobileSwitch(store.get());
 }
 
 function screenSpeech(persona) {
@@ -210,9 +270,32 @@ function screenSpeech(persona) {
   return `${title}. ${root.querySelector('.app-content').innerText}`;
 }
 
+// „Nie wiem, co zrobić”: zapamiętujemy, na którym ekranie ktoś utknął, żeby móc to przekazać bliskiej osobie
+function openHelpMe(persona) {
+  if (currentScreen(persona) === 'helpMe') return;
+  const screen = resolveScreen(currentScreen(persona));
+  const root = document.querySelector(`[data-persona="${persona}"]`);
+  const from = screen.kind === 'tab' && currentScreen(persona) === 'documents'
+    ? 'Ekran główny'
+    : (root.querySelector('.nav-title, .large-title')?.textContent.trim() ?? '');
+  store.update((s) => {
+    s.helpFrom[persona] = from;
+    return s;
+  });
+  stopSpeaking();
+  go(persona, 'helpMe');
+}
+
 function handleClick(event) {
   const target = event.target.closest('button');
   if (!target || target.disabled) return;
+
+  // „Pokaż sam”: start i stop pokazu
+  if (target.dataset.autoplay) {
+    return target.dataset.autoplay === 'start' ? startAutoplay({ reset: resetDemo, showPersona }) : stopAutoplay();
+  }
+  // Dotknięcie przez człowieka w trakcie pokazu oddaje mu stery
+  if (event.isTrusted && autoplayState()) stopAutoplay();
 
   const phone = target.closest('[data-persona]');
   if (phone) {
@@ -225,7 +308,10 @@ function handleClick(event) {
     if (tab) return openTab(persona, tab);
     if ('back' in target.dataset) return back(persona);
     if ('home' in target.dataset) return home(persona);
+    if ('simpleStart' in target.dataset) return openTab(persona, 'documents');
+    if ('helpMe' in target.dataset) return openHelpMe(persona);
     if ('speak' in target.dataset) return speak(screenSpeech(persona));
+    if ('stopSpeaking' in target.dataset) return stopSpeaking();
     if (dismiss) return dismissNotification(persona, dismiss);
     if (notificationGo) {
       dismissNotification(persona, target.dataset.id);
@@ -241,10 +327,11 @@ function handleClick(event) {
     return;
   }
 
-  // Przyciski w przewodniku: telefon od „policjanta” albo od prawdziwego urzędu
+  // Przyciski w przewodniku: telefon od „policjanta”, od prawdziwego urzędu albo logowanie, które zaczyna Krystyna
   if (target.dataset.guideAction) {
     mobilePersona = 'krystyna';
-    return target.dataset.guideAction === 'realCall' ? startRealCall() : startScamCall();
+    const start = { realCall: startRealCall, login: startLogin }[target.dataset.guideAction] ?? startScamCall;
+    return start();
   }
 
   if (target.dataset.showPersona) {
@@ -253,11 +340,7 @@ function handleClick(event) {
     return;
   }
 
-  if ('reset' in target.dataset) {
-    stopSpeaking();
-    mobilePersona = 'krystyna';
-    store.reset();
-  }
+  if ('reset' in target.dataset) resetDemo();
 }
 
 document.addEventListener('click', handleClick);
@@ -265,6 +348,13 @@ document.addEventListener('input', (event) => {
   if (event.target.matches('[data-draft]')) {
     store.quietly((s) => {
       s.reply = event.target.value;
+    });
+  }
+  if (event.target.matches('[data-nickname]')) {
+    const persona = event.target.closest('[data-persona]').dataset.persona;
+    const contactId = event.target.id.replace('nickname-', '');
+    store.quietly((s) => {
+      s.nicknameDrafts[`${persona}:${contactId}`] = event.target.value;
     });
   }
   if (event.target.matches('[data-facts]')) {
@@ -279,5 +369,7 @@ document.addEventListener('change', (event) => {
   }
 });
 store.subscribe(render);
+onSpeakingChange(() => render(store.get()));
+onAutoplayChange(() => render(store.get()));
 render(store.get());
 initDevices(() => render(store.get()));
