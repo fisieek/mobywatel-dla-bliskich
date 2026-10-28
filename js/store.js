@@ -2,7 +2,7 @@
 // więc to, co zrobi Anna, od razu widzi Krystyna (i odwrotnie).
 import { defaultNicknames } from './personas.js';
 
-const STORAGE_KEY = 'mobywatel-dla-bliskich:v7';
+const STORAGE_KEY = 'mobywatel-dla-bliskich:v8';
 
 function initialState() {
   return {
@@ -39,6 +39,12 @@ function initialState() {
     nicknameDrafts: {},
     // Tryb prosty (nowa opcja w Więcej): Krystyna ma go włączonego
     simpleMode: { krystyna: true, anna: false },
+    // Na jakim ekranie ktoś dotknął „Nie wiem, co zrobić”
+    helpFrom: { krystyna: '', anna: '' },
+    // Czy na ekranie zgody w trybie prostym ktoś otworzył „Inne możliwości”
+    consentAdvanced: { krystyna: false, anna: false },
+    // „Przypomnij mi” przy terminie pisma — osobno na każdym telefonie
+    reminders: { krystyna: false, anna: false },
     // Stos ekranów osobno dla każdego telefonu; pierwszy element to aktywna zakładka
     nav: { krystyna: ['documents'], anna: ['documents'] },
     // Powiadomienia wyświetlane teraz na danym telefonie (na ekranie najwyżej jedno, najnowsze)

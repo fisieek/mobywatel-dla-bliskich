@@ -2,7 +2,7 @@
 import { contactName } from './personas.js';
 
 function helpSceneStep(state) {
-  if (state.guardian === 'none') return { phone: 'Telefon Krystyny', text: 'Otwórz Usługi → Pomoc bliskich i pozwól Annie pomagać.' };
+  if (state.guardian === 'none') return { phone: 'Telefon Krystyny', text: 'Na ekranie głównym dotknij „Pozwól bliskiej osobie Ci pomagać” i pozwól Annie pomagać.' };
   if (state.guardian === 'pending') return { phone: 'Telefon Anny', text: 'Otwórz powiadomienie od mamy (albo dzwonek u góry) i przyjmij prośbę.' };
   switch (state.letter) {
     case 'none':
@@ -119,7 +119,7 @@ function controlSceneDone(state) {
   const hotel =
     state.consent.krystyna === 'shared'
       ? '<p class="guide-try">✓ Krystyna zameldowała się w hotelu bez podawania numeru PESEL i adresu.</p>'
-      : '<p class="guide-try"><strong>Zobacz też:</strong> Krystyna melduje się w hotelu. Na jej telefonie: Kod QR → Zeskanuj kod QR.</p>';
+      : '<p class="guide-try"><strong>Zobacz też:</strong> Krystyna melduje się w hotelu. Na jej telefonie: „Zeskanuj kod QR” na ekranie głównym.</p>';
   return `
     ${hotel}
     ${whoDoesIt([

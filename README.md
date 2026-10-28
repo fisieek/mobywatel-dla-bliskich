@@ -76,6 +76,15 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
   - daty pisma, terminu i pozwolenia liczone od dnia pokazu,
   - Anna po wyjściu z pisma mamy sama wraca do „Działam jako: Ja”,
   - imiona bez odmiany i nowy ekran Więcej → Moi bliscy (nazwy bliskich).
+- ✅ **Poprawki P1: prostota dla Krystyny** (28.10.2026):
+  - w trybie prostym zamiast pięciu małych zakładek i ikon bez podpisów: dwa duże przyciski na dole — „Start” i „Nie wiem, co zrobić”,
+  - „Nie wiem, co zrobić” na każdym ekranie: zadzwoń do bliskiej osoby, daj jej znać, na jakim ekranie utknęłaś, albo wróć na start,
+  - ekran główny trybu prostego ma wszystko jako duże wiersze: „Pozwól bliskiej osobie Ci pomagać” (gdy nikt jeszcze nie pomaga), pisma, „Ktoś do mnie dzwoni?”, „Zeskanuj kod QR”, historia, Powiadomienia, telefon, „Więcej opcji”,
+  - karta stanu mówi też o nowych powiadomieniach — nigdy „wszystko w porządku”, gdy coś czeka,
+  - zgoda w hotelu w trybie prostym to jedna decyzja: „Pokaż tylko to” albo „Nie pokazuj”; trzy poziomy pod „Inne możliwości”,
+  - „Przypomnij mi” zostawia widoczne „✓ Przypomnimy 3 dni przed terminem” i informuje Annę, jeśli widzi pisma i terminy,
+  - Anna może zaproponować mamie tryb prosty (Usługi → Pomoc bliskich); włącza go tylko mama,
+  - ciemniejszy szary tekst (kontrast ok. 5,3:1 zamiast 3,0:1) i większe przypisy w trybie prostym.
 - ⏳ Przewodnik: podsumowanie liczników na końcu i porównanie z pierwowzorem.
 
 ## Zasady

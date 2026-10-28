@@ -34,13 +34,18 @@ const lastScreen = { krystyna: null, anna: null };
 
 function tabHeader(screen, state, persona) {
   const unread = state.notificationLog[persona].some((n) => n.unread);
+  // W trybie prostym nie ma ikon bez podpisów — Powiadomienia i Asystent są wierszami na ekranie głównym
+  const icons = state.simpleMode[persona]
+    ? ''
+    : `
+      <button class="icon-btn" data-go="assistant" aria-label="Wirtualny Asystent">${icon('assistant')}</button>
+      <button class="icon-btn" data-go="inbox" aria-label="Skrzynka">${icon('envelope')}</button>
+      <button class="icon-btn" data-go="notifications" aria-label="Powiadomienia">${icon('bell')}${unread ? '<i class="dot"></i>' : ''}</button>`;
   return `
     <header class="app-top">
       <button class="app-mark" data-home aria-label="Strona główna"><span>m</span></button>
       <span class="spacer"></span>
-      <button class="icon-btn" data-go="assistant" aria-label="Wirtualny Asystent">${icon('assistant')}</button>
-      <button class="icon-btn" data-go="inbox" aria-label="Skrzynka">${icon('envelope')}</button>
-      <button class="icon-btn" data-go="notifications" aria-label="Powiadomienia">${icon('bell')}${unread ? '<i class="dot"></i>' : ''}</button>
+      ${icons}
     </header>
     ${actingBanner(state, persona)}
     <div class="large-title-row">
@@ -68,7 +73,17 @@ function actingBanner(state, persona) {
     </div>`;
 }
 
+// Tryb prosty: zamiast pięciu małych zakładek dwa duże przyciski — powrót na start i stałe wyjście „Nie wiem, co zrobić”
+function simpleDock() {
+  return `
+    <nav class="simple-dock" aria-label="Menu">
+      <button class="dock-start" data-simple-start>${icon('cards', { size: 22 })}<span>Start</span></button>
+      <button class="dock-help" data-help-me>${icon('help', { size: 22 })}<span>Nie wiem, co zrobić</span></button>
+    </nav>`;
+}
+
 function tabbar(state, persona) {
+  if (state.simpleMode[persona]) return simpleDock();
   const active = state.nav[persona][0];
   return `
     <nav class="tabbar" aria-label="Menu główne">
@@ -215,6 +230,22 @@ function screenSpeech(persona) {
   return `${title}. ${root.querySelector('.app-content').innerText}`;
 }
 
+// „Nie wiem, co zrobić”: zapamiętujemy, na którym ekranie ktoś utknął, żeby móc to przekazać bliskiej osobie
+function openHelpMe(persona) {
+  if (currentScreen(persona) === 'helpMe') return;
+  const screen = resolveScreen(currentScreen(persona));
+  const root = document.querySelector(`[data-persona="${persona}"]`);
+  const from = screen.kind === 'tab' && currentScreen(persona) === 'documents'
+    ? 'Ekran główny'
+    : (root.querySelector('.nav-title, .large-title')?.textContent.trim() ?? '');
+  store.update((s) => {
+    s.helpFrom[persona] = from;
+    return s;
+  });
+  stopSpeaking();
+  go(persona, 'helpMe');
+}
+
 function handleClick(event) {
   const target = event.target.closest('button');
   if (!target || target.disabled) return;
@@ -230,6 +261,8 @@ function handleClick(event) {
     if (tab) return openTab(persona, tab);
     if ('back' in target.dataset) return back(persona);
     if ('home' in target.dataset) return home(persona);
+    if ('simpleStart' in target.dataset) return openTab(persona, 'documents');
+    if ('helpMe' in target.dataset) return openHelpMe(persona);
     if ('speak' in target.dataset) return speak(screenSpeech(persona));
     if ('stopSpeaking' in target.dataset) return stopSpeaking();
     if (dismiss) return dismissNotification(persona, dismiss);
