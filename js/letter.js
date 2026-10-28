@@ -57,7 +57,7 @@ ${letter.department}
 
 Dotyczy: wezwania z ${letter.date}, znak ${letter.sign}
 
-W odpowiedzi na wezwanie wyjaśniam, że różnica między powierzchnią podaną w informacji IN-1 (98,00 m²) a powierzchnią z ewidencji (120,40 m²) wynika z poddasza o wysokości poniżej 1,40 m (ok. 22,4 m²). Zgodnie z art. 4 ust. 2 ustawy o podatkach i opłatach lokalnych powierzchnię o wysokości poniżej 1,40 m pomija się przy ustalaniu powierzchni użytkowej.
+W odpowiedzi na wezwanie wyjaśniam, że różnica między powierzchnią podaną w informacji IN-1 (98,00 m²) a powierzchnią z ewidencji (120,40 m²) wynika z poddasza o wysokości poniżej 1,40 m (ok. 22,4 m²). Powierzchni o wysokości poniżej 1,40 m nie wlicza się do powierzchni użytkowej budynku.
 
 Z poważaniem
 Krystyna Nowak`;

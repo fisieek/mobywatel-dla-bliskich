@@ -32,7 +32,7 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
 - `js/screens/documents.js` — zakładka Dokumenty (zwykła, tryb prosty, „Działam jako”).
 - `js/screens/common.js` — Usługi, Kod QR, Szukaj, Więcej, szczegóły dokumentu, ekrany nowych usług.
 - `js/scenes/help.js` — scena Pomoc (pozwolenie, pismo, odpowiedź, podpis PIN-em).
-- `js/scenes/protect.js` — scena Ochrona (telefon od „policjanta”, „Ktoś do mnie dzwoni?”, zablokowana prośba o logowanie, prawdziwy telefon z Zakładu Ubezpieczeń Społecznych z kodem do porównania).
+- `js/scenes/protect.js` — scena Ochrona (telefon od „policjanta” z podpisem numeru, „Ktoś do mnie dzwoni?”, zablokowana prośba o logowanie, prawdziwy telefon z Zakładu Ubezpieczeń Społecznych z kodem do porównania, logowanie kodem QR z liczbą do porównania).
 - `js/scenes/control.js` — scena Kontrola (kod QR wypożyczalni, ekran zgody z trzema poziomami danych, historia „Kto widział moje dane”).
 - `js/letter.js` — fikcyjne pismo, wyjaśnienie i szkic odpowiedzi.
 - `js/assistant.js` — asystent w przeglądarce: pyta `/api/assistant`, a po 8 sekundach bez odpowiedzi przechodzi na przygotowane odpowiedzi.
@@ -85,6 +85,12 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
   - „Przypomnij mi” zostawia widoczne „✓ Przypomnimy 3 dni przed terminem” i informuje Annę, jeśli widzi pisma i terminy,
   - Anna może zaproponować mamie tryb prosty (Usługi → Pomoc bliskich); włącza go tylko mama,
   - ciemniejszy szary tekst (kontrast ok. 5,3:1 zamiast 3,0:1) i większe przypisy w trybie prostym.
+- ✅ **Poprawki P2: wiarygodność** (28.10.2026):
+  - ekran rozmowy bez przycisku mObywatela (aplikacja nie może go dodać do systemowego ekranu rozmowy); zamiast tego podpis numeru już przy dzwonieniu — „Numer niepotwierdzony przez żadną instytucję” albo „Zakład Ubezpieczeń Społecznych · numer sprawdzony” (na iPhonie od iOS 18: Live Caller ID Lookup, na Androidzie: filtrowanie połączeń) — i systemowy gest „Przesuń w górę”,
+  - nowa wersja pozytywna logowania: Krystyna skanuje kod QR na stronie eZUS i wybiera liczbę widoczną na komputerze; zła liczba = brak logowania i wpis w historii,
+  - Antek: opis oparty na tym, co istnieje (mObywatel Junior), z wyraźnym „Nowość” dla młodszych dzieci,
+  - szkic odpowiedzi w trybie awaryjnym bez numeru przepisu, zgodnie z zasadą dla PLLuM (numer tylko, gdy jest w piśmie albo w faktach od Anny),
+  - „Nie rozpoznajesz? Zgłoś” mówi, dokąd trafia zgłoszenie (inspektor ochrony danych, CERT Polska, a przy działaniu Anny — pytanie do niej i „Odwołaj pomoc”).
 - ⏳ Przewodnik: podsumowanie liczników na końcu i porównanie z pierwowzorem.
 
 ## Zasady

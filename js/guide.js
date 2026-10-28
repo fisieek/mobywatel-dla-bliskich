@@ -26,9 +26,9 @@ function helpSceneStep(state) {
 function protectSceneStep(state) {
   const { call, protection } = state;
   if (call?.caller === 'scam') {
-    if (call.status === 'ringing') return { phone: 'Telefon Krystyny', text: 'Dzwoni „policjant”. Odbierz połączenie.' };
+    if (call.status === 'ringing') return { phone: 'Telefon Krystyny', text: 'Dzwoni „policjant”. Już pod numerem widać podpis od mObywatela: „Numer niepotwierdzony przez żadną instytucję”. Odbierz połączenie.' };
     if (!protection.checked) {
-      return { phone: 'Telefon Krystyny', text: 'Nie rozłączaj się. Przejdź do mObywatela, dotknij „Sprawdź, kto dzwoni” i wybierz „Policja”.' };
+      return { phone: 'Telefon Krystyny', text: 'Nie rozłączaj się. Wyjdź z ekranu rozmowy (pasek „Przesuń w górę” na dole), w mObywatelu dotknij „Sprawdź, kto dzwoni” i wybierz „Policja”.' };
     }
     return { phone: 'Telefon Krystyny', text: 'Aplikacja mówi: rozłącz się. Dotknij „Rozłącz się”. Anna dostała już ostrzeżenie.' };
   }
@@ -47,7 +47,7 @@ function realCallStep(state) {
   if (call?.caller === 'zus') {
     if (call.status === 'ringing') return { phone: 'Telefon Krystyny', text: 'Dzwoni Zakład Ubezpieczeń Społecznych. Odbierz.' };
     if (state.realCall !== 'verified') {
-      return { phone: 'Telefon Krystyny', text: 'Przejdź do mObywatela, dotknij „Ktoś do mnie dzwoni?” i wybierz „Zakład Ubezpieczeń Społecznych”.' };
+      return { phone: 'Telefon Krystyny', text: 'Wyjdź z ekranu rozmowy, w mObywatelu dotknij „Sprawdź, kto dzwoni” i wybierz „Zakład Ubezpieczeń Społecznych”.' };
     }
   }
   return null;
@@ -105,14 +105,25 @@ function protectSceneDone(state) {
             <p><strong>Zobacz też:</strong> a gdyby dzwonił naprawdę urząd?</p>
             <button class="btn btn-secondary btn-small" data-guide-action="realCall">Zadzwoń jako Zakład Ubezpieczeń Społecznych</button>
           </div>`;
+  const login =
+    state.login === 'done'
+      ? '<p class="guide-try">✓ Logowanie, które zaczyna Krystyna: kod QR na komputerze i liczba do porównania.</p>'
+      : ['none', 'wrong'].includes(state.login)
+        ? `<div class="guide-try">
+            <p><strong>${state.login === 'wrong' ? 'Zła liczba = brak logowania.' : 'Zobacz też:'}</strong> ${state.login === 'wrong' ? 'Spróbuj jeszcze raz i wybierz 72.' : 'jak wygląda logowanie, które Krystyna zaczyna sama?'}</p>
+            <button class="btn btn-secondary btn-small" data-guide-action="login">Zaloguj Krystynę do eZUS kodem QR</button>
+          </div>`
+        : '<p class="scene-status scene-status-active">Teraz · Telefon Krystyny</p><p class="scene-step">Zeskanuj kod z ekranu komputera i wybierz liczbę, którą na nim widać (72).</p>';
   return `
     ${extra}
+    ${login}
     ${whoDoesIt([
       ['Estonia, Smart-ID+', 'każde logowanie zaczyna użytkownik, a telefon jest powiązany z sesją.'],
       ['Dania, MitID', 'kod QR albo przejście prosto do aplikacji zamiast ogólnego powiadomienia — wprowadzone na prośbę użytkowników.'],
     ])}
     ${counter('Decyzja w stresie, sam na sam z oszustem.', '1 dotknięcie, odpowiedź w sekundę, bliska osoba wie od razu.')}
-    <p class="guide-note">Sprawdzanie połączeń wymaga, żeby instytucje zgłaszały swoje telefony do obywateli. To kierunek, nie gotowa usługa. Blokada próśb, których użytkownik nie zaczął, działa już w Estonii i Danii.</p>`;
+    <p class="guide-note">Sprawdzanie połączeń wymaga, żeby instytucje zgłaszały swoje telefony do obywateli. To kierunek, nie gotowa usługa. Blokada próśb, których użytkownik nie zaczął, działa już w Estonii i Danii.</p>
+    <p class="guide-note">Podpis numeru przy dzwonieniu da się zrobić już dziś: na iPhonie od iOS 18 aplikacja może sprawdzić przychodzący numer na swoim serwerze (Live Caller ID Lookup), na Androidzie służy do tego usługa filtrowania połączeń. Aplikacja nie może za to dodać przycisków do systemowego ekranu rozmowy — dlatego Krystyna wychodzi z rozmowy sama. W prototypie od razu otwiera się mObywatel.</p>`;
 }
 
 function controlSceneDone(state) {
