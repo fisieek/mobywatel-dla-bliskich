@@ -202,6 +202,23 @@ function fieldList(req, level, { done = false } = {}) {
     </div>`;
 }
 
+// Tryb prosty: jedna decyzja. Pokazujemy tylko to, co wystarczy; trzy poziomy są pod „Inne możliwości”.
+function simpleConsent(req) {
+  return `
+    <div class="requester">
+      <span class="service-icon tint-amber">${icon(req.iconName, { size: 26 })}</span>
+      <div>
+        <h2 class="requester-name">${req.name} chce sprawdzić, że to Ty</h2>
+        <p class="verified">${icon('checkCircle', { size: 16 })} Zweryfikowany odbiorca</p>
+      </div>
+    </div>
+    <p class="service-desc">Cel: ${req.purpose}. Pokażemy tylko to, co wystarczy.</p>
+    ${fieldList(req, 'basic')}
+    <button class="btn btn-primary" data-action="share">Pokaż tylko to</button>
+    <button class="btn btn-secondary" data-home>Nie pokazuj</button>
+    <button class="link center" data-action="advanced">Inne możliwości</button>`;
+}
+
 export const controlScreens = {
   qrScan: {
     kind: 'inner',
@@ -234,6 +251,7 @@ export const controlScreens = {
         store.update((s) => {
           s.consent[persona] = 'scanned';
           s.consentLevel[persona] = 'basic';
+          s.consentAdvanced[persona] = false;
           return s;
         });
         replace(persona, 'consent');
@@ -246,12 +264,16 @@ export const controlScreens = {
     title: 'Potwierdź swoje dane',
     speech: (state, persona) => {
       const req = requesters[persona];
+      if (state.simpleMode[persona] && !state.consentAdvanced[persona]) {
+        return `${req.name} chce sprawdzić, że to Ty. Cel: ${req.purpose}. Pokażemy tylko: ${req.levels.basic.fields.join(', ')}. Nie pokażemy numeru PESEL ani adresu. Dotknij Pokaż tylko to albo Nie pokazuj.`;
+      }
       return `${req.name} prosi o Twoje dane. Cel: ${req.purpose}. Wybierz, ile pokazać. ${req.hint.replace(/<[^>]+>/g, '')}`;
     },
     render: (state, persona) => {
       const req = requesters[persona];
       if (state.consent[persona] === 'none') return infoBox('Najpierw zeskanuj kod QR.');
       if (state.consent[persona] === 'shared') return infoBox(`Dane dla: ${req.name} zostały już udostępnione. Zobaczysz je w historii.`);
+      if (state.simpleMode[persona] && !state.consentAdvanced[persona]) return simpleConsent(req);
       const level = state.consentLevel[persona];
       const options = Object.entries(req.levels)
         .map(
@@ -290,6 +312,11 @@ export const controlScreens = {
       level: (el, persona) =>
         store.update((s) => {
           s.consentLevel[persona] = el.dataset.id;
+          return s;
+        }),
+      advanced: (el, persona) =>
+        store.update((s) => {
+          s.consentAdvanced[persona] = true;
           return s;
         }),
       share: (el, persona) =>

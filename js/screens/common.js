@@ -1,6 +1,6 @@
 // Zakładki i ekrany wspólne dla obu telefonów, odwzorowane z mObywatela.
 // Nasze nowe usługi są wpięte w istniejące miejsca i oznaczone etykietą „Nowość”.
-import { store, notify, markNotificationsRead } from '../store.js';
+import { store, notify, markNotificationsRead, openTab, addHistory } from '../store.js';
 import { icon } from '../icons.js';
 import { people, family, fullName, contactName } from '../personas.js';
 import { documents, list, row, newBadge, sectionTitle, serviceHeader, infoBox, comingSoon } from '../ui.js';
@@ -179,6 +179,81 @@ const screens = {
           </div>`,
         )
         .join('')}</div>`;
+    },
+  },
+
+  // „Nie wiem, co zrobić” — stałe wyjście w trybie prostym: zadzwoń, daj znać bliskiej osobie albo wróć na start
+  helpMe: {
+    kind: 'inner',
+    title: 'Pomoc',
+    speech: (state, persona) => {
+      const contact = contactName(state, persona, people[persona].contact);
+      return `Spokojnie. Nic się nie stanie, jeśli teraz przerwiesz. Możesz zadzwonić do ${contact}, dać znać, że potrzebujesz pomocy, albo wrócić na start.`;
+    },
+    render: (state, persona) => {
+      const contactId = people[persona].contact;
+      const contact = contactName(state, persona, contactId);
+      const from = state.helpFrom[persona];
+      const canAsk = persona === 'krystyna' && state.guardian === 'active';
+      return `
+        <div class="pin-head">
+          <h2 class="service-title">Spokojnie. Pomożemy.</h2>
+          <p class="service-desc">Nic się nie stanie, jeśli teraz przerwiesz.</p>
+        </div>
+        ${list([
+          row({ iconName: 'call', tint: 'green', title: `Zadzwoń do ${contact}`, go: 'callContact' }),
+          canAsk
+            ? row({ iconName: 'people', tint: 'blue', title: `Daj znać: ${contact}`, desc: from ? `Zobaczy, że potrzebujesz pomocy przy: „${from}”` : 'Zobaczy, że potrzebujesz pomocy', action: 'askForHelp' })
+            : row({ iconName: 'people', tint: 'blue', title: 'Pozwól bliskiej osobie Ci pomagać', go: 'helpers' }),
+          row({ iconName: 'cards', tint: 'blue', title: 'Wróć na start', action: 'goStart' }),
+        ])}`;
+    },
+    actions: {
+      askForHelp: (el, persona) => {
+        const state = store.get();
+        const contactId = people[persona].contact;
+        const from = state.helpFrom[persona];
+        const me = contactName(state, contactId, persona);
+        addHistory({ persona, text: `Poprosiłaś o pomoc${from ? ` przy ekranie „${from}”` : ''}: ${contactName(state, persona, contactId)}` });
+        notify(contactId, {
+          title: me,
+          body: `Potrzebuje pomocy${from ? ` na ekranie „${from}”` : ''}. Zadzwoń do niej.`,
+          action: { label: `Zadzwoń do ${me}`, go: 'callContact' },
+        });
+        notify(persona, { title: 'Wysłane', body: `Wysłaliśmy do: ${contactName(state, persona, contactId)}. Zaraz może do Ciebie zadzwonić.` });
+      },
+      goStart: (el, persona) => openTab(persona, 'documents'),
+    },
+  },
+
+  // Propozycja trybu prostego od bliskiej osoby — decyduje właściciel telefonu
+  simpleOffer: {
+    kind: 'inner',
+    title: 'Tryb prosty',
+    render: (state, persona) => {
+      if (state.simpleMode[persona]) {
+        return `${infoBox('Tryb prosty jest włączony. Wyłączysz go w każdej chwili w Więcej → Tryb prosty.')}<button class="btn btn-primary" data-home>Gotowe</button>`;
+      }
+      return `
+        ${serviceHeader({ iconName: 'textSize', tint: 'blue', title: 'Wolisz większe litery i mniej przycisków?', desc: `Proponuje to: ${contactName(state, persona, people[persona].contact)}. Decydujesz Ty.`, badge: newBadge() })}
+        ${list([
+          row({ iconName: 'textSize', title: 'Większy tekst i duże przyciski', trailing: '' }),
+          row({ iconName: 'speaker', title: 'Czytanie na głos każdego ekranu', trailing: '' }),
+          row({ iconName: 'help', title: 'Przycisk „Nie wiem, co zrobić” zawsze na dole', trailing: '' }),
+        ])}
+        <button class="btn btn-primary" data-action="enable">Włącz tryb prosty</button>
+        <button class="btn btn-secondary" data-home>Nie, dziękuję</button>`;
+    },
+    actions: {
+      enable: (el, persona) => {
+        store.update((s) => {
+          s.simpleMode[persona] = true;
+          return s;
+        });
+        const contactId = people[persona].contact;
+        notify(contactId, { title: contactName(store.get(), contactId, persona), body: 'Włączyła tryb prosty.' });
+        openTab(persona, 'documents');
+      },
     },
   },
 

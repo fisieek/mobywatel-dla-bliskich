@@ -2083,6 +2083,62 @@ label.btn {
   color: var(--mo-green);
 }
 
+/* Tryb prosty: dwa duże przyciski zamiast pięciu zakładek */
+.simple-dock {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 8px;
+  padding: 8px 14px var(--safe-bottom);
+  background: var(--mo-bg);
+}
+
+.simple-dock button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 8px 12px;
+  border-radius: var(--radius-btn);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.15;
+}
+
+.dock-start {
+  background: var(--mo-surface);
+  color: var(--mo-text);
+  box-shadow: var(--shadow-card);
+}
+
+.dock-help {
+  background: var(--mo-text);
+  color: #fff;
+}
+
+.simple .footnote {
+  font-size: 16px;
+}
+
+.simple .ai-source {
+  font-size: 15px;
+}
+
+.simple .link {
+  font-size: 18px;
+  padding: 10px;
+}
+
+/* Przypomnienie już ustawione */
+.pill-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--mo-green-wash);
+  color: var(--mo-green);
+}
+
 /* Czytanie na głos: stały pasek nad dolnym menu, w układzie ekranu — nie zasłania treści */
 .read-aloud-bar {
   flex-shrink: 0;
@@ -2242,8 +2298,8 @@ label.btn {
     padding-bottom: max(env(safe-area-inset-bottom), 8px);
   }
 
-  .read-aloud {
-    bottom: 72px;
+  .simple-dock {
+    padding-bottom: max(env(safe-area-inset-bottom), 8px);
   }
 
   .guide {

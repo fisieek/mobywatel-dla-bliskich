@@ -94,9 +94,11 @@ function simpleStatus(persona, state) {
       cta: 'Przeczytaj odpowiedź',
     };
   }
-  if (state.notifications[persona].length > 0) return { text: 'Masz nową wiadomość.', tone: 'attention', go: 'notifications', cta: 'Przeczytaj' };
   const blocked = persona === 'krystyna' ? blockedStatus(state) : null;
-  return blocked ?? { text: 'Wszystko w porządku. Nic nie musisz dziś robić.', tone: 'ok' };
+  if (blocked) return blocked;
+  const unread = state.notificationLog[persona].filter((n) => n.unread).length;
+  if (unread) return { text: `Masz nowe powiadomienia: ${unread}.`, tone: 'attention', go: 'notifications', cta: 'Przeczytaj' };
+  return { text: 'Wszystko w porządku. Nic nie musisz dziś robić.', tone: 'ok' };
 }
 
 // Karta stanu: gdy jest coś do zrobienia, cała karta jest przyciskiem do tej jednej czynności
@@ -109,18 +111,31 @@ function statusCard(status) {
     </button>`;
 }
 
+// Ekran główny trybu prostego: jedna karta stanu i duże wiersze. Wszystko, co było w zakładkach
+// i ikonach nagłówka, jest tu jako wiersz z podpisem.
+function simpleRows(persona, state) {
+  const unread = state.notificationLog[persona].filter((n) => n.unread).length;
+  return [
+    persona === 'krystyna' && state.guardian === 'none'
+      ? row({ iconName: 'people', tint: 'green', title: 'Pozwól bliskiej osobie Ci pomagać', go: 'helpers', badge: newBadge() })
+      : '',
+    row({ iconName: 'letter', title: 'Moje pisma', go: 'letters' }),
+    row({ iconName: 'phoneQuestion', tint: 'violet', title: 'Ktoś do mnie dzwoni?', go: 'whoIsCalling' }),
+    row({ iconName: 'qr', title: 'Zeskanuj kod QR', desc: 'W hotelu, w urzędzie, przy logowaniu', go: 'qrScan' }),
+    row({ iconName: 'eye', tint: 'green', title: 'Kto widział moje dane', go: 'myData' }),
+    row({ iconName: 'bell', title: 'Powiadomienia', desc: unread ? `Nowe: ${unread}` : 'Brak nowych', go: 'notifications' }),
+    row({ iconName: 'call', tint: 'blue', title: `Zadzwoń do ${contactFor(state, persona)}`, go: 'callContact' }),
+  ].filter(Boolean);
+}
+
 function simpleHome(persona, state) {
   const status = simpleStatus(persona, state);
   return `
     ${statusCard(status)}
-    ${list([
-      row({ iconName: 'letter', title: 'Moje pisma', go: 'letters' }),
-      row({ iconName: 'phoneQuestion', tint: 'violet', title: 'Ktoś do mnie dzwoni?', go: 'whoIsCalling' }),
-      row({ iconName: 'eye', tint: 'green', title: 'Kto widział moje dane', go: 'myData' }),
-      row({ iconName: 'call', tint: 'blue', title: `Zadzwoń do ${contactFor(state, persona)}`, go: 'callContact' }),
-    ])}
+    ${list(simpleRows(persona, state))}
     ${sectionTitle('Moje dokumenty')}
-    ${docStack(people[persona].documents)}`;
+    ${docStack(people[persona].documents)}
+    <button class="btn btn-secondary" data-tab="more">Więcej opcji</button>`;
 }
 
 export const documentsScreen = {
@@ -130,7 +145,8 @@ export const documentsScreen = {
   titleBadge: (state, persona) => (state.simpleMode[persona] ? newBadge('Tryb prosty') : ''),
   speech: (state, persona) => {
     if (!state.simpleMode[persona]) return null;
-    return `Dzień dobry, ${fullName(persona)}. ${simpleStatus(persona, state).text} Możesz wybrać: Moje pisma, Ktoś do mnie dzwoni, Kto widział moje dane albo Zadzwoń do ${contactFor(state, persona)}.`;
+    const choices = simpleRows(persona, state).map((html) => html.match(/class="row-title">([^<]*)/)?.[1]).filter(Boolean);
+    return `Dzień dobry, ${fullName(persona)}. ${simpleStatus(persona, state).text} Możesz wybrać: ${choices.join(', ')}.`;
   },
   render: (state, persona) => (state.simpleMode[persona] ? simpleHome(persona, state) : standardHome(persona, state)),
   actions: {

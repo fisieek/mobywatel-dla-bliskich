@@ -70,7 +70,7 @@ const SOURCE_NOTES = {
   draft: 'Szkic przygotował Wirtualny Asystent. Sprawdź go przed wysłaniem.',
 };
 
-function explanationBlocks(state) {
+function explanationBlocks(state, persona) {
   const e = currentExplanation(state);
   return `
     ${state.usedSample && state.aiSource.explain === 'scripted' && photoUrl ? infoBox('Asystent jest teraz niedostępny, więc pokazujemy przykładowe pismo.') : ''}
@@ -79,7 +79,9 @@ function explanationBlocks(state) {
       <div class="ai-block"><p class="ai-label">Co musisz zrobić</p><p>${escapeHtml(e.todo)}</p></div>
       <div class="ai-block ai-block-deadline">
         <p class="ai-label">Do kiedy</p><p class="ai-deadline">${escapeHtml(e.when)}</p>
-        <button class="pill" data-action="remind">Przypomnij mi</button>
+        ${state.reminders[persona]
+          ? `<span class="pill pill-done" role="status">${icon('check', { size: 16 })} Przypomnimy 3 dni przed terminem</span>`
+          : '<button class="pill" data-action="remind">Przypomnij mi</button>'}
       </div>
       ${e.warning ? `<p class="ai-warning">${escapeHtml(e.warning)}</p>` : ''}
     </div>
@@ -120,6 +122,13 @@ export function onPhotoSelected(persona, file) {
   if (photoUrl) URL.revokeObjectURL(photoUrl);
   photoUrl = URL.createObjectURL(file);
   readLetter(persona, () => readTextFromPhoto(file));
+}
+
+function setReminder(persona) {
+  store.update((s) => {
+    s.reminders[persona] = true;
+    return s;
+  });
 }
 
 function letterPhoto(state) {
@@ -174,7 +183,11 @@ function helpersForAnna(state) {
     return `${sectionTitle('Prośby o pomoc')}${list([row({ iconName: 'people', tint: 'green', title: mamaFor(state), desc: 'Prosi Cię o pomoc w sprawach urzędowych', go: 'helpersInvite' })])}`;
   }
   if (state.guardian === 'active') {
-    return `${sectionTitle('Komu pomagasz')}${list([row({ iconName: 'people', tint: 'green', title: mamaFor(state), desc: `${fullName('krystyna')} · do ${GUARDIAN_UNTIL} · pisma, odpowiedzi, ostrzeżenia`, go: 'mamaLetter' })])}`;
+    // Anna może zaproponować tryb prosty, ale włącza go tylko mama
+    const offer = state.simpleMode.krystyna
+      ? ''
+      : `<button class="btn btn-secondary" data-action="offerSimple">Zaproponuj tryb prosty: ${mamaFor(state)}</button>`;
+    return `${sectionTitle('Komu pomagasz')}${list([row({ iconName: 'people', tint: 'green', title: mamaFor(state), desc: `${fullName('krystyna')} · do ${GUARDIAN_UNTIL} · pisma, odpowiedzi, ostrzeżenia`, go: 'mamaLetter' })])}${offer}`;
   }
   return infoBox('Nikt nie poprosił Cię jeszcze o pomoc. Gdy bliska osoba da Ci pozwolenie, zobaczysz to tutaj.');
 }
@@ -194,6 +207,14 @@ export const helpScreens = {
       ${persona === 'krystyna' ? helpersForKrystyna(state) : helpersForAnna(state)}`,
     actions: {
       revoke: () => revokeGuardian(),
+      offerSimple: () => {
+        notify('krystyna', {
+          title: annaFor(store.get()),
+          body: 'Proponuje Ci tryb prosty: większe litery, mniej przycisków, czytanie na głos.',
+          action: { label: 'Zobacz', go: 'simpleOffer' },
+        });
+        notify('anna', { title: 'Propozycja wysłana', body: `Tryb prosty włączy tylko: ${mamaFor(store.get())}.` });
+      },
     },
   },
 
@@ -352,15 +373,23 @@ export const helpScreens = {
     kind: 'inner',
     title: 'Pismo z urzędu',
     speech: (state) => explanationSpeech(currentExplanation(state)),
-    render: (state) => {
+    render: (state, persona) => {
       if (state.letter === 'reading') return thinking('Czytam pismo…');
       return `
         <p class="letter-from">${icon('letter', { size: 18 })} ${escapeHtml(officeName(state))}</p>
-        ${explanationBlocks(state)}
+        ${explanationBlocks(state, persona)}
         ${letterActionsForKrystyna(state)}`;
     },
     actions: {
-      remind: () => notify('krystyna', { title: 'Przypomnienie ustawione', body: `Przypomnimy Ci 3 dni przed terminem (${deadlineText(store.get())}).` }),
+      remind: () => {
+        const state = store.get();
+        setReminder('krystyna');
+        notify('krystyna', { title: 'Przypomnienie ustawione', body: `Przypomnimy Ci 3 dni przed terminem (${deadlineText(state)}).` });
+        // Bliska osoba, która widzi pisma i terminy, też dostaje przypomnienie
+        if (state.guardian === 'active' && state.guardianScope.letters) {
+          notify('anna', { title: mamaFor(state), body: `Ustawiła przypomnienie o terminie pisma (${deadlineText(state)}). Przypomnimy też Tobie.` });
+        }
+      },
       requestHelp: () => {
         const state = store.get();
         patch({ letter: 'requested' });
@@ -453,17 +482,20 @@ export const helpScreens = {
         notify('krystyna', { title: annaFor(state), body: `Otworzyła Twoje pismo: ${officeName(state)}.` });
       }
     },
-    render: (state) => {
+    render: (state, persona) => {
       if (state.guardian !== 'active') return infoBox(`${mamaFor(state)}: brak pozwolenia na pomoc.`);
       if (!letterAtLeast(state, 'requested')) return infoBox(`${mamaFor(state)}: brak pism, przy których prosi o pomoc.`);
       return `
         <p class="letter-from">${icon('letter', { size: 18 })} ${escapeHtml(officeName(state))}</p>
         <details class="paper-details"><summary>Zobacz zdjęcie pisma</summary>${letterPhoto(state)}</details>
-        ${explanationBlocks(state)}
+        ${explanationBlocks(state, persona)}
         ${replySectionForAnna(state)}`;
     },
     actions: {
-      remind: () => notify('anna', { title: 'Przypomnienie ustawione', body: `Przed terminem (${deadlineText(store.get())}) przypomnimy: Tobie i ${mamaFor(store.get())}.` }),
+      remind: () => {
+        setReminder('anna');
+        notify('anna', { title: 'Przypomnienie ustawione', body: `Przed terminem (${deadlineText(store.get())}) przypomnimy: Tobie i ${mamaFor(store.get())}.` });
+      },
       draft: () => {
         const state = store.get();
         patch({ letter: 'drafting' });
