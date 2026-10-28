@@ -9,7 +9,8 @@ import { resolveCommonScreen } from './screens/common.js';
 import { helpScreens, onPhotoSelected } from './scenes/help.js';
 import { protectScreens, callOverlay, callPill, callAction, startScamCall, startRealCall, startLogin } from './scenes/protect.js';
 import { controlScreens } from './scenes/control.js';
-import { renderGuide } from './guide.js';
+import { renderGuide, currentStep } from './guide.js';
+import { startAutoplay, stopAutoplay, autoplayState, onAutoplayChange } from './autoplay.js';
 import { initDevices, biometric } from './device.js';
 
 const tabs = [
@@ -213,11 +214,50 @@ function renderMobileSwitch(state) {
   });
 }
 
+const MOBILE_MAX = 860;
+// Telefon, którego dotyczył poprzedni krok — przełączamy telefon tylko wtedy, gdy krok przechodzi na drugą osobę
+let lastStepPersona = null;
+
+// Wąski ekran: pasek „Teraz” nad telefonem. Gdy krok przechodzi na drugą osobę, pokazujemy jej telefon.
+function renderNextStep(state) {
+  const bar = document.querySelector('[data-next-step]');
+  const step = currentStep(state);
+  const run = autoplayState();
+  const play = run && !run.failed
+    ? '<button class="next-step-play" data-autoplay="stop">Zatrzymaj</button>'
+    : '<button class="next-step-play" data-autoplay="start">▶ Pokaż sam</button>';
+  bar.innerHTML = step
+    ? `<p><strong>Teraz${step.phone ? ` · ${step.phone}` : ''}:</strong> ${step.text}</p>${play}`
+    : `<p><strong>Gotowe.</strong> Podsumowanie jest pod telefonem.</p>${play}`;
+
+  if (step?.persona && step.persona !== lastStepPersona && window.innerWidth <= MOBILE_MAX) {
+    mobilePersona = step.persona;
+  }
+  lastStepPersona = step?.persona ?? lastStepPersona;
+  // Wysokość telefonu = ekran minus pasek u góry (pasek ma 1–3 linie tekstu)
+  const top = document.querySelector('[data-mobile-top]');
+  document.documentElement.style.setProperty('--mobile-top-h', `${top.offsetHeight}px`);
+}
+
 function render(state) {
   renderPhone('krystyna', state);
   renderPhone('anna', state);
+  renderNextStep(state);
   renderMobileSwitch(state);
-  document.querySelector('[data-guide]').innerHTML = renderGuide(state);
+  document.querySelector('[data-guide]').innerHTML = renderGuide(state, autoplayState());
+}
+
+function resetDemo() {
+  stopSpeaking();
+  mobilePersona = 'krystyna';
+  lastStepPersona = null;
+  store.reset();
+}
+
+function showPersona(persona) {
+  if (mobilePersona === persona) return;
+  mobilePersona = persona;
+  renderMobileSwitch(store.get());
 }
 
 function screenSpeech(persona) {
@@ -249,6 +289,13 @@ function openHelpMe(persona) {
 function handleClick(event) {
   const target = event.target.closest('button');
   if (!target || target.disabled) return;
+
+  // „Pokaż sam”: start i stop pokazu
+  if (target.dataset.autoplay) {
+    return target.dataset.autoplay === 'start' ? startAutoplay({ reset: resetDemo, showPersona }) : stopAutoplay();
+  }
+  // Dotknięcie przez człowieka w trakcie pokazu oddaje mu stery
+  if (event.isTrusted && autoplayState()) stopAutoplay();
 
   const phone = target.closest('[data-persona]');
   if (phone) {
@@ -293,11 +340,7 @@ function handleClick(event) {
     return;
   }
 
-  if ('reset' in target.dataset) {
-    stopSpeaking();
-    mobilePersona = 'krystyna';
-    store.reset();
-  }
+  if ('reset' in target.dataset) resetDemo();
 }
 
 document.addEventListener('click', handleClick);
@@ -327,5 +370,6 @@ document.addEventListener('change', (event) => {
 });
 store.subscribe(render);
 onSpeakingChange(() => render(store.get()));
+onAutoplayChange(() => render(store.get()));
 render(store.get());
 initDevices(() => render(store.get()));
