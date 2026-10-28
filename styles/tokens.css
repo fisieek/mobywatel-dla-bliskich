@@ -28,6 +28,7 @@
   --card-emeryt: linear-gradient(135deg, #2e8a7b 0%, #4fae93 100%);
   --card-prawo-jazdy: linear-gradient(135deg, #3b2483 0%, #7a3485 100%);
   --card-pojazdy: linear-gradient(135deg, #ea6d2f 0%, #eeab55 100%);
+  --card-legitymacja: linear-gradient(135deg, #c2185b 0%, #ef6c8e 100%);
 
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
 

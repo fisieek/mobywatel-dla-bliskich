@@ -27,21 +27,40 @@ export const people = {
     born: '18.06.2026',
     documents: [],
   },
+  // Córka Anny, 11 lat, 5 klasa. Ma mObywatela Junior z legitymacją szkolną.
+  zosia: {
+    firstName: 'Zofia',
+    lastName: 'Nowak',
+    born: '14.05.2015',
+    pesel: '15251400000',
+    documents: ['legitymacja'],
+    contact: 'anna',
+  },
 };
 
 // Bliscy każdej osoby według rejestru stanu cywilnego. Relacja jest opisana z punktu widzenia właściciela telefonu.
 export const family = {
-  krystyna: [{ id: 'anna', relation: 'Córka' }],
+  krystyna: [
+    { id: 'anna', relation: 'Córka' },
+    { id: 'zosia', relation: 'Wnuczka' },
+    { id: 'antek', relation: 'Wnuk' },
+  ],
   anna: [
     { id: 'krystyna', relation: 'Matka' },
+    { id: 'zosia', relation: 'Córka' },
     { id: 'antek', relation: 'Syn' },
+  ],
+  zosia: [
+    { id: 'anna', relation: 'Matka' },
+    { id: 'krystyna', relation: 'Babcia' },
   ],
 };
 
 // Nazwy, które użytkownik sam nadał bliskim (ekran „Moi bliscy”). Pusta nazwa = imię, nazwisko i relacja.
 export const defaultNicknames = {
-  krystyna: { anna: '' },
-  anna: { krystyna: 'Mama', antek: 'Antek' },
+  krystyna: { anna: '', zosia: '', antek: '' },
+  anna: { krystyna: 'Mama', zosia: 'Zosia', antek: 'Antek' },
+  zosia: { anna: 'Mama', krystyna: 'Babcia' },
 };
 
 export const fullName = (id) => `${people[id].firstName} ${people[id].lastName}`;
@@ -58,7 +77,7 @@ export function contactName(state, owner, id) {
 }
 
 // Za kogo może działać Anna (przełącznik „Działam jako”): identyfikator w stanie → osoba
-export const actingAsPeople = { ja: 'anna', mama: 'krystyna', antek: 'antek' };
+export const actingAsPeople = { ja: 'anna', mama: 'krystyna', zosia: 'zosia', antek: 'antek' };
 
 export function actingAsLabel(state, id) {
   return id === 'ja' ? 'Ja' : contactName(state, 'anna', actingAsPeople[id]);

@@ -4,12 +4,15 @@ import { store, go, back, home, openTab, currentScreen, dismissNotification } fr
 import { icon } from './icons.js';
 import { speak, canSpeak, stopSpeaking, isSpeaking, onSpeakingChange } from './speech.js';
 import { fullName, actingAsPeople } from './personas.js';
-import { documentsScreen, callContactScreen } from './screens/documents.js';
+import { documentsScreen, callContactScreen, callScreenFor } from './screens/documents.js';
 import { resolveCommonScreen } from './screens/common.js';
 import { helpScreens, onPhotoSelected } from './scenes/help.js';
 import { protectScreens, callOverlay, callPill, callAction, startScamCall, startRealCall, startLogin } from './scenes/protect.js';
 import { controlScreens } from './scenes/control.js';
-import { renderGuide, currentStep } from './guide.js';
+import { resolveMedsScreen, startMedsLow } from './scenes/meds.js';
+import { pickupScreens } from './scenes/pickup.js';
+import { juniorScreens, chatOverlay, chatAction, startStrangerChat } from './scenes/junior.js';
+import { renderGuide, currentStep, currentScene, ZOSIA_SCENES } from './guide.js';
 import { startAutoplay, stopAutoplay, autoplayState, onAutoplayChange } from './autoplay.js';
 import { initDevices, biometric } from './device.js';
 
@@ -21,24 +24,44 @@ const tabs = [
   { id: 'more', iconName: 'grid', label: 'Więcej' },
 ];
 
+// mObywatel Junior (Zosia) ma mniej zakładek: dokumenty, kod QR i ustawienia
+const juniorTabs = ['documents', 'qr', 'more'];
+
 const resolve = (value, state, persona) => (typeof value === 'function' ? value(state, persona) : value);
 
 function resolveScreen(id) {
   if (id === 'documents') return documentsScreen;
   if (id === 'callContact') return callContactScreen;
-  return helpScreens[id] ?? protectScreens[id] ?? controlScreens[id] ?? resolveCommonScreen(id) ?? documentsScreen;
+  if (id.startsWith('call-')) return callScreenFor(id.slice(5));
+  return (
+    helpScreens[id] ??
+    protectScreens[id] ??
+    controlScreens[id] ??
+    resolveMedsScreen(id) ??
+    pickupScreens[id] ??
+    juniorScreens[id] ??
+    resolveCommonScreen(id) ??
+    documentsScreen
+  );
 }
 
 // Na wąskim ekranie widać jeden telefon naraz
 let mobilePersona = 'krystyna';
-const lastScreen = { krystyna: null, anna: null };
+const lastScreen = { krystyna: null, anna: null, zosia: null };
+// Na komputerze po lewej stoi telefon Krystyny albo — w scenach Zosi — telefon Zosi
+let leftPhone = 'krystyna';
+let lastScene = null;
 
 function tabHeader(screen, state, persona) {
   const unread = state.notificationLog[persona].some((n) => n.unread);
   // W trybie prostym nie ma ikon bez podpisów — Powiadomienia i Asystent są wierszami na ekranie głównym
+  // mObywatel Junior nie ma Wirtualnego Asystenta ani Skrzynki
+  const bell = `<button class="icon-btn" data-go="notifications" aria-label="Powiadomienia">${icon('bell')}${unread ? '<i class="dot"></i>' : ''}</button>`;
   const icons = state.simpleMode[persona]
     ? ''
-    : `
+    : persona === 'zosia'
+      ? bell
+      : `
       <button class="icon-btn" data-go="assistant" aria-label="Wirtualny Asystent">${icon('assistant')}</button>
       <button class="icon-btn" data-go="inbox" aria-label="Skrzynka">${icon('envelope')}</button>
       <button class="icon-btn" data-go="notifications" aria-label="Powiadomienia">${icon('bell')}${unread ? '<i class="dot"></i>' : ''}</button>`;
@@ -89,6 +112,7 @@ function tabbar(state, persona) {
   return `
     <nav class="tabbar" aria-label="Menu główne">
       ${tabs
+        .filter((t) => persona !== 'zosia' || juniorTabs.includes(t.id))
         .map((t) => {
           const on = t.id === active;
           return `
@@ -187,6 +211,7 @@ function renderPhone(persona, state) {
     ${readAloudButton(state, persona, screen)}
     ${tabbar(state, persona)}
     ${callOverlay(state, persona)}
+    ${chatOverlay(state, persona)}
     <div class="banners" aria-live="assertive">${banners(state, persona)}</div>
     ${overlay(state, persona)}`;
 
@@ -195,6 +220,9 @@ function renderPhone(persona, state) {
 
   if (lastScreen[persona] !== screenId) {
     lastScreen[persona] = screenId;
+    // Powiadomienie prowadzące na ten ekran jest już niepotrzebne
+    const stale = state.notifications[persona].filter((n) => n.action?.go === screenId);
+    if (stale.length) setTimeout(() => stale.forEach((n) => dismissNotification(persona, n.id)), 0);
     // Akcje przy wejściu na ekran (np. powiadomienie na drugim telefonie) po zakończeniu renderowania
     if (screen.onEnter) setTimeout(() => screen.onEnter(store.get(), persona), 0);
   }
@@ -225,7 +253,7 @@ function renderNextStep(state) {
   const run = autoplayState();
   const play = run && !run.failed
     ? '<button class="next-step-play" data-autoplay="stop">Zatrzymaj</button>'
-    : '<button class="next-step-play" data-autoplay="start">▶ Pokaż sam</button>';
+    : '<button class="next-step-play" data-autoplay="core">▶ Pokaż sam</button>';
   bar.innerHTML = step
     ? `<p><strong>Teraz${step.phone ? ` · ${step.phone}` : ''}:</strong> ${step.text}</p>${play}`
     : `<p><strong>Gotowe.</strong> Podsumowanie jest pod telefonem.</p>${play}`;
@@ -239,9 +267,58 @@ function renderNextStep(state) {
   document.documentElement.style.setProperty('--mobile-top-h', `${top.offsetHeight}px`);
 }
 
+// Po skończonej scenie Zosi chwilę jeszcze widać jej telefon, zanim wróci telefon Krystyny
+const BACK_TO_KRYSTYNA_MS = 3000;
+let wasRunning = false;
+
+function placeLeftPhone() {
+  document.querySelectorAll('.phone').forEach((phone) => {
+    const offStage = phone.dataset.persona === (leftPhone === 'zosia' ? 'krystyna' : 'zosia');
+    phone.classList.toggle('phone-off-stage', offStage);
+  });
+}
+
+// Lewy telefon: w scenach Zosi pokazujemy jej telefon zamiast telefonu Krystyny (gdy scena się zmienia).
+// Po końcu pokazu i po ostatniej scenie zostaje telefon, na którym wszystko się skończyło.
+function updateLeftPhone(state) {
+  const run = autoplayState();
+  const running = Boolean(run && !run.failed);
+  const scene = currentScene(state, run);
+  const runJustEnded = wasRunning && !running;
+  wasRunning = running;
+  if (scene !== lastScene) {
+    lastScene = scene;
+    if (ZOSIA_SCENES.includes(scene)) {
+      leftPhone = 'zosia';
+    } else if (scene >= 0 && !runJustEnded && leftPhone === 'zosia') {
+      setTimeout(() => {
+        if (lastScene !== scene) return;
+        leftPhone = 'krystyna';
+        placeLeftPhone();
+      }, running ? 0 : BACK_TO_KRYSTYNA_MS);
+    }
+  }
+  placeLeftPhone();
+}
+
+// Podpisy nad telefonami (tekst dla jury, poza aplikacją) z przełącznikiem lewego telefonu
+function renderCaptions(state) {
+  const captions = {
+    krystyna: `Krystyna, 71 lat · ${state.simpleMode.krystyna ? 'tryb prosty' : 'zwykły mObywatel'} <button class="caption-switch" data-left-phone="zosia">Pokaż telefon Zosi</button>`,
+    anna: 'Anna, 34 lata · córka Krystyny, sama wychowuje Zosię i Antka',
+    zosia: 'Zosia, 11 lat · mObywatel Junior <button class="caption-switch" data-left-phone="krystyna">Pokaż telefon Krystyny</button>',
+  };
+  Object.entries(captions).forEach(([persona, html]) => {
+    document.querySelector(`[data-caption="${persona}"]`).innerHTML = html;
+  });
+}
+
 function render(state) {
   renderPhone('krystyna', state);
   renderPhone('anna', state);
+  renderPhone('zosia', state);
+  updateLeftPhone(state);
+  renderCaptions(state);
   renderNextStep(state);
   renderMobileSwitch(state);
   document.querySelector('[data-guide]').innerHTML = renderGuide(state, autoplayState());
@@ -251,10 +328,26 @@ function resetDemo() {
   stopSpeaking();
   mobilePersona = 'krystyna';
   lastStepPersona = null;
+  leftPhone = 'krystyna';
+  lastScene = null;
+  wasRunning = false;
   store.reset();
 }
 
+// Pokaz „Cała rodzina” zaczyna od stanu po pierwszych scenach: tryb prosty włączony, Anna może pomagać
+function prepareFamily() {
+  store.update((s) => {
+    s.simpleMode.krystyna = true;
+    s.guardian = 'active';
+    return s;
+  });
+}
+
 function showPersona(persona) {
+  if (persona === 'zosia' || persona === 'krystyna') {
+    leftPhone = persona;
+    placeLeftPhone();
+  }
   if (mobilePersona === persona) return;
   mobilePersona = persona;
   renderMobileSwitch(store.get());
@@ -292,7 +385,14 @@ function handleClick(event) {
 
   // „Pokaż sam”: start i stop pokazu
   if (target.dataset.autoplay) {
-    return target.dataset.autoplay === 'start' ? startAutoplay({ reset: resetDemo, showPersona }) : stopAutoplay();
+    const group = target.dataset.autoplay;
+    if (group === 'stop') return stopAutoplay();
+    return startAutoplay({ group, reset: resetDemo, prepare: group === 'family' ? prepareFamily : null, showPersona });
+  }
+  // Przełącznik lewego telefonu nad telefonem (Krystyna ↔ Zosia)
+  if (target.dataset.leftPhone) {
+    leftPhone = target.dataset.leftPhone;
+    return placeLeftPhone();
   }
   // Dotknięcie przez człowieka w trakcie pokazu oddaje mu stery
   if (event.isTrusted && autoplayState()) stopAutoplay();
@@ -304,6 +404,7 @@ function handleClick(event) {
     const { go: goTo, tab, action, actionGlobal, dismiss, notificationGo } = target.dataset;
 
     if (target.dataset.call) return callAction(persona, target.dataset.call);
+    if (target.dataset.chat) return chatAction(target.dataset.chat);
     if (goTo) return go(persona, goTo);
     if (tab) return openTab(persona, tab);
     if ('back' in target.dataset) return back(persona);
@@ -329,8 +430,14 @@ function handleClick(event) {
 
   // Przyciski w przewodniku: telefon od „policjanta”, od prawdziwego urzędu albo logowanie, które zaczyna Krystyna
   if (target.dataset.guideAction) {
+    const action = target.dataset.guideAction;
+    if (action === 'strangerChat') {
+      mobilePersona = 'zosia';
+      leftPhone = 'zosia';
+      return startStrangerChat();
+    }
     mobilePersona = 'krystyna';
-    const start = { realCall: startRealCall, login: startLogin }[target.dataset.guideAction] ?? startScamCall;
+    const start = { realCall: startRealCall, login: startLogin, medsLow: startMedsLow }[action] ?? startScamCall;
     return start();
   }
 

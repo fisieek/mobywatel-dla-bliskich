@@ -9,6 +9,7 @@ export const documents = {
   emeryt: { name: 'Legitymacja emeryta-rencisty', bg: 'var(--card-emeryt)', mark: 'idCheck' },
   prawoJazdy: { name: 'mPrawo jazdy', bg: 'var(--card-prawo-jazdy)', mark: 'car' },
   pojazdy: { name: 'Moje pojazdy', bg: 'var(--card-pojazdy)', mark: 'car' },
+  legitymacja: { name: 'mLegitymacja szkolna', bg: 'var(--card-legitymacja)', mark: 'idCheck' },
 };
 
 export function docStack(ids, owner) {

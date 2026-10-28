@@ -58,7 +58,13 @@ const servicesScreen = {
 const qrScreen = {
   kind: 'tab',
   title: 'Kod QR',
-  render: () => `
+  render: (state, persona) =>
+    persona === 'zosia'
+      ? list([
+          row({ iconName: 'qr', title: 'Zgoda dla szkoły', desc: 'Zeskanuj kod z kartki od wychowawczyni', go: 'schoolConsentScan' }),
+          row({ iconName: 'idCheck', title: 'Pokaż legitymację', desc: 'W autobusie, w muzeum, w kinie', go: 'doc-legitymacja' }),
+        ])
+      : `
     ${list([
       row({ iconName: 'qr', title: 'Zeskanuj kod QR', desc: 'Potwierdź swoje dane lub zaloguj się', go: 'qrScan' }),
       row({ iconName: 'idCheck', title: 'Pokaż kod QR', desc: 'Pozwól komuś sprawdzić Twój dokument', go: 'qrShow' }),
@@ -235,7 +241,7 @@ const screens = {
         return `${infoBox('Tryb prosty jest włączony. Wyłączysz go w każdej chwili w Więcej → Tryb prosty.')}<button class="btn btn-primary" data-home>Gotowe</button>`;
       }
       return `
-        ${serviceHeader({ iconName: 'textSize', tint: 'blue', title: 'Wolisz większe litery i mniej przycisków?', desc: `Proponuje to: ${contactName(state, persona, people[persona].contact)}. Decydujesz Ty.`, badge: newBadge() })}
+        ${serviceHeader({ iconName: 'textSize', tint: 'blue', title: 'Wolisz większe litery i mniej przycisków?', desc: state.simpleOffered ? `Proponuje to: ${contactName(state, persona, people[persona].contact)}. Decydujesz Ty.` : 'Ten sam mObywatel, tylko prościej. Wyłączysz go w każdej chwili w Więcej.', badge: newBadge() })}
         ${list([
           row({ iconName: 'textSize', title: 'Większy tekst i duże przyciski', trailing: '' }),
           row({ iconName: 'speaker', title: 'Czytanie na głos każdego ekranu', trailing: '' }),
@@ -251,7 +257,8 @@ const screens = {
           return s;
         });
         const contactId = people[persona].contact;
-        notify(contactId, { title: contactName(store.get(), contactId, persona), body: 'Włączyła tryb prosty.' });
+        // Bliska osoba, która to zaproponowała, dowiaduje się o decyzji
+        if (store.get().simpleOffered) notify(contactId, { title: contactName(store.get(), contactId, persona), body: 'Włączyła tryb prosty.' });
         openTab(persona, 'documents');
       },
     },
