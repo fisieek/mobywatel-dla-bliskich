@@ -15,8 +15,7 @@ node dev-server.mjs
 
 Potem otwórz http://localhost:4173. W aplikacji Claude: podgląd `mobywatel-prototyp` z `.claude/launch.json`.
 
-- **Bez klucza API** asystent działa w trybie awaryjnym (przygotowane odpowiedzi), a pod wyjaśnieniem jest napis „tryb awaryjny”.
-- **Z PLLuM:** skopiuj `.env.example` do `.env.local` i wpisz klucz z featherless.ai. Plik `.env.local` jest w `.gitignore`. Na Vercelu klucz ustawia się w panelu projektu jako zmienną `FEATHERLESS_API_KEY`.
+- Asystent korzysta z przygotowanych odpowiedzi do przykładowego pisma i nie łączy się z żadnym modelem językowym (decyzja z 2.11.2026). Mówi o tym panel obok telefonów.
 
 ## Budowa
 Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzutów ekranu. Dokładamy tylko nowe funkcje i oznaczamy je etykietą „Nowość”.
@@ -38,11 +37,12 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
 - `js/scenes/meds.js`, `js/scenes/pickup.js`, `js/scenes/junior.js` — sceny „Cała rodzina”: Moje leki, Upoważnij babcię, Ktoś do mnie pisze? i Zgoda dla szkoły.
 - `js/scenes/control.js` — scena Kontrola (kod QR wypożyczalni, ekran zgody z trzema poziomami danych, historia „Kto widział moje dane”).
 - `js/letter.js` — fikcyjne pismo, wyjaśnienie i szkic odpowiedzi.
-- `js/assistant.js` — asystent w przeglądarce: pyta `/api/assistant`, a po 8 sekundach bez odpowiedzi przechodzi na przygotowane odpowiedzi.
-- `js/ocr.js` — odczyt tekstu ze zdjęcia (Tesseract.js, polski słownik, w przeglądarce).
-- `api/assistant.js` + `api/_lib/pllum.js` — funkcja na serwerze: PLLuM-12B-instruct-2512 przez Featherless (klucz tylko na serwerze, limit długości, pamięć podręczna).
+- `js/assistant.js` — asystent: przygotowane odpowiedzi z `js/letter.js`.
+- `js/ocr.js` — odczyt tekstu ze zdjęcia. Nieużywany od 2.11.2026, zostawiony na później.
+- `api/assistant.js` + `api/_lib/pllum.js` — funkcja na serwerze do łączenia z PLLuM. Strona jej nie wywołuje (decyzja z 2.11.2026), kod został na później.
 - `dev-server.mjs` — lokalny serwer: pliki + `/api/assistant`.
-- `js/guide.js` — panel „Scenariusze” obok telefonów (jedno „Teraz”, zwinięte karty po scenie, podsumowanie na końcu, krok dla paska na telefonie).
+- `js/episodes.js` — scenariusze jako odcinki: problem, grupa docelowa, reprezentanci, kroki i stan startowy każdego.
+- `js/guide.js` — panel „Scenariusze” obok telefonów: rozwijane odcinki jak FAQ, po jednym naraz.
 - `js/autoplay.js` — „Pokaż sam”: pokaz całego demo (ok. 2 min), który klika te same przyciski co człowiek, z podświetleniem dotknięcia.
 - `js/speech.js` — „Przeczytaj na głos” w trybie prostym.
 - `js/icons.js` + `js/official-icons.js` + `assets/ikony/` — oficjalne ikony z systemu projektowego mObywatela (licencja MIT Centralnego Ośrodka Informatyki, `assets/ikony/LICENCJA.txt`) i kilka własnych tam, gdzie oficjalnych nie ma. Bez godła i logo dokumentów.
@@ -103,7 +103,7 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
   - **Tryb prosty** to pierwsza scena: Krystyna zaczyna w zwykłym mObywatelu i włącza go z karty „Wolisz większe litery i mniej przycisków?”,
   - **Moje leki** (Krystyna): leki z e-recept opisane po ludzku, ostrzeżenie 5 dni przed końcem tabletek, prośba do Anny, Anna prosi przychodnię o receptę i widzi tylko ten jeden lek, kod do apteki na jednym ekranie,
   - **Upoważnij babcię** (Anna): upoważnienie mamy do odbioru Zosi ze szkoły (i wizyty Antka u lekarza) z terminem, kod QR u Krystyny, szkoła widzi tylko to, co potrzebne, Anna wie o odbiorze w tej samej chwili,
-  - **Ktoś do mnie pisze?** (Zosia, mObywatel Junior): obcy w czacie gry chce zdjęć i straszy, trzy duże przyciski, rada po dziecięcemu, Zosia sama wybiera: 116 111, „Powiedz: Mama” albo Dyżurnet.pl; mama nie dostaje nic bez jej zgody,
+  - **Ktoś do mnie pisze?** (Zosia, mObywatel Junior): obcy pisze do Zosi w Wiadomościach, chce zdjęć i straszy, trzy duże przyciski, rada po dziecięcemu, Zosia sama wybiera: 116 111, „Powiedz: Mama” albo Dyżurnet.pl; mama nie dostaje nic bez jej zgody,
   - **Zgoda dla szkoły** (Zosia → Anna): Zosia skanuje kod z kartki od wychowawczyni, Anna podpisuje zgodę w pracy,
   - trzeci telefon (Zosia, mObywatel Junior z trzema zakładkami); na komputerze w scenach Zosi zastępuje telefon Krystyny, przełącznik nad telefonem,
   - „Pokaż sam” w dwóch częściach: „Tryb prosty i trzy filary” i „Cała rodzina” (po ok. 2 min).
@@ -111,6 +111,10 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
   - zakładka Dokumenty ma tylko dokumenty; zamiast przełącznika „Działam jako” jest Usługi → Pomoc bliskich,
   - pełne listy usług i dokumentów, działające Szukaj, Więcej według prawdziwej aplikacji, oficjalne ikony,
   - strona dla urzędników: panel „Scenariusze” przewija się osobno, telefony stoją w miejscu.
+  - scenariusze jako niezależne odcinki w rozwijanym panelu: problem, grupa docelowa, reprezentanci i kroki po kolei; każdy można otworzyć, zacząć od nowa i pokazać automatycznie,
+  - upoważnienie jak cyfrowa kartka: czyja sprawa, kilka podpowiedzi i „Inna sprawa” opisana własnymi słowami,
+  - telefon Zosi pojawia się sam przy jej scenariuszach, bez ręcznego przełącznika (na wąskim ekranie zostają zakładki Krystyna · Anna · Zosia),
+  - asystent bez modelu językowego: przygotowane odpowiedzi do przykładowego pisma.
 - ⏳ Film 90 s z pokazu automatycznego do zgłoszenia.
 
 ## Zasady

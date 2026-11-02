@@ -2,10 +2,15 @@
 // więc to, co zrobi Anna, od razu widzi Krystyna (i odwrotnie).
 import { defaultNicknames } from './personas.js';
 
-const STORAGE_KEY = 'mobywatel-dla-bliskich:v11';
+const STORAGE_KEY = 'mobywatel-dla-bliskich:v13';
 
 function initialState() {
   return {
+    // Który scenariusz jest otwarty w panelu, czy rozwinięty i które już obejrzano
+    episode: 0,
+    episodeOpen: true,
+    summaryOpen: false,
+    seenEpisodes: [],
     // Pozwolenie Krystyny dla Anny (scena 1a): 'none' | 'pending' | 'active'
     guardian: 'none',
     // Zakres pozwolenia — przełączniki na ekranie zakresu
@@ -13,17 +18,14 @@ function initialState() {
     // Papierowe pismo Krystyny (scena 1b–1c):
     // 'none' → 'reading' → 'explained' → 'requested' → 'opened' → 'drafting' → 'drafted' → 'awaiting' → 'signed'
     letter: 'none',
-    // Tekst pisma (odczytany ze zdjęcia albo przykładowy) i wyjaśnienie asystenta
-    letterText: '',
+    // Wyjaśnienie asystenta
     explanation: null,
     // Co mama chce wyjaśnić w odpowiedzi — Anna wpisuje to przed szkicem
     replyFacts: 'Różnica to niskie poddasze, poniżej 1,40 m (ok. 22 m²).',
     // Treść odpowiedzi przygotowanej przez Annę
     reply: '',
-    // Skąd odpowiedź asystenta: 'live' (PLLuM) | 'scripted' (tryb awaryjny)
-    aiSource: { explain: null, draft: null },
-    // Czy zamiast zdjęcia użytkownika pokazujemy przykładowe pismo (gdy asystent jest niedostępny)
-    usedSample: true,
+    // Czy ktoś wybrał własne zdjęcie pisma (asystent i tak wyjaśnia przykładowe)
+    ownPhoto: false,
     // Cyfry wpisane w PIN podpisu
     pin: '',
     // Chwilowa nakładka na telefonie (np. Face ID): { krystyna: null, anna: null }
@@ -64,11 +66,11 @@ function initialState() {
     // Moje leki (Krystyna): 'ok' → 'low' → 'requested' (prośba do Anny) → 'ordered' (Anna poprosiła przychodnię) → 'refilled'
     meds: 'ok',
     medsShown: false,
-    // Upoważnienie od Anny dla Krystyny: null | { school, doctor, until, status: 'active' | 'used' | 'revoked', usedAt }
+    // Upoważnienie od Anny dla Krystyny: null | { subject, purpose, text, until, status: 'active' | 'used' | 'revoked', usedAt }
     pickup: null,
     // Wybór na ekranie upoważnienia, zanim Anna je potwierdzi
-    pickupDraft: { school: true, doctor: false, until: 'today' },
-    // Ktoś do mnie pisze? (Zosia): czat od obcego na ekranie Zosi i to, co Zosia wybrała
+    pickupDraft: { subject: 'zosia', purpose: 'school', text: '', until: 'today' },
+    // Ktoś do mnie pisze? (Zosia): wiadomości od obcego na ekranie Zosi i to, co Zosia wybrała
     chat: null,
     writing: { situation: null, told: false, called: false, reported: false },
     // Zgoda dla szkoły (Zosia → Anna): 'none' → 'scanned' → 'requested' → 'signed' | 'declined'

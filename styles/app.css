@@ -149,7 +149,7 @@ button:disabled {
   margin: 0 auto;
   padding: 24px;
   display: grid;
-  grid-template-columns: auto auto minmax(340px, 480px);
+  grid-template-columns: auto auto minmax(340px, 640px);
   gap: 32px;
   align-items: start;
   justify-content: center;
@@ -211,8 +211,18 @@ button:disabled {
 }
 
 .guide-foot {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   padding: 12px 22px;
   border-top: 1px solid var(--mo-hair);
+  box-shadow: 0 -6px 12px -8px rgba(15, 25, 60, 0.18);
+}
+
+.guide-foot .btn {
+  flex: 1 1 auto;
+  width: auto;
 }
 
 /* Komputer: strona mieści się na ekranie, telefony stoją, a przewija się tylko środek panelu */
@@ -256,70 +266,190 @@ button:disabled {
   }
 }
 
-.scenes {
+/* Scenariusze jako rozwijane odcinki, jak FAQ */
+.eps {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 16px;
+  gap: 8px;
 }
 
-.scene {
-  display: grid;
-  grid-template-columns: 30px 1fr;
+.ep {
+  border: 1px solid var(--mo-hair);
+  border-radius: 14px;
+  background: var(--mo-surface);
+}
+
+.ep-open {
+  border-color: rgba(26, 92, 245, 0.35);
+  box-shadow: 0 2px 10px rgba(15, 25, 60, 0.07);
+}
+
+.ep-head {
+  display: flex;
+  align-items: center;
   gap: 12px;
-}
-
-.scene-number {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--mo-blue);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  font-size: 14px;
-}
-
-.scene-name {
-  font-weight: 700;
-}
-
-.scene-desc {
-  font-size: 14px;
-  color: var(--mo-text-2);
-}
-
-.scene-status {
-  margin-top: 4px;
-  font-size: 11px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  text-align: left;
   font-weight: 600;
-  color: var(--mo-text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
-/* Bieżący scenariusz wyróżniony tłem */
-.scene-current {
-  margin: -8px -10px;
-  padding: 8px 10px;
-  border-radius: 12px;
+.ep-head:hover {
   background: var(--mo-bg);
 }
 
-/* Sceny na później są przygaszone, bieżąca wyraźna */
-.scene-later .scene-name,
-.scene-later .scene-desc {
-  color: var(--mo-text-2);
-}
-
-.scene-later .scene-number {
+.ep-number {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
   background: var(--mo-hair);
   color: var(--mo-text-2);
+  font-size: 13px;
+  font-weight: 700;
 }
 
-/* Karty „Kto już to robi” zwinięte po scenie */
+.ep-open .ep-number {
+  background: var(--mo-blue);
+  color: #fff;
+}
+
+.ep-number-seen,
+.ep-open .ep-number-seen {
+  background: var(--mo-green-wash);
+  color: var(--mo-green);
+}
+
+.ep-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.ep-chevron {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--mo-text-3);
+  border-bottom: 2px solid var(--mo-text-3);
+  transform: rotate(45deg);
+  margin: 0 4px 3px;
+}
+
+.ep-open .ep-chevron {
+  transform: rotate(-135deg);
+  margin-bottom: -3px;
+}
+
+.ep-body {
+  display: grid;
+  gap: 14px;
+  padding: 2px 16px 16px;
+  font-size: 14px;
+}
+
+.ep-facts {
+  display: grid;
+  gap: 2px;
+}
+
+.ep-facts dt,
+.ep-heading {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--mo-text-2);
+}
+
+.ep-facts dd {
+  margin: 0 0 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.ep-steps {
+  list-style: none;
+  margin: -6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ep-step {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 10px;
+}
+
+.ep-step-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--mo-hair);
+  color: var(--mo-text-2);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ep-step-phone {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mo-text-2);
+}
+
+.ep-step-next p {
+  color: var(--mo-text-2);
+}
+
+.ep-step-done p {
+  color: var(--mo-text-2);
+}
+
+.ep-step-done .ep-step-mark {
+  background: var(--mo-green-wash);
+  color: var(--mo-green);
+}
+
+.ep-step-now {
+  background: var(--mo-blue-wash);
+  font-weight: 600;
+}
+
+.ep-step-now .ep-step-mark {
+  background: var(--mo-blue);
+  color: #fff;
+}
+
+.ep-step-now .ep-step-phone {
+  color: var(--mo-blue);
+}
+
+.ep-step .btn-small {
+  margin-top: 8px;
+}
+
+.ep-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ep-actions .btn {
+  flex: 1 1 auto;
+  width: auto;
+}
+
+/* Podobne rozwiązania: zwinięte */
 .guide-details {
   margin-top: 8px;
   font-size: 14px;
@@ -1642,26 +1772,6 @@ label.btn {
   color: #5fd38a;
 }
 
-/* Przewodnik: bieżący krok i karty po scenie */
-
-.scene-current .scene-number {
-  box-shadow: 0 0 0 4px var(--mo-blue-wash);
-}
-
-.scene-status-active {
-  color: var(--mo-blue);
-}
-
-.scene-status-done {
-  color: var(--mo-green);
-}
-
-.scene-step {
-  font-size: 14px;
-  font-weight: 600;
-  margin-top: 2px;
-}
-
 .guide-card {
   margin-top: 10px;
   padding: 12px 14px;
@@ -2070,6 +2180,27 @@ label.btn {
   color: var(--mo-green);
 }
 
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 8px 14px;
+  border-radius: 18px;
+  background: var(--mo-surface);
+  border: 1.5px solid var(--mo-hair);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.chip-on {
+  border-color: var(--mo-blue);
+  background: var(--mo-blue-wash);
+  color: var(--mo-blue);
+}
+
 .choices {
   display: grid;
   gap: 8px;
@@ -2242,10 +2373,6 @@ label.btn {
 }
 
 .guide-try .btn-small {
-  margin-top: 8px;
-}
-
-.scene .btn-small {
   margin-top: 8px;
 }
 
@@ -2630,48 +2757,6 @@ label.btn {
   }
 }
 
-.caption-switch {
-  margin-left: 8px;
-  padding: 2px 10px;
-  border-radius: 10px;
-  background: var(--mo-surface);
-  color: var(--mo-blue);
-  font-size: 12px;
-  font-weight: 600;
-  box-shadow: var(--shadow-card);
-}
-
-/* ---------- Przewodnik: grupy scen i dwa pokazy ---------- */
-
-.scene-group {
-  margin-top: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--mo-text-3);
-}
-
-.autoplay-title {
-  font-weight: 700;
-  font-size: 14px;
-}
-
-.autoplay-title span {
-  font-weight: 400;
-  color: var(--mo-text-2);
-}
-
-.autoplay-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-
-.nowrap {
-  white-space: nowrap;
-}
-
 /* ---------- Moje leki ---------- */
 
 .m-warning,
@@ -2800,67 +2885,156 @@ label.btn {
   font-weight: 600;
 }
 
-/* ---------- Zosia: czat od obcego (ekran innej aplikacji) ---------- */
+/* ---------- Zosia: wiadomości od obcego (ekran innej aplikacji, jak iMessage) ---------- */
 
 .chat-screen {
   position: absolute;
-  inset: 0;
+  inset: var(--statusbar-h) 0 0;
   z-index: 6;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: calc(var(--statusbar-h) + 12px) 16px calc(var(--safe-bottom) + 20px);
-  background: linear-gradient(180deg, #2b1d4f 0%, #1a1233 100%);
-  color: #fff;
+  padding-bottom: calc(var(--safe-bottom) + 12px);
+  background: #fff;
+  color: #000;
 }
 
 .chat-head {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  justify-content: center;
+  padding: 4px 12px 10px;
+  background: #f6f6f6;
+  border-bottom: 1px solid #d9d9dc;
+}
+
+.chat-back {
+  position: absolute;
+  left: 8px;
+  top: 16px;
+  color: #007aff;
+}
+
+.chat-contact {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
 }
 
 .chat-avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #7b5cd6;
-  font-weight: 700;
+  background: linear-gradient(180deg, #a8adb7 0%, #868b95 100%);
+  color: #fff;
 }
 
 .chat-from {
-  font-weight: 700;
-}
-
-.chat-app {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.65);
 }
 
 .chat-thread {
   flex: 1;
-  display: grid;
-  align-content: start;
-  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 14px;
 }
 
-.chat-bubble {
-  max-width: 85%;
-  padding: 10px 14px;
-  border-radius: 16px 16px 16px 4px;
-  background: rgba(255, 255, 255, 0.14);
-  font-size: 15px;
+.chat-meta {
+  align-self: center;
+  margin-bottom: 6px;
+  font-size: 11px;
   line-height: 1.35;
+  color: #8e8e93;
+  text-align: center;
+}
+
+.chat-meta strong {
+  font-weight: 600;
+}
+
+.chat-unknown {
+  margin: 12px 0 0;
   opacity: 0;
   animation: line-in 0.4s ease-out forwards;
 }
 
+.chat-bubble {
+  position: relative;
+  max-width: 78%;
+  padding: 7px 12px;
+  border-radius: 18px;
+  background: #e9e9eb;
+  font-size: 16px;
+  line-height: 1.3;
+  opacity: 0;
+  animation: line-in 0.4s ease-out forwards;
+}
+
+/* Ogonek ma tylko ostatni dymek, jak w iMessage */
+.chat-bubble:has(+ .chat-unknown)::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  background: #e9e9eb;
+  border-bottom-right-radius: 14px;
+}
+
+.chat-bubble:has(+ .chat-unknown)::after {
+  content: '';
+  position: absolute;
+  left: -8px;
+  bottom: 0;
+  width: 8px;
+  height: 16px;
+  background: #fff;
+  border-bottom-right-radius: 8px;
+}
+
+.chat-compose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+}
+
+.chat-plus {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #e9e9eb;
+  color: #6b6b70;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.chat-field {
+  flex: 1;
+  padding: 6px 12px;
+  border: 1px solid #d1d1d6;
+  border-radius: 18px;
+  color: #8e8e93;
+  font-size: 15px;
+}
+
 .chat-swipe {
   align-self: center;
+  color: #6b6b70;
+}
+
+.chat-swipe .call-swipe-bar {
+  background: #000;
 }
 
 /* ---------- Ktoś do mnie pisze? ---------- */
@@ -2894,8 +3068,16 @@ label.btn {
   line-height: 1.4;
 }
 
+/* Na wąskim ekranie nie ma paska stanu telefonu, więc Wiadomości zaczynają się od samej góry */
+@media (max-width: 860px) {
+  .chat-screen {
+    top: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .chat-bubble {
+  .chat-bubble,
+  .chat-unknown {
     animation: none;
     opacity: 1;
   }

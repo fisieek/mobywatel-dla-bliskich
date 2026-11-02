@@ -44,7 +44,7 @@ export const serviceCategories = [
     isNew: true,
     rows: [
       ours('Pomoc bliskich', 'people', 'helpers', 'Kto Ci pomaga i komu pomagasz'),
-      ours('Upoważnij bliską osobę', 'people', 'authorize', 'Odbiór dziecka ze szkoły, wizyta u lekarza', ['anna']),
+      ours('Upoważnij bliską osobę', 'people', 'authorize', 'Odbiór dziecka, przesyłki i inne codzienne sprawy', ['anna']),
       ours('Moi bliscy', 'people', 'contacts', 'Nazwy, pod którymi widzisz bliskie osoby'),
     ],
   },

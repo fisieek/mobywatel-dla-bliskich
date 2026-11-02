@@ -6,26 +6,19 @@ import { store, replace, notify, patch, addHistory, withBiometric } from '../sto
 import { icon } from '../icons.js';
 import { speak } from '../speech.js';
 import { list, row, newBadge, sectionTitle, serviceHeader, infoBox } from '../ui.js';
-import { people, contactName, fullName } from '../personas.js';
-import { explanation as sampleExplanation, explanationSpeech, paperHtml, sampleLetterText } from '../letter.js';
+import { contactName, fullName } from '../personas.js';
+import { explanation as sampleExplanation, explanationSpeech, paperHtml } from '../letter.js';
 import { explainLetter, draftReply } from '../assistant.js';
-import { readTextFromPhoto } from '../ocr.js';
 import { mamaSummary, childrenSection } from './care.js';
 import { shortDate, monthsFromToday } from '../dates.js';
 
 // Pozwolenie jest ważne 12 miesięcy od dnia pokazu
 export const GUARDIAN_UNTIL = shortDate(monthsFromToday(12));
-// Poniżej tej długości odczyt zdjęcia uznajemy za nieudany
-const MIN_OCR_CHARS = 150;
 
-const recipient = { name: 'Krystyna Nowak', form: people.krystyna.grammaticalForm };
 
 // Jak kto kogo widzi w aplikacji — zawsze bez odmiany imion („Anna Nowak, Córka”, „Mama”)
 const annaFor = (state) => contactName(state, 'krystyna', 'anna'); // na telefonie Krystyny
 const mamaFor = (state) => contactName(state, 'anna', 'krystyna'); // na telefonie Anny
-
-// Zdjęcie zrobione przez użytkownika — tylko w pamięci strony, nie zapisujemy go nigdzie
-let photoUrl = null;
 
 const currentExplanation = (state) => state.explanation ?? sampleExplanation;
 const officeName = (state) => currentExplanation(state).from || 'urzędu';
@@ -64,17 +57,16 @@ function scopeSpeech(state) {
   return `${annaFor(store.get())}. Będzie mogła: ${allowed.join(', ')}. Niczego nie wyśle ani nie podpisze bez Ciebie. Pozwolenie jest ważne 12 miesięcy. Możesz je odwołać w każdej chwili jednym przyciskiem.`;
 }
 
-// Na telefonie tylko prosta prośba o sprawdzenie. Czy odpowiedź przyszła na żywo z PLLuM,
-// czy z trybu awaryjnego, pokazuje przewodnik dla jury (guide.js).
+// Na telefonie prosta prośba o sprawdzenie. Że odpowiedzi są przykładowe, mówi panel obok telefonów (guide.js).
 const SOURCE_NOTES = {
-  explain: 'Wyjaśnienie przygotował Wirtualny Asystent. Sprawdź je z treścią pisma.',
-  draft: 'Szkic przygotował Wirtualny Asystent. Sprawdź go przed wysłaniem.',
+  explain: 'Wyjaśnienie przygotował Wirtualny asystent. Sprawdź je z treścią pisma.',
+  draft: 'Szkic przygotował Wirtualny asystent. Sprawdź go przed wysłaniem.',
 };
 
 function explanationBlocks(state, persona) {
   const e = currentExplanation(state);
   return `
-    ${state.usedSample && state.aiSource.explain === 'scripted' && photoUrl ? infoBox('Asystent jest teraz niedostępny, więc pokazujemy przykładowe pismo.') : ''}
+    ${state.ownPhoto ? infoBox('W prototypie asystent wyjaśnia zawsze przykładowe pismo. Twojego zdjęcia nie odczytujemy ani nie zapisujemy.') : ''}
     <div class="ai-blocks">
       <div class="ai-block"><p class="ai-label">O co chodzi</p><p>${escapeHtml(e.what)}</p></div>
       <div class="ai-block"><p class="ai-label">Co musisz zrobić</p><p>${escapeHtml(e.todo)}</p></div>
@@ -89,40 +81,19 @@ function explanationBlocks(state, persona) {
     <p class="ai-source">${icon('assistant', { size: 16 })} ${SOURCE_NOTES.explain}</p>`;
 }
 
-// Odczyt pisma: tekst ze zdjęcia (albo przykładowy) → PLLuM → trzy bloki
-async function readLetter(persona, getText) {
-  patch({ letter: 'reading' });
+// Odczyt pisma: asystent zawsze wyjaśnia przykładowe pismo, także gdy ktoś wybierze własne zdjęcie.
+// Zdjęcia nie odczytujemy ani nie zapisujemy.
+async function readLetter(persona, ownPhoto) {
+  patch({ letter: 'reading', ownPhoto });
   replace(persona, 'letterExplained');
-  let letterText = sampleLetterText();
-  let usedSample = true;
-  try {
-    const text = await getText();
-    if (text && text.length >= MIN_OCR_CHARS) {
-      letterText = text;
-      usedSample = false;
-    }
-  } catch {
-    // odczyt się nie udał — zostaje przykładowe pismo
-  }
-  const result = await explainLetter({ letterText, recipient });
+  const explained = await explainLetter();
   if (store.get().letter !== 'reading') return;
-  const fellBack = result.source === 'scripted' && !usedSample;
-  store.update((s) => {
-    s.letter = 'explained';
-    s.letterText = fellBack ? sampleLetterText() : letterText;
-    s.usedSample = usedSample || fellBack;
-    s.explanation = result.explanation;
-    s.aiSource.explain = result.source;
-    return s;
-  });
-  if (store.get().simpleMode.krystyna) speak(explanationSpeech(result.explanation));
+  patch({ letter: 'explained', explanation: explained });
+  if (store.get().simpleMode.krystyna) speak(explanationSpeech(explained));
 }
 
 export function onPhotoSelected(persona, file) {
-  if (!file) return;
-  if (photoUrl) URL.revokeObjectURL(photoUrl);
-  photoUrl = URL.createObjectURL(file);
-  readLetter(persona, () => readTextFromPhoto(file));
+  if (file) readLetter(persona, true);
 }
 
 function setReminder(persona) {
@@ -130,12 +101,6 @@ function setReminder(persona) {
     s.reminders[persona] = true;
     return s;
   });
-}
-
-function letterPhoto(state) {
-  return photoUrl && !state.usedSample
-    ? `<img class="letter-photo" src="${photoUrl}" alt="Zdjęcie pisma">`
-    : paperHtml({ compact: true });
 }
 
 function thinking(text) {
@@ -367,11 +332,10 @@ export const helpScreens = {
         <input type="file" accept="image/*" capture="environment" data-photo hidden>
         ${icon('camera', { size: 20 })} Zdjęcie własnego pisma
       </label>
-      <p class="footnote center">Przycisk na środku robi zdjęcie przykładowego pisma. Własne pismo odczytamy w telefonie — zdjęcie nigdzie nie jest wysyłane.</p>`,
+      <p class="footnote center">Przycisk na środku robi zdjęcie przykładowego pisma. W prototypie asystent wyjaśnia zawsze to pismo.</p>`,
     actions: {
       shoot: (el, persona) => {
-        photoUrl = null;
-        readLetter(persona, async () => sampleLetterText());
+        readLetter(persona, false);
       },
     },
   },
@@ -493,7 +457,7 @@ export const helpScreens = {
       if (!letterAtLeast(state, 'requested')) return infoBox(`${mamaFor(state)}: brak pism, przy których prosi o pomoc.`);
       return `
         <p class="letter-from">${icon('letter', { size: 18 })} ${escapeHtml(officeName(state))}</p>
-        <details class="paper-details"><summary>Zobacz zdjęcie pisma</summary>${letterPhoto(state)}</details>
+        <details class="paper-details"><summary>Zobacz zdjęcie pisma</summary>${paperHtml({ compact: true })}</details>
         ${explanationBlocks(state, persona)}
         ${replySectionForAnna(state)}`;
     },
@@ -503,16 +467,9 @@ export const helpScreens = {
         notify('anna', { title: 'Przypomnienie ustawione', body: `Przed terminem (${deadlineText(store.get())}) przypomnimy: Tobie i ${mamaFor(store.get())}.` });
       },
       draft: () => {
-        const state = store.get();
         patch({ letter: 'drafting' });
-        draftReply({ letterText: state.letterText, recipient, facts: state.replyFacts, isSample: state.usedSample }).then(({ reply, source }) => {
-          if (store.get().letter !== 'drafting') return;
-          store.update((s) => {
-            s.letter = 'drafted';
-            s.reply = reply;
-            s.aiSource.draft = source;
-            return s;
-          });
+        draftReply().then((reply) => {
+          if (store.get().letter === 'drafting') patch({ letter: 'drafted', reply });
         });
       },
       sendToMama: (el, persona) => {
@@ -575,7 +532,7 @@ function replySectionForAnna(state) {
       return `
         ${sectionTitle('Co trzeba wyjaśnić w odpowiedzi?')}
         <textarea class="facts" data-facts data-keep-focus aria-label="Co trzeba wyjaśnić w odpowiedzi">${escapeHtml(state.replyFacts)}</textarea>
-        <p class="footnote">Asystent użyje tylko tego, co tu wpiszesz, i treści pisma. Niczego nie wymyśli.</p>
+        <p class="footnote">W prototypie szkic jest przykładowy i nie zmienia się po wpisaniu innych faktów. Poprawisz go w następnym kroku.</p>
         <button class="btn btn-primary" data-action="draft">${icon('assistant', { size: 20 })} Przygotuj odpowiedź z asystentem</button>`;
     case 'drafting':
       return thinking('Asystent przygotowuje szkic odpowiedzi…');

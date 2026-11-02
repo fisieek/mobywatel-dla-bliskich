@@ -13,7 +13,8 @@ import { resolveMedsScreen, startMedsLow } from './scenes/meds.js';
 import { pickupScreens } from './scenes/pickup.js';
 import { juniorScreens, chatOverlay, chatAction, startStrangerChat } from './scenes/junior.js';
 import { careScreens } from './scenes/care.js';
-import { renderGuide, currentStep, currentScene, ZOSIA_SCENES } from './guide.js';
+import { renderGuide } from './guide.js';
+import { episodes, episodeDone, currentStep, ZOSIA_EPISODES } from './episodes.js';
 import { startAutoplay, stopAutoplay, autoplayState, onAutoplayChange } from './autoplay.js';
 import { initDevices, biometric } from './device.js';
 
@@ -50,9 +51,6 @@ function resolveScreen(id) {
 // Na wąskim ekranie widać jeden telefon naraz
 let mobilePersona = 'krystyna';
 const lastScreen = { krystyna: null, anna: null, zosia: null };
-// Na komputerze po lewej stoi telefon Krystyny albo — w scenach Zosi — telefon Zosi
-let leftPhone = 'krystyna';
-let lastScene = null;
 
 function tabHeader(screen, state, persona) {
   const unread = state.notificationLog[persona].some((n) => n.unread);
@@ -251,10 +249,10 @@ function renderNextStep(state) {
   const run = autoplayState();
   const play = run && !run.failed
     ? '<button class="next-step-play" data-autoplay="stop">Zatrzymaj</button>'
-    : '<button class="next-step-play" data-autoplay="core">▶ Pokaz</button>';
+    : `<button class="next-step-play" data-autoplay="episode" data-scene="${state.episode}">▶ Pokaz</button>`;
   bar.innerHTML = step
     ? `<p><strong>Teraz${step.phone ? ` · ${step.phone}` : ''}:</strong> ${step.text}</p>${play}`
-    : `<p><strong>Gotowe.</strong> Podsumowanie jest pod telefonem.</p>${play}`;
+    : `<p><strong>Scenariusz obejrzany.</strong> Następne są pod telefonem.</p>${play}`;
 
   if (step?.persona && step.persona !== lastStepPersona && window.innerWidth <= MOBILE_MAX) {
     mobilePersona = step.persona;
@@ -265,46 +263,20 @@ function renderNextStep(state) {
   document.documentElement.style.setProperty('--mobile-top-h', `${top.offsetHeight}px`);
 }
 
-// Po skończonej scenie Zosi chwilę jeszcze widać jej telefon, zanim wróci telefon Krystyny
-const BACK_TO_KRYSTYNA_MS = 3000;
-let wasRunning = false;
-
-function placeLeftPhone() {
+// Na komputerze po lewej stoi telefon Krystyny albo — w scenariuszach Zosi — telefon Zosi
+function placeLeftPhone(state) {
+  const left = ZOSIA_EPISODES.includes(state.episode) ? 'zosia' : 'krystyna';
   document.querySelectorAll('.phone').forEach((phone) => {
-    const offStage = phone.dataset.persona === (leftPhone === 'zosia' ? 'krystyna' : 'zosia');
-    phone.classList.toggle('phone-off-stage', offStage);
+    phone.classList.toggle('phone-off-stage', phone.dataset.persona === (left === 'zosia' ? 'krystyna' : 'zosia'));
   });
 }
 
-// Lewy telefon: w scenach Zosi pokazujemy jej telefon zamiast telefonu Krystyny (gdy scena się zmienia).
-// Po końcu pokazu i po ostatniej scenie zostaje telefon, na którym wszystko się skończyło.
-function updateLeftPhone(state) {
-  const run = autoplayState();
-  const running = Boolean(run && !run.failed);
-  const scene = currentScene(state, run);
-  const runJustEnded = wasRunning && !running;
-  wasRunning = running;
-  if (scene !== lastScene) {
-    lastScene = scene;
-    if (ZOSIA_SCENES.includes(scene)) {
-      leftPhone = 'zosia';
-    } else if (scene >= 0 && !runJustEnded && leftPhone === 'zosia') {
-      setTimeout(() => {
-        if (lastScene !== scene) return;
-        leftPhone = 'krystyna';
-        placeLeftPhone();
-      }, running ? 0 : BACK_TO_KRYSTYNA_MS);
-    }
-  }
-  placeLeftPhone();
-}
-
-// Podpisy nad telefonami (tekst dla jury, poza aplikacją) z przełącznikiem lewego telefonu
+// Podpisy nad telefonami (poza aplikacją)
 function renderCaptions(state) {
   const captions = {
-    krystyna: `Krystyna, 71 lat · ${state.simpleMode.krystyna ? 'tryb prosty' : 'zwykły mObywatel'} <button class="caption-switch" data-left-phone="zosia">Pokaż telefon Zosi</button>`,
+    krystyna: `Krystyna, 71 lat · ${state.simpleMode.krystyna ? 'tryb prosty' : 'zwykły mObywatel'}`,
     anna: 'Anna, 34 lata · córka Krystyny, sama wychowuje Zosię i Antka',
-    zosia: 'Zosia, 11 lat · mObywatel Junior <button class="caption-switch" data-left-phone="krystyna">Pokaż telefon Krystyny</button>',
+    zosia: 'Zosia, 11 lat · mObywatel Junior',
   };
   Object.entries(captions).forEach(([persona, html]) => {
     document.querySelector(`[data-caption="${persona}"]`).innerHTML = html;
@@ -315,53 +287,78 @@ function render(state) {
   renderPhone('krystyna', state);
   renderPhone('anna', state);
   renderPhone('zosia', state);
-  updateLeftPhone(state);
+  placeLeftPhone(state);
   renderCaptions(state);
   renderNextStep(state);
   renderMobileSwitch(state);
   renderGuidePanel(state);
 }
 
-// Panel przewija się osobno: po przerysowaniu zostaje w tym samym miejscu, a przy zmianie scenariusza pokazuje bieżący
-let lastGuideScene = null;
+// Panel przewija się osobno: po przerysowaniu zostaje w tym samym miejscu i z tymi samymi rozwinięciami,
+// a przy zmianie scenariusza pokazuje jego początek
+let lastGuideEpisode = null;
+let lastGuideStep = null;
 
 function renderGuidePanel(state) {
   const guide = document.querySelector('[data-guide]');
   const scrollTop = guide.querySelector('[data-guide-body]')?.scrollTop ?? 0;
+  const opened = [...guide.querySelectorAll('details')].map((d) => d.open);
+  const episodeChanged = state.episode !== lastGuideEpisode;
+  // Obejrzany scenariusz zostaje na liście także po przejściu do następnego
+  if (episodeDone(state, state.episode) && !state.seenEpisodes.includes(state.episode)) {
+    store.quietly((s) => {
+      s.seenEpisodes.push(s.episode);
+    });
+  }
   guide.innerHTML = renderGuide(state, autoplayState());
   const body = guide.querySelector('[data-guide-body]');
   body.scrollTop = scrollTop;
-  const scene = currentScene(state, autoplayState());
-  if (scene === lastGuideScene) return;
-  lastGuideScene = scene;
-  const current = body.querySelector('.scene-current');
-  if (current) body.scrollTop += current.getBoundingClientRect().top - body.getBoundingClientRect().top - 12;
+  if (episodeChanged) {
+    lastGuideEpisode = state.episode;
+    const open = body.querySelector('.ep-open');
+    if (open) body.scrollTop += open.getBoundingClientRect().top - body.getBoundingClientRect().top;
+    return;
+  }
+  guide.querySelectorAll('details').forEach((d, i) => {
+    if (opened[i]) d.open = true;
+  });
+  // Bieżący krok ma być widoczny, także gdy lista kroków nie mieści się w panelu
+  const step = body.querySelector('.ep-step-now');
+  const stepText = step?.textContent;
+  if (step && stepText !== lastGuideStep) {
+    const box = step.getBoundingClientRect();
+    const frame = body.getBoundingClientRect();
+    if (box.bottom > frame.bottom) body.scrollTop += box.bottom - frame.bottom + 12;
+    else if (box.top < frame.top) body.scrollTop += box.top - frame.top - 12;
+  }
+  lastGuideStep = stepText;
+}
+
+// Otwiera scenariusz od jego własnego stanu startowego. Lista obejrzanych zostaje.
+function openEpisode(index) {
+  stopSpeaking();
+  const seen = store.get().seenEpisodes;
+  store.reset();
+  store.update((s) => {
+    episodes[index].start(s);
+    s.episode = index;
+    s.seenEpisodes = seen;
+    return s;
+  });
+  mobilePersona = ZOSIA_EPISODES.includes(index) ? 'zosia' : episodes[index].steps.find((step) => step.phone)?.phone === 'Telefon Anny' ? 'anna' : 'krystyna';
+  lastStepPersona = null;
+  renderMobileSwitch(store.get());
 }
 
 function resetDemo() {
   stopSpeaking();
   mobilePersona = 'krystyna';
   lastStepPersona = null;
-  leftPhone = 'krystyna';
-  lastScene = null;
-  wasRunning = false;
+  lastGuideEpisode = null;
   store.reset();
 }
 
-// Pokaz „Cała rodzina” zaczyna od stanu po pierwszych scenach: tryb prosty włączony, Anna może pomagać
-function prepareFamily() {
-  store.update((s) => {
-    s.simpleMode.krystyna = true;
-    s.guardian = 'active';
-    return s;
-  });
-}
-
 function showPersona(persona) {
-  if (persona === 'zosia' || persona === 'krystyna') {
-    leftPhone = persona;
-    placeLeftPhone();
-  }
   if (mobilePersona === persona) return;
   mobilePersona = persona;
   renderMobileSwitch(store.get());
@@ -399,17 +396,30 @@ function handleClick(event) {
 
   // „Pokaż sam”: start i stop pokazu
   if (target.dataset.autoplay) {
-    const group = target.dataset.autoplay;
-    if (group === 'stop') return stopAutoplay();
-    return startAutoplay({ group, reset: resetDemo, prepare: group === 'family' ? prepareFamily : null, showPersona });
-  }
-  // Przełącznik lewego telefonu nad telefonem (Krystyna ↔ Zosia)
-  if (target.dataset.leftPhone) {
-    leftPhone = target.dataset.leftPhone;
-    return placeLeftPhone();
+    const kind = target.dataset.autoplay;
+    if (kind === 'stop') return stopAutoplay();
+    const indices = kind === 'all' ? episodes.map((_, i) => i) : [Number(target.dataset.scene)];
+    return startAutoplay({ indices, prepare: openEpisode, showPersona });
   }
   // Dotknięcie przez człowieka w trakcie pokazu oddaje mu stery
   if (event.isTrusted && autoplayState()) stopAutoplay();
+
+  // Panel: rozwijanie scenariuszy jak w FAQ. Inny scenariusz startuje od nowa, ten sam tylko się zwija lub rozwija.
+  if (target.dataset.episode) {
+    const index = Number(target.dataset.episode);
+    if (index !== store.get().episode) return openEpisode(index);
+    return store.update((s) => {
+      s.episodeOpen = !s.episodeOpen;
+      return s;
+    });
+  }
+  if (target.dataset.episodeRestart) return openEpisode(Number(target.dataset.episodeRestart));
+  if ('summary' in target.dataset) {
+    return store.update((s) => {
+      s.summaryOpen = !s.summaryOpen;
+      return s;
+    });
+  }
 
   const phone = target.closest('[data-persona]');
   if (phone) {
@@ -441,7 +451,6 @@ function handleClick(event) {
     const action = target.dataset.guideAction;
     if (action === 'strangerChat') {
       mobilePersona = 'zosia';
-      leftPhone = 'zosia';
       return startStrangerChat();
     }
     mobilePersona = 'krystyna';
@@ -470,6 +479,14 @@ document.addEventListener('input', (event) => {
     const persona = event.target.closest('[data-persona]').dataset.persona;
     store.update((s) => {
       s.search[persona] = event.target.value;
+      return s;
+    });
+  }
+  // Od opisu zależy, czy przycisk „Upoważnij” jest aktywny. Bez znaków, które przeglądarka czyta jako kod, bo opis trafia na ekrany.
+  if (event.target.matches('[data-pickup-text]')) {
+    const text = event.target.value.replace(/[<>&"]/g, '');
+    store.update((s) => {
+      s.pickupDraft.text = text;
       return s;
     });
   }
