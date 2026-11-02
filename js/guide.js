@@ -213,7 +213,7 @@ function autoplayBar(run) {
     </div>`;
 }
 
-// Karta „W 60 sekund”: teza, trzy najmocniejsze momenty i porównanie z prototypem referencyjnym.
+// Karta „W skrócie”: teza, trzy najmocniejsze momenty i porównanie z prototypem referencyjnym.
 // Porównujemy z wersją pod linkiem na mobywatel.ai (tryb skryptowy), tak jak widzi ją jury.
 const moments = [
   [0, 'Krystyna rozumie pismo z urzędu, Anna przygotowuje odpowiedź, a Krystyna podpisuje ją PIN-em.'],
@@ -231,13 +231,13 @@ function intro(state, run) {
   if (!state.introOpen) {
     return `
       <div class="intro intro-closed">
-        <button class="intro-toggle" data-intro aria-expanded="false"><span>W 60 sekund: o co chodzi w tym prototypie</span><span class="ep-chevron" aria-hidden="true"></span></button>
+        <button class="intro-toggle" data-intro aria-expanded="false"><span>W skrócie: o co chodzi w tym prototypie</span><span class="ep-chevron" aria-hidden="true"></span></button>
       </div>`;
   }
   const running = Boolean(run && !run.failed);
   return `
     <div class="intro">
-      <button class="intro-toggle" data-intro aria-expanded="true"><span>W 60 sekund</span><span class="ep-chevron" aria-hidden="true"></span></button>
+      <button class="intro-toggle" data-intro aria-expanded="true"><span>W skrócie</span><span class="ep-chevron" aria-hidden="true"></span></button>
       <p class="intro-thesis">Sprawy urzędowe często załatwia się w rodzinie. Prototyp referencyjny prowadzi jedną osobę w rozmowie z asystentem. <strong>My pokazujemy mObywatela, w którym bliscy pomagają sobie bezpiecznie: na dwóch telefonach naraz, ze zgodą, zakresem i historią.</strong></p>
       <ol class="intro-moments">
         ${moments

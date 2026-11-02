@@ -433,7 +433,7 @@ function handleClick(event) {
   // Panel: rozwijanie scenariuszy jak w FAQ. Inny scenariusz startuje od nowa, ten sam tylko się zwija lub rozwija.
   if (target.dataset.episode) {
     const index = Number(target.dataset.episode);
-    // Moment z karty „W 60 sekund” zawsze otwiera scenariusz od początku
+    // Moment z karty „W skrócie” zawsze otwiera scenariusz od początku
     if (index !== store.get().episode || target.classList.contains('intro-moment')) return openEpisode(index);
     return store.update((s) => {
       s.episodeOpen = !s.episodeOpen;

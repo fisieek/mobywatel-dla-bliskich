@@ -489,7 +489,7 @@ button:disabled {
   transition: width 0.4s ease;
 }
 
-/* Karta „W 60 sekund” na górze panelu: teza, trzy momenty, krótki pokaz i porównanie z referencją */
+/* Karta „W skrócie” na górze panelu: teza, trzy momenty, krótki pokaz i porównanie z referencją */
 .intro {
   display: grid;
   gap: 12px;
