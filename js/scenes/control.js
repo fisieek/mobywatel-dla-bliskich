@@ -228,11 +228,6 @@ export const controlScreens = {
     speech: (state, persona) => `Skieruj aparat na kod QR. Tutaj to kod: ${requesters[persona].name}. Dotknij przycisku Zeskanuj kod.`,
     render: (state, persona) => {
       const req = requesters[persona];
-      if (persona === 'anna' && state.actingAs !== 'ja') {
-        return `
-          ${infoBox('Auto wynajmujesz dla siebie. Wróć do siebie, żeby pokazać swoje dane.')}
-          <button class="btn btn-primary" data-action-global="actAsMe">Działaj jako Ja</button>`;
-      }
       return `
         <div class="viewfinder viewfinder-qr">
           <button class="counter-card" data-action="scan" aria-label="Zeskanuj kod QR: ${req.name}">
@@ -356,9 +351,10 @@ export const controlScreens = {
     },
   },
 
+  // Rozszerzenie istniejącej Historii aktywności (Więcej → Pozostałe), stąd taki tytuł ekranu
   myData: {
     kind: 'inner',
-    title: 'Kto widział moje dane',
+    title: 'Historia aktywności',
     speech: (state, persona) => myDataSpeech(state, persona),
     onEnter: (state, persona) => {
       if (persona === 'krystyna' && state.consent.anna === 'shared' && !state.historySeen) patch({ historySeen: true });
@@ -371,9 +367,6 @@ export const controlScreens = {
         desc: 'Logowania, udostępnienia, podpisy i działania osób, które Ci pomagają — w jednym miejscu, jak historia konta w banku.',
         badge: newBadge(),
       });
-      if (persona === 'anna' && state.actingAs !== 'ja') {
-        return `${head}${infoBox(`Tę historię widzi tylko: ${mamaFor(state)}. Twoje działania w jej imieniu są tam zapisane.`)}`;
-      }
       return `${head}${persona === 'krystyna' ? krystynaHistory(state) : `${sectionTitle('Twoja historia')}${historyList(entriesFor(state, 'anna'), state)}`}`;
     },
     actions: {

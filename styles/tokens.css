@@ -32,8 +32,8 @@
 
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
 
-  --radius-card: 14px;
-  --radius-doc: 18px;
+  --radius-card: 16px;
+  --radius-doc: 16px;
   --radius-btn: 14px;
   --shadow-card: 0 1px 2px rgba(15, 25, 60, 0.06);
   --focus-ring: 0 0 0 3px rgba(26, 92, 245, 0.35);

@@ -75,10 +75,3 @@ export function contactName(state, owner, id) {
   const relation = relationOf(owner, id);
   return relation ? `${fullName(id)}, ${relation}` : fullName(id);
 }
-
-// Za kogo może działać Anna (przełącznik „Działam jako”): identyfikator w stanie → osoba
-export const actingAsPeople = { ja: 'anna', mama: 'krystyna', zosia: 'zosia', antek: 'antek' };
-
-export function actingAsLabel(state, id) {
-  return id === 'ja' ? 'Ja' : contactName(state, 'anna', actingAsPeople[id]);
-}

@@ -1,11 +1,11 @@
-// Przewodnik dla jury: podpowiada następny krok, a po scenie pokazuje „Kto już to robi” i licznik.
+// Panel obok telefonów: podpowiada następny krok, a po scenariuszu pokazuje przykłady z innych krajów i porównanie „dziś / po zmianie”.
 import { contactName } from './personas.js';
 
 function simpleSceneStep(state) {
   if (state.simpleMode.krystyna) return null;
   return {
     phone: 'Telefon Krystyny',
-    text: 'Krystyna ma zwykłego mObywatela: pięć zakładek, drobny tekst. Na górze ekranu dotknij „Wolisz większe litery i mniej przycisków?” i włącz tryb prosty.',
+    text: 'Krystyna ma zwykłego mObywatela: pięć zakładek, drobny tekst. Otwórz zakładkę Więcej → Tryb prosty i włącz go.',
   };
 }
 
@@ -24,7 +24,7 @@ function helpSceneStep(state) {
     case 'requested':
     case 'opened':
     case 'drafting':
-      return { phone: 'Telefon Anny', text: 'Otwórz pismo mamy i przygotuj odpowiedź z asystentem.' };
+      return { phone: 'Telefon Anny', text: 'Otwórz powiadomienie (albo Usługi → Pomoc bliskich → Pisma) i przygotuj odpowiedź z asystentem.' };
     case 'drafted':
       return { phone: 'Telefon Anny', text: 'Popraw szkic, jeśli chcesz, i wyślij go mamie do zatwierdzenia.' };
     case 'awaiting':
@@ -46,10 +46,10 @@ function protectSceneStep(state) {
   if (protection.push === 'queued') return { phone: 'Telefon Krystyny', text: 'Oszust się nie poddaje… Poczekaj chwilę.' };
   if (protection.push === 'pending') return { phone: 'Telefon Krystyny', text: 'Przyszła prośba o logowanie, której Krystyna nie zaczęła. Otwórz ją z powiadomienia albo z czerwonej karty na ekranie głównym.' };
   if (protection.push === 'none' && !protection.checked) {
-    return { text: 'Zobacz, co się dzieje, gdy do Krystyny dzwoni oszust.', button: { action: 'scamCall', label: 'Zadzwoń do Krystyny jako „policjant”' } };
+    return { text: 'Do Krystyny dzwoni oszust podający się za policjanta.', button: { action: 'scamCall', label: 'Zasymuluj telefon od fałszywego policjanta' } };
   }
   if (!protection.checked) return { phone: 'Telefon Krystyny', text: 'Dotknij „Ktoś do mnie dzwoni?” i wybierz „Policja”.' };
-  if (protection.push === 'none') return { text: 'Zadzwoń jeszcze raz, żeby zobaczyć, co oszust zrobi dalej.', button: { action: 'scamCall', label: 'Zadzwoń jako „policjant”' } };
+  if (protection.push === 'none') return { text: 'Zadzwoń jeszcze raz, żeby zobaczyć, co oszust zrobi dalej.', button: { action: 'scamCall', label: 'Zasymuluj kolejny telefon' } };
   return null;
 }
 
@@ -66,8 +66,7 @@ function realCallStep(state) {
 
 function controlSceneStep(state) {
   if (state.consent.anna === 'none') {
-    const prefix = state.actingAs === 'ja' ? '' : 'Wróć do siebie („Działam jako: Ja”). ';
-    return { phone: 'Telefon Anny', text: `${prefix}Anna wynajmuje auto. Otwórz zakładkę „Kod QR” → „Zeskanuj kod QR” i dotknij „Zeskanuj kod”.` };
+    return { phone: 'Telefon Anny', text: 'Anna wynajmuje auto. Otwórz zakładkę „Kod QR” → „Zeskanuj kod QR” i dotknij „Zeskanuj kod”.' };
   }
   if (state.consent.anna === 'scanned') return { phone: 'Telefon Anny', text: 'Wybierz, ile danych pokazać wypożyczalni, i udostępnij.' };
   if (!state.historySeen) {
@@ -83,7 +82,7 @@ function medsSceneStep(state) {
     case 'ok':
       return { text: 'Mija kilka tygodni. Krystynie kończy się lek na ciśnienie.', button: { action: 'medsLow', label: 'Kilka tygodni później: kończą się tabletki' } };
     case 'low': {
-      const first = state.guardian === 'active' ? '' : 'Najpierw pozwól Annie pomagać (scena Pomoc). ';
+      const first = state.guardian === 'active' ? '' : 'Najpierw pozwól Annie pomagać (scenariusz Pomoc). ';
       return { phone: 'Telefon Krystyny', text: `${first}Aplikacja ostrzega 5 dni wcześniej. Otwórz powiadomienie (albo „Moje leki”), dotknij „Poproś o nową receptę” i poproś o pomoc Annę.` };
     }
     case 'requested':
@@ -103,8 +102,7 @@ function pickupSceneStep(state) {
   if (status === 'active') {
     return { phone: 'Telefon Krystyny', text: 'Krystyna jest pod szkołą. Otwórz powiadomienie (albo kartę „Pokaż kod w szkole”), a potem dotknij „Nauczycielka skanuje kod”.' };
   }
-  const prefix = state.actingAs === 'ja' ? '' : 'Wróć do siebie („Działam jako: Ja”). ';
-  return { phone: 'Telefon Anny', text: `${prefix}Anna utknęła w pracy, a lekcje Zosi kończą się o 13:30. Na ekranie Dokumenty dotknij „Upoważnij bliską osobę”, a potem „Upoważnij”.` };
+  return { phone: 'Telefon Anny', text: 'Anna utknęła w pracy, a lekcje Zosi kończą się o 13:30. Otwórz Usługi → „Upoważnij bliską osobę” i dotknij „Upoważnij”.' };
 }
 
 const writingDone = (state) => state.writing.told || state.writing.called;
@@ -112,17 +110,17 @@ const writingDone = (state) => state.writing.told || state.writing.called;
 function writingSceneStep(state) {
   if (writingDone(state)) return null;
   if (!state.chat) {
-    return { text: 'Zosia gra w grę z czatem. Pisze do niej ktoś obcy.', button: { action: 'strangerChat', label: 'Pokaż czat od obcego u Zosi' } };
+    return { text: 'Zosia gra w grę z czatem. Pisze do niej ktoś obcy.', button: { action: 'strangerChat', label: 'Zasymuluj wiadomość od obcej osoby' } };
   }
   if (state.chat.open) return { phone: 'Telefon Zosi', text: 'Przeczytaj wiadomości. Potem wyjdź z gry (pasek „Przesuń w górę” na dole).' };
-  if (!state.writing.situation) return { phone: 'Telefon Zosi', text: 'W mObywatelu Junior dotknij „Ktoś do mnie pisze?” i wybierz, co się dzieje.' };
+  if (!state.writing.situation) return { phone: 'Telefon Zosi', text: 'Otwórz Usługi → „Ktoś do mnie pisze?” i wybierz, co się dzieje.' };
   return { phone: 'Telefon Zosi', text: 'Zosia dostaje radę po dziecięcemu i sama wybiera, komu powiedzieć. Dotknij „Powiedz: Mama” (albo „Zadzwoń: 116 111”).' };
 }
 
 function schoolSceneStep(state) {
   switch (state.school) {
     case 'none':
-      return { phone: 'Telefon Zosi', text: 'Wychowawczyni rozdała kartki ze zgodą na wycieczkę. Dotknij „Zgoda dla szkoły” i zeskanuj kod z kartki.' };
+      return { phone: 'Telefon Zosi', text: 'Wychowawczyni rozdała kartki ze zgodą na wycieczkę. Otwórz Usługi → „Zgoda dla szkoły” i zeskanuj kod z kartki.' };
     case 'scanned':
       return { phone: 'Telefon Zosi', text: 'Dotknij „Poproś o zgodę: Mama”.' };
     case 'requested':
@@ -135,16 +133,16 @@ function schoolSceneStep(state) {
 function counter(today, ours) {
   return `
     <div class="guide-card guide-counter">
-      <p class="guide-card-title">Dziś vs w mObywatelu dla bliskich</p>
+      <p class="guide-card-title">Dziś i po zmianie</p>
       <div class="counter-row"><span>Dziś</span><p>${today}</p></div>
-      <div class="counter-row counter-new"><span>U nas</span><p>${ours}</p></div>
+      <div class="counter-row counter-new"><span>Po zmianie</span><p>${ours}</p></div>
     </div>`;
 }
 
 function whoDoesIt(items) {
   return `
     <div class="guide-card">
-      <p class="guide-card-title">Kto już to robi</p>
+      <p class="guide-card-title">Podobne rozwiązania</p>
       ${items.map(([who, what]) => `<p><strong>${who}:</strong> ${what}</p>`).join('')}
     </div>`;
 }
@@ -180,8 +178,8 @@ function protectSceneDone(state) {
       : real
         ? activeStep(real)
         : `<div class="guide-try">
-            <p><strong>Zobacz też:</strong> a gdyby dzwonił naprawdę urząd?</p>
-            <button class="btn btn-secondary btn-small" data-guide-action="realCall">Zadzwoń jako Zakład Ubezpieczeń Społecznych</button>
+            <p><strong>Wariant:</strong> dzwoni prawdziwy urząd.</p>
+            <button class="btn btn-secondary btn-small" data-guide-action="realCall">Zasymuluj telefon z Zakładu Ubezpieczeń Społecznych</button>
           </div>`;
   const login =
     state.login === 'done'
@@ -189,7 +187,7 @@ function protectSceneDone(state) {
       : loginStep(state)
         ? activeStep(loginStep(state))
         : `<div class="guide-try">
-            <p><strong>${state.login === 'wrong' ? 'Zła liczba = brak logowania.' : 'Zobacz też:'}</strong> ${state.login === 'wrong' ? 'Spróbuj jeszcze raz i wybierz 72.' : 'jak wygląda logowanie, które Krystyna zaczyna sama?'}</p>
+            <p><strong>${state.login === 'wrong' ? 'Zła liczba = brak logowania.' : 'Wariant:'}</strong> ${state.login === 'wrong' ? 'Spróbuj jeszcze raz i wybierz 72.' : 'logowanie, które Krystyna zaczyna sama.'}</p>
             <button class="btn btn-secondary btn-small" data-guide-action="login">Zaloguj Krystynę do eZUS kodem QR</button>
           </div>`;
   return {
@@ -209,7 +207,7 @@ function controlSceneDone(state) {
   const hotel =
     state.consent.krystyna === 'shared'
       ? '<p class="guide-try">✓ Krystyna zameldowała się w hotelu bez podawania numeru PESEL i adresu.</p>'
-      : '<p class="guide-try"><strong>Zobacz też:</strong> Krystyna melduje się w hotelu. Na jej telefonie: „Zeskanuj kod QR” na ekranie głównym.</p>';
+      : '<p class="guide-try"><strong>Wariant:</strong> Krystyna melduje się w hotelu. Na jej telefonie: „Zeskanuj kod QR” na ekranie głównym.</p>';
   return {
     tries: hotel,
     cards: `
@@ -305,14 +303,14 @@ function sceneItem({ number, name, desc, step, current, done, openCards, note = 
   } else if (step) {
     // Scena na później: bez kroku, ale z przyciskiem startu, jeśli scena się nim zaczyna (np. telefon od „policjanta”)
     status = `
-      <p class="scene-status">Potem</p>
+      <p class="scene-status">Do obejrzenia</p>
       ${step.button && !step.phone ? `<button class="btn btn-secondary btn-small" data-guide-action="${step.button.action}">${step.button.label}</button>` : ''}`;
   } else {
     status = `
-      <p class="scene-status scene-status-done">Gotowe ✓</p>
+      <p class="scene-status scene-status-done">Obejrzany ✓</p>
       ${done.tries}
       <details class="guide-details" ${openCards ? 'open' : ''}>
-        <summary>Kto już to robi i co się zmienia</summary>
+        <summary>Podobne rozwiązania i porównanie</summary>
         ${done.cards}
       </details>`;
   }
@@ -393,14 +391,14 @@ function summary(state) {
   ];
   return `
     <div class="guide-summary">
-      <p class="guide-card-title">Cała historia: dziś vs w mObywatelu dla bliskich</p>
+      <p class="guide-card-title">Podsumowanie: dziś i po zmianie</p>
       ${rows
         .map(
           ([what, today, ours]) => `
           <div class="summary-row">
             <p class="summary-what">${what}</p>
             <div class="counter-row"><span>Dziś</span><p>${today}</p></div>
-            <div class="counter-row counter-new"><span>U nas</span><p>${ours}</p></div>
+            <div class="counter-row counter-new"><span>Po zmianie</span><p>${ours}</p></div>
           </div>`,
         )
         .join('')}
@@ -412,18 +410,18 @@ function autoplayControls(run) {
   if (!run) {
     return `
       <div class="autoplay">
-        <p class="autoplay-title">▶ Pokaż sam</p>
+        <p class="autoplay-title">Pokaz automatyczny <span>każdy ok. 2 min</span></p>
         <div class="autoplay-buttons">
-          <button class="btn btn-primary btn-small" data-autoplay="core">Tryb prosty i trzy filary · ok. 2 min</button>
-          <button class="btn btn-secondary btn-small" data-autoplay="family">Cała rodzina · ok. 2 min</button>
+          <button class="btn btn-primary btn-small" data-autoplay="core">▶ Główne funkcje</button>
+          <button class="btn btn-secondary btn-small" data-autoplay="family">▶ Sprawy rodzinne</button>
         </div>
-        <p class="guide-note">Zaczyna od nowa i klika za Ciebie, z podświetleniem każdego dotknięcia. Możesz przerwać w każdej chwili.</p>
+        <p class="guide-note">Aplikacja sama przechodzi przez kroki. Można przerwać w każdej chwili.</p>
       </div>`;
   }
   if (run.failed) {
     return `
       <div class="autoplay autoplay-running" role="status">
-        <p>Pokaz zatrzymał się na kroku ${run.index} z ${run.total}. Dalej możesz klikać sam.</p>
+        <p>Pokaz zatrzymał się na kroku ${run.index} z ${run.total}. Można kontynuować ręcznie.</p>
         <button class="btn btn-secondary btn-small" data-autoplay="stop">Zamknij</button>
       </div>`;
   }
@@ -435,12 +433,12 @@ function autoplayControls(run) {
 }
 
 const sceneList = (state) => [
-  { group: 'Na start', name: 'Tryb prosty', desc: 'Ten sam mObywatel, tylko prościej: duże przyciski, czytanie na głos i „Nie wiem, co zrobić”.', done: simpleSceneDone() },
-  { group: 'Trzy filary', name: 'Pomoc', desc: 'Anna pomaga mamie z pismem z urzędu, bez jej telefonu i PIN-u.', done: helpSceneDone(), note: aiSourceNote(state) },
+  { group: 'Na początek', name: 'Tryb prosty', desc: 'Ten sam mObywatel, tylko prościej: duże przyciski, czytanie na głos i „Nie wiem, co zrobić”.', done: simpleSceneDone() },
+  { group: 'Główne funkcje', name: 'Pomoc', desc: 'Anna pomaga mamie z pismem z urzędu, bez jej telefonu i PIN-u.', done: helpSceneDone(), note: aiSourceNote(state) },
   { name: 'Ochrona', desc: 'Dzwoni „policjant”. Aplikacja mówi: rozłącz się. Prośbę oszusta da się tylko odrzucić. Anna dostaje ostrzeżenie.', done: protectSceneDone(state) },
   { name: 'Kontrola', desc: 'Wypożyczalnia dostaje tylko to, czego potrzebuje. Wszystko widać w historii.', done: controlSceneDone(state) },
-  { group: 'Cała rodzina', name: 'Moje leki', desc: 'Krystynie kończy się lek. Aplikacja ostrzega wcześniej, Anna pomaga z receptą.', done: medsSceneDone() },
-  { name: 'Upoważnij babcię', desc: 'Anna utknęła w pracy. Babcia odbiera Zosię ze szkoły z kodem QR.', done: pickupSceneDone() },
+  { group: 'Sprawy rodzinne', name: 'Moje leki', desc: 'Krystynie kończy się lek. Aplikacja ostrzega wcześniej, Anna pomaga z receptą.', done: medsSceneDone() },
+  { name: 'Odbiór dziecka ze szkoły', desc: 'Anna utknęła w pracy. Babcia odbiera Zosię ze szkoły z kodem QR.', done: pickupSceneDone() },
   { name: 'Ktoś do mnie pisze?', desc: 'Obcy w czacie gry straszy Zosię. Zosia dostaje radę i sama wybiera, komu powiedzieć.', done: writingSceneDone() },
   { name: 'Zgoda dla szkoły', desc: 'Zosia skanuje kartkę od wychowawczyni, mama podpisuje zgodę w pracy.', done: schoolSceneDone() },
 ];
@@ -453,18 +451,26 @@ export function renderGuide(state, run = null) {
   const doneBefore = steps.map((step, i) => (!step && i < current ? i : -1)).filter((i) => i >= 0);
   const openIndex = allDone ? -1 : doneBefore.at(-1) ?? -1;
 
+  const seen = steps.filter((step) => !step).length;
   return `
-    <h2 class="guide-title">Sceny do przeklikania</h2>
-    ${autoplayControls(run)}
-    <ol class="scenes">
-      ${sceneList(state)
-        .map(
-          (scene, i) => `
-          ${scene.group ? `<li class="scene-group">${scene.group}</li>` : ''}
-          ${sceneItem({ number: i + 1, ...scene, step: steps[i], current: current === i, openCards: openIndex === i })}`,
-        )
-        .join('')}
-    </ol>
-    ${allDone ? summary(state) : ''}
-    <button class="btn btn-secondary" data-reset>Zacznij od nowa</button>`;
+    <div class="guide-head">
+      <div class="guide-title-row">
+        <h2 class="guide-title">Scenariusze</h2>
+        <span class="guide-progress">Obejrzane: ${seen} z ${steps.length}</span>
+      </div>
+      ${autoplayControls(run)}
+    </div>
+    <div class="guide-body" data-guide-body>
+      <ol class="scenes">
+        ${sceneList(state)
+          .map(
+            (scene, i) => `
+            ${scene.group ? `<li class="scene-group">${scene.group}</li>` : ''}
+            ${sceneItem({ number: i + 1, ...scene, step: steps[i], current: current === i, openCards: openIndex === i })}`,
+          )
+          .join('')}
+      </ol>
+      ${allDone ? summary(state) : ''}
+    </div>
+    <div class="guide-foot"><button class="btn btn-secondary btn-small" data-reset>Zacznij od początku</button></div>`;
 }

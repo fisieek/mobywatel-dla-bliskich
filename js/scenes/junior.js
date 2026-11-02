@@ -117,14 +117,14 @@ function tripCards() {
 }
 
 // Ekran główny Zosi (mObywatel Junior)
-export function zosiaHome(state) {
-  return `
-    ${list([
-      row({ iconName: 'phoneQuestion', tint: 'violet', title: 'Ktoś do mnie pisze?', desc: 'Obraża Cię, straszy albo chce zdjęć?', go: 'whoIsWriting', badge: newBadge() }),
-      row({ iconName: 'qr', tint: 'blue', title: 'Zgoda dla szkoły', desc: 'Zeskanuj kod z kartki od wychowawczyni', go: 'schoolConsentScan', badge: newBadge() }),
-      row({ iconName: 'call', tint: 'green', title: `Zadzwoń do ${mamaForZosia(state)}`, go: 'callContact' }),
-    ])}
-    ${sectionTitle('Moje dokumenty')}`;
+// Zakładka Usługi w mObywatelu Junior
+export function zosiaServices(state) {
+  return list([
+    row({ iconName: 'phoneQuestion', tint: 'violet', title: 'Ktoś do mnie pisze?', desc: 'Obraża Cię, straszy albo chce zdjęć?', go: 'whoIsWriting', badge: newBadge() }),
+    row({ iconName: 'qr', tint: 'blue', title: 'Zgoda dla szkoły', desc: 'Zeskanuj kod z kartki od wychowawczyni', go: 'schoolConsentScan', badge: newBadge() }),
+    row({ iconName: 'call', tint: 'green', title: `Zadzwoń do ${mamaForZosia(state)}`, go: 'callContact' }),
+    row({ iconName: 'people', tint: 'blue', title: 'Moi bliscy', desc: 'Nazwy, pod którymi widzisz bliskie osoby', go: 'contacts', badge: newBadge() }),
+  ]);
 }
 
 export const juniorScreens = {

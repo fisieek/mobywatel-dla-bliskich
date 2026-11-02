@@ -25,12 +25,14 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
 - `styles/devices.css` + `js/device.js` — realistyczne telefony w prawdziwych wymiarach: iPhone 18 Pro (402 × 874 pt, Dynamic Island) i składany iPhone Duo — złożony (466 × 678 pt) i rozłożony (890 × 626 pt, boczne menu zamiast dolnego paska). Przełącznik „Pokaż na” w nagłówku, jedna skala dla wszystkich urządzeń.
 - `styles/tokens.css` — kolory i kształty mObywatela (odczytane ze zrzutów, przybliżone).
 - `styles/app.css` — szkielet aplikacji (nagłówek, karty dokumentów, listy, dolny pasek) i tryb prosty.
-- `js/store.js` — wspólny stan obu telefonów: nawigacja, powiadomienia między telefonami, tryb prosty, „Działam jako”, historia. Zapis w `sessionStorage`.
+- `js/store.js` — wspólny stan obu telefonów: nawigacja, powiadomienia między telefonami, tryb prosty, historia. Zapis w `sessionStorage`.
 - `js/ui.js` — klocki interfejsu mObywatela (stos kart, wiersz listy, nagłówek usługi, ramka informacyjna, etykieta „Nowość”).
 - `js/personas.js` — fikcyjne osoby, ich dokumenty i bliscy (`family`), nazwy nadane bliskim i `contactName` — jedyne miejsce, które decyduje, jak pokazujemy bliską osobę.
 - `js/dates.js` — daty liczone od dnia pokazu (pismo, termin, ważność pozwolenia).
-- `js/screens/documents.js` — zakładka Dokumenty (zwykła, tryb prosty, „Działam jako”).
-- `js/screens/common.js` — Usługi, Kod QR, Szukaj, Więcej, szczegóły dokumentu, ekrany nowych usług.
+- `js/catalog.js` — pełne listy usług (37) i dokumentów (32) z info.mobywatel.gov.pl plus nasze nowe usługi; szukanie.
+- `js/screens/documents.js` — zakładka Dokumenty (tylko dokumenty) i ekran startowy trybu prostego.
+- `js/screens/common.js` — Usługi, Kod QR, Szukaj, Więcej, szczegóły dokumentu, ślepe uliczki `core:Nazwa`, ekrany nowych usług.
+- `js/scenes/care.js` — sprawy bliskich na telefonie Anny (Usługi → Pomoc bliskich → osoba).
 - `js/scenes/help.js` — scena Pomoc (pozwolenie, pismo, odpowiedź, podpis PIN-em).
 - `js/scenes/protect.js` — scena Ochrona (telefon od „policjanta” z podpisem numeru, „Ktoś do mnie dzwoni?”, zablokowana prośba o logowanie, prawdziwy telefon z Zakładu Ubezpieczeń Społecznych z kodem do porównania, logowanie kodem QR z liczbą do porównania).
 - `js/scenes/meds.js`, `js/scenes/pickup.js`, `js/scenes/junior.js` — sceny „Cała rodzina”: Moje leki, Upoważnij babcię, Ktoś do mnie pisze? i Zgoda dla szkoły.
@@ -40,19 +42,19 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
 - `js/ocr.js` — odczyt tekstu ze zdjęcia (Tesseract.js, polski słownik, w przeglądarce).
 - `api/assistant.js` + `api/_lib/pllum.js` — funkcja na serwerze: PLLuM-12B-instruct-2512 przez Featherless (klucz tylko na serwerze, limit długości, pamięć podręczna).
 - `dev-server.mjs` — lokalny serwer: pliki + `/api/assistant`.
-- `js/guide.js` — przewodnik dla jury (jedno „Teraz”, zwinięte karty po scenie, podsumowanie na końcu, krok dla paska na telefonie).
+- `js/guide.js` — panel „Scenariusze” obok telefonów (jedno „Teraz”, zwinięte karty po scenie, podsumowanie na końcu, krok dla paska na telefonie).
 - `js/autoplay.js` — „Pokaż sam”: pokaz całego demo (ok. 2 min), który klika te same przyciski co człowiek, z podświetleniem dotknięcia.
 - `js/speech.js` — „Przeczytaj na głos” w trybie prostym.
-- `js/icons.js` — własne ikony obrysowe (bez plików z aplikacji).
+- `js/icons.js` + `js/official-icons.js` + `assets/ikony/` — oficjalne ikony z systemu projektowego mObywatela (licencja MIT Centralnego Ośrodka Informatyki, `assets/ikony/LICENCJA.txt`) i kilka własnych tam, gdzie oficjalnych nie ma. Bez godła i logo dokumentów.
 
 ## Stan (27.10.2026, tydzień 1: fundament)
 - ✅ Szkielet aktualnego mObywatela: nagłówek z ikonami, stos kart, dolny pasek z 5 zakładkami, ekrany wewnętrzne z „Wróć”.
-- ✅ Nowe: tryb prosty (przełącznik w Więcej), „Działam jako: Ja · Mama · Antek”, nowe usługi w zakładce Usługi, powiadomienia między telefonami, czytanie na głos.
+- ✅ Nowe: tryb prosty (Więcej → Tryb prosty), nowe usługi w zakładce Usługi, powiadomienia między telefonami, czytanie na głos.
 - ✅ Istniejące usługi mObywatela prowadzą do ekranu „Ta usługa działa już w prawdziwym mObywatelu”.
 - ✅ **Scena Pomoc** (27.10.2026), cała na dwóch telefonach:
   - Krystyna daje Annie pozwolenie z zakresem i Face ID, Anna je przyjmuje,
   - Krystyna fotografuje papierowe pismo, asystent wyjaśnia je w trzech blokach i czyta na głos,
-  - Krystyna prosi Annę o pomoc, Anna (jako „Mama”) przygotowuje odpowiedź z asystentem i może ją poprawić,
+  - Krystyna prosi Annę o pomoc, Anna przygotowuje odpowiedź z asystentem i może ją poprawić,
   - Krystyna czyta albo słucha odpowiedzi i podpisuje ją PIN-em podpisu, Anna dostaje „Mama wysłała ✓”.
   - Przewodnik pokazuje następny krok, a na końcu karty „Kto już to robi” i „Dziś vs u nas”.
 - ✅ Połączenie z PLLuM gotowe w kodzie: wyjaśnienie pisma (JSON w 3 blokach) i szkic odpowiedzi z faktami od Anny. Sprawdzone na udawanym serwerze zgodnym z OpenAI. **Czeka na klucz API od Filipa.**
@@ -76,7 +78,6 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
   - na ekranie najwyżej jedno powiadomienie; po 7–10 s przechodzi do Powiadomień (dzwonek z kropką), razem z przyciskiem,
   - informacja „na żywo: PLLuM” / „tryb awaryjny” jest w przewodniku, a na telefonie tylko „Sprawdź z treścią pisma”,
   - daty pisma, terminu i pozwolenia liczone od dnia pokazu,
-  - Anna po wyjściu z pisma mamy sama wraca do „Działam jako: Ja”,
   - imiona bez odmiany i nowy ekran Więcej → Moi bliscy (nazwy bliskich).
 - ✅ **Poprawki P1: prostota dla Krystyny** (28.10.2026):
   - w trybie prostym zamiast pięciu małych zakładek i ikon bez podpisów: dwa duże przyciski na dole — „Start” i „Nie wiem, co zrobić”,
@@ -106,10 +107,14 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
   - **Zgoda dla szkoły** (Zosia → Anna): Zosia skanuje kod z kartki od wychowawczyni, Anna podpisuje zgodę w pracy,
   - trzeci telefon (Zosia, mObywatel Junior z trzema zakładkami); na komputerze w scenach Zosi zastępuje telefon Krystyny, przełącznik nad telefonem,
   - „Pokaż sam” w dwóch częściach: „Tryb prosty i trzy filary” i „Cała rodzina” (po ok. 2 min).
-- ⏳ Film 90 s z „Pokaż sam” do zgłoszenia.
+- ✅ **Aktualny mObywatel i porządek w strukturze** (2.11.2026):
+  - zakładka Dokumenty ma tylko dokumenty; zamiast przełącznika „Działam jako” jest Usługi → Pomoc bliskich,
+  - pełne listy usług i dokumentów, działające Szukaj, Więcej według prawdziwej aplikacji, oficjalne ikony,
+  - strona dla urzędników: panel „Scenariusze” przewija się osobno, telefony stoją w miejscu.
+- ⏳ Film 90 s z pokazu automatycznego do zgłoszenia.
 
 ## Zasady
 - **Imion nigdy nie odmieniamy.** Bliską osobę pokazujemy zawsze jako „Imię Nazwisko, Relacja” (np. „Anna Nowak, Córka”) albo pod nazwą nadaną na ekranie Więcej → Moi bliscy (np. „Mama”) — w tej samej formie w każdym zdaniu: „Zadzwoń do Mama”, „Poproś o pomoc: Anna Nowak, Córka”. Zdania budujemy tak, żeby imię stało w mianowniku (podmiot, etykieta po dwukropku albo tytuł powiadomienia). Wszystko idzie przez `contactName` w `js/personas.js`.
-- Bez godła, oznaczeń i zdjęć z prototypu Cieszyńskiego. Dane i osoby fikcyjne.
+- Bez godła oraz bez oznaczeń i zdjęć z prototypu Cieszyńskiego. Dane i osoby fikcyjne.
 - Bez bibliotek i bez kroku budowania, żeby prototyp działał stabilnie bez logowania przez cały czas oceny.
 - Niewidoczny w wyszukiwarkach i bez śledzenia: `noindex` w `index.html` i w nagłówku `X-Robots-Tag` (`vercel.json`), bez analityki i bez Google Fonts (czcionki systemowe). Jedyne zewnętrzne zapytanie z przeglądarki to biblioteka odczytu tekstu z cdn.jsdelivr.net, i to dopiero przy zdjęciu własnego pisma.

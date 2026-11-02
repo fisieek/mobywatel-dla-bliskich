@@ -1,7 +1,7 @@
 // Scena 1 · POMOC — „Pomóż mi, bez oddawania telefonu”.
 // 1a: Krystyna daje Annie pozwolenie, Anna je przyjmuje.
 // 1b: Krystyna fotografuje papierowe pismo, asystent wyjaśnia je po ludzku, Krystyna prosi Annę o pomoc.
-// 1c: Anna (jako „Mama”) przygotowuje odpowiedź, Krystyna podpisuje ją PIN-em podpisu.
+// 1c: Anna przygotowuje odpowiedź, Krystyna podpisuje ją PIN-em podpisu.
 import { store, replace, notify, patch, addHistory, withBiometric } from '../store.js';
 import { icon } from '../icons.js';
 import { speak } from '../speech.js';
@@ -10,6 +10,7 @@ import { people, contactName, fullName } from '../personas.js';
 import { explanation as sampleExplanation, explanationSpeech, paperHtml, sampleLetterText } from '../letter.js';
 import { explainLetter, draftReply } from '../assistant.js';
 import { readTextFromPhoto } from '../ocr.js';
+import { mamaSummary, childrenSection } from './care.js';
 import { shortDate, monthsFromToday } from '../dates.js';
 
 // Pozwolenie jest ważne 12 miesięcy od dnia pokazu
@@ -153,7 +154,7 @@ function successBlock(title, body) {
 // ---------- 1a: pozwolenie ----------
 
 export function revokeGuardian() {
-  patch({ guardian: 'none', actingAs: 'ja' });
+  patch({ guardian: 'none' });
   const state = store.get();
   addHistory({ persona: 'krystyna', text: `Odwołałaś pomoc: ${annaFor(state)}` });
   notify('anna', { title: mamaFor(state), body: 'Odwołała Twoją pomoc. Nie widzisz już jej pism.' });
@@ -179,17 +180,19 @@ function helpersForKrystyna(state) {
 }
 
 function helpersForAnna(state) {
+  const children = childrenSection(state);
   if (state.guardian === 'pending') {
-    return `${sectionTitle('Prośby o pomoc')}${list([row({ iconName: 'people', tint: 'green', title: mamaFor(state), desc: 'Prosi Cię o pomoc w sprawach urzędowych', go: 'helpersInvite' })])}`;
+    return `${sectionTitle('Prośby o pomoc')}${list([row({ iconName: 'people', tint: 'green', title: mamaFor(state), desc: 'Prosi Cię o pomoc w sprawach urzędowych', go: 'helpersInvite' })])}${children}`;
   }
   if (state.guardian === 'active') {
+    const summary = mamaSummary(state);
     // Anna może zaproponować tryb prosty, ale włącza go tylko mama
     const offer = state.simpleMode.krystyna
       ? ''
       : `<button class="btn btn-secondary" data-action="offerSimple">Zaproponuj tryb prosty: ${mamaFor(state)}</button>`;
-    return `${sectionTitle('Komu pomagasz')}${list([row({ iconName: 'people', tint: 'green', title: mamaFor(state), desc: `${fullName('krystyna')} · do ${GUARDIAN_UNTIL} · pisma, odpowiedzi, ostrzeżenia`, go: 'mamaLetter' })])}${offer}`;
+    return `${sectionTitle('Komu pomagasz')}${list([row({ iconName: 'people', tint: summary.tint, title: mamaFor(state), desc: summary.desc, go: 'care-krystyna' })])}${offer}${children}`;
   }
-  return infoBox('Nikt nie poprosił Cię jeszcze o pomoc. Gdy bliska osoba da Ci pozwolenie, zobaczysz to tutaj.');
+  return `${infoBox('Nikt nie poprosił Cię jeszcze o pomoc. Gdy bliska osoba da Ci pozwolenie, zobaczysz to tutaj.')}${children}`;
 }
 
 export const helpScreens = {
@@ -201,7 +204,10 @@ export const helpScreens = {
         iconName: 'people',
         tint: 'green',
         title: 'Pomoc bliskich',
-        desc: 'Pozwól zaufanej osobie widzieć Twoje pisma i przygotowywać odpowiedzi. Ty decydujesz, w czym pomaga i do kiedy.',
+        desc:
+          persona === 'krystyna'
+            ? 'Pozwól zaufanej osobie widzieć Twoje pisma i przygotowywać odpowiedzi. Ty decydujesz, w czym pomaga i do kiedy.'
+            : 'Sprawy osób, którym pomagasz, i Twoich dzieci w jednym miejscu. Działasz pod własnym imieniem, a każdy krok jest w historii.',
         badge: newBadge(),
       })}
       ${persona === 'krystyna' ? helpersForKrystyna(state) : helpersForAnna(state)}`,
@@ -474,9 +480,8 @@ export const helpScreens = {
   mamaLetter: {
     kind: 'inner',
     title: 'Pismo z urzędu',
+    helping: 'krystyna',
     onEnter: (state) => {
-      // Aplikacja sama przełącza Annę na mamę; po wyjściu z pisma Anna wróci do siebie (store.js)
-      if (state.actingAs !== 'mama' && state.guardian === 'active') patch({ actingAs: 'mama', autoActing: true });
       if (state.letter === 'requested') {
         patch({ letter: 'opened' });
         addHistory({ persona: 'krystyna', actor: 'anna', text: 'Przeczytała pismo z urzędu' });
