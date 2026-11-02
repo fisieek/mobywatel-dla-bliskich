@@ -1,4 +1,4 @@
-// „Pokaż sam”: przewodnik klika za jury, krok po kroku, z podświetleniem dotykanego miejsca.
+// Pokaz automatyczny: panel klika za oglądającego, krok po kroku, z podświetleniem dotykanego miejsca.
 // Kroki to te same przyciski, których dotyka człowiek — pokaz nie ma osobnej logiki aplikacji.
 
 const K = 'krystyna';
@@ -9,16 +9,15 @@ const Z = 'zosia';
 const STEP_PAUSE_MS = 1400;
 // Jak długo widać podświetlenie przed dotknięciem
 const HIGHLIGHT_MS = 900;
-// Najdłużej czekamy na przycisk, np. gdy asystent myśli (do 8 s) albo przychodzi powiadomienie
+// Najdłużej czekamy na przycisk, np. gdy przychodzi powiadomienie
 const WAIT_LIMIT_MS = 15000;
 
 // Krok: [telefon albo null dla przewodnika, selektor, przerwa po kroku w ms].
-// `scene` to numer sceny w przewodniku (od 0), żeby przewodnik podświetlał to, co właśnie widać.
+// `scene` to numer scenariusza w panelu (od 0).
 const scenes = [
   {
     name: 'Tryb prosty',
     scene: 0,
-    group: 'core',
     steps: [
       [K, '[data-tab="more"]'],
       [K, '.row[data-go="simpleOffer"]', 1800],
@@ -28,7 +27,6 @@ const scenes = [
   {
     name: 'Pomoc',
     scene: 1,
-    group: 'core',
     steps: [
       [K, '.row[data-go="helpers"]'],
       [K, 'button[data-go="helpersChoose"]'],
@@ -58,7 +56,6 @@ const scenes = [
   {
     name: 'Ochrona',
     scene: 2,
-    group: 'core',
     steps: [
       [null, '[data-guide-action="scamCall"]', 1800],
       [K, '[data-call="answer"]', 5000],
@@ -74,7 +71,6 @@ const scenes = [
   {
     name: 'Kontrola',
     scene: 3,
-    group: 'core',
     steps: [
       [A, '[data-tab="qr"]'],
       [A, '.row[data-go="qrScan"]'],
@@ -87,7 +83,6 @@ const scenes = [
   {
     name: 'Moje leki',
     scene: 4,
-    group: 'family',
     steps: [
       [null, '[data-guide-action="medsLow"]', 1800],
       [K, '[data-notification-go="meds"]'],
@@ -101,9 +96,8 @@ const scenes = [
     ],
   },
   {
-    name: 'Upoważnienie',
+    name: 'Odbiór dziecka ze szkoły',
     scene: 5,
-    group: 'family',
     steps: [
       [A, '[data-tab="services"]'],
       [A, '.row[data-go="authorize"]', 1800],
@@ -117,7 +111,6 @@ const scenes = [
   {
     name: 'Ktoś do mnie pisze?',
     scene: 6,
-    group: 'family',
     steps: [
       [null, '[data-guide-action="strangerChat"]', 5000],
       [Z, '[data-chat="minimize"]'],
@@ -132,7 +125,6 @@ const scenes = [
   {
     name: 'Zgoda dla szkoły',
     scene: 7,
-    group: 'family',
     steps: [
       [Z, '[data-tab="services"]'],
       [Z, '.row[data-go="schoolConsentScan"]'],
@@ -144,10 +136,10 @@ const scenes = [
   },
 ];
 
-const stepsFor = (group) =>
+const stepsFor = (indices) =>
   scenes
-    .filter((scene) => group === 'all' || scene.group === group)
-    .flatMap((scene) => scene.steps.map((step) => ({ scene: scene.name, sceneIndex: scene.scene, step })));
+    .filter((scene) => indices.includes(scene.scene))
+    .flatMap((scene) => scene.steps.map((step, i) => ({ scene: scene.name, sceneIndex: scene.scene, step, first: i === 0 })));
 
 // Bieżący pokaz: null albo { index, total, scene, sceneIndex, failed }
 let run = null;
@@ -196,21 +188,22 @@ export function stopAutoplay() {
   emit();
 }
 
-// group — 'core' (tryb prosty i trzy filary), 'family' (cała rodzina) albo 'all'.
-// reset — zaczyna demo od nowa; prepare — ustawia stan początkowy części; showPersona — pokazuje telefon, którego dotyczy krok
-export async function startAutoplay({ group = 'core', reset, prepare, showPersona }) {
+// indices — które scenariusze pokazać; prepare(i) ustawia stan startowy scenariusza; showPersona — pokazuje telefon, którego dotyczy krok
+export async function startAutoplay({ indices, prepare, showPersona }) {
   stopAutoplay();
   const id = ++runId;
-  const allSteps = stepsFor(group);
+  const allSteps = stepsFor(indices);
   run = { index: 0, total: allSteps.length, scene: allSteps[0].scene, sceneIndex: allSteps[0].sceneIndex, failed: false };
   emit();
-  reset();
-  prepare?.();
-  await sleep(800);
 
   for (let i = 0; i < allSteps.length; i++) {
     if (id !== runId) return;
-    const { scene, sceneIndex, step } = allSteps[i];
+    const { scene, sceneIndex, step, first } = allSteps[i];
+    if (first) {
+      prepare(sceneIndex);
+      await sleep(800);
+      if (id !== runId) return;
+    }
     const [persona, selector, pause = STEP_PAUSE_MS] = step;
     run = { ...run, index: i + 1, scene, sceneIndex };
     emit();

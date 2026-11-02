@@ -1,6 +1,6 @@
-// Scena · UPOWAŻNIJ BABCIĘ (Cała rodzina, filar Kontrola).
-// Anna utknęła w pracy. W minutę upoważnia mamę do odebrania Zosi ze szkoły. Krystyna pokazuje w szkole kod QR,
-// nauczycielka widzi tylko to, co potrzebne, a Anna dostaje informację o odbiorze.
+// Scenariusz · ODBIÓR DZIECKA ZE SZKOŁY (i inne codzienne sprawy).
+// Upoważnienie to cyfrowa wersja kartki: Anna wybiera podpowiedź albo opisuje sprawę własnymi słowami.
+// Krystyna pokazuje kod QR, sprawdzający widzi, kto i do czego upoważnił, a Anna dostaje informację o użyciu.
 import { store, notify, patch, addHistory, withBiometric } from '../store.js';
 import { icon } from '../icons.js';
 import { list, row, newBadge, serviceHeader, infoBox, sectionTitle } from '../ui.js';
@@ -13,10 +13,6 @@ const school = { name: 'Szkoła Podstawowa nr 7 w Gdyni', klass: '5b' };
 // Imiona bez odmiany — każdy telefon pokazuje bliskich po swojemu
 const mamaFor = (state) => contactName(state, 'anna', 'krystyna'); // na telefonie Anny
 const annaFor = (state) => contactName(state, 'krystyna', 'anna'); // na telefonie Krystyny
-const zosiaForAnna = (state) => contactName(state, 'anna', 'zosia');
-const antekForAnna = (state) => contactName(state, 'anna', 'antek');
-const zosiaForKrystyna = (state) => contactName(state, 'krystyna', 'zosia');
-const antekForKrystyna = (state) => contactName(state, 'krystyna', 'antek');
 
 const untilOptions = {
   today: { title: 'Tylko dziś', desc: 'Do 18:00', short: 'dziś do 18:00' },
@@ -24,25 +20,39 @@ const untilOptions = {
   always: { title: 'Do odwołania', desc: 'Możesz odwołać w każdej chwili', short: 'do odwołania' },
 };
 
-const scopeText = (state, pickup) =>
-  [pickup.school ? `odbiór ze szkoły · ${zosiaForKrystyna(state)}` : '', pickup.doctor ? `wizyta u lekarza · ${antekForKrystyna(state)}` : '']
-    .filter(Boolean)
-    .join(', ');
+// W czyjej sprawie i jakie podpowiedzi. Listy nie da się przewidzieć, dlatego zawsze jest też „Inna sprawa”.
+const subjects = [
+  { id: 'zosia', purposes: ['school', 'doctor'] },
+  { id: 'antek', purposes: ['doctor'] },
+  { id: 'me', purposes: ['parcel'] },
+];
 
-function toggle(on) {
-  return `<span class="toggle ${on ? 'toggle-on' : ''}" aria-hidden="true"><span></span></span>`;
+const purposes = {
+  school: { title: 'Odbiór ze szkoły', desc: `${school.name}, klasa ${school.klass}` },
+  doctor: { title: 'Wizyta u lekarza', desc: 'Pediatra i szczepienia' },
+  parcel: { title: 'Odbiór przesyłki', desc: 'Na poczcie lub w punkcie odbioru' },
+  other: { title: 'Inna sprawa', desc: 'Opisz ją własnymi słowami' },
+};
+
+const purposeText = (pickup) => (pickup.purpose === 'other' ? pickup.text : purposes[pickup.purpose].title);
+
+// Jak dana osoba widzi zakres, np. „Odbiór ze szkoły · Zosia”
+function scopeText(state, pickup, viewer) {
+  return pickup.subject === 'me' ? purposeText(pickup) : `${purposeText(pickup)} · ${contactName(state, viewer, pickup.subject)}`;
 }
+
+const isSchool = (pickup) => pickup.purpose === 'school';
 
 // Karta na ekranie głównym Krystyny w trybie prostym
 export function pickupStatus(state) {
-  if (state.pickup?.status !== 'active' || !state.pickup.school) return null;
-  return { text: `Możesz dziś odebrać ze szkoły: ${zosiaForKrystyna(state)}.`, tone: 'attention', go: 'pickupPass', cta: 'Pokaż kod w szkole' };
+  if (state.pickup?.status !== 'active') return null;
+  return { text: `Masz upoważnienie: ${scopeText(state, state.pickup, 'krystyna')}.`, tone: 'attention', go: 'pickupPass', cta: isSchool(state.pickup) ? 'Pokaż kod w szkole' : 'Pokaż kod' };
 }
 
 // Wiersz mamy na ekranie Anny
 export function pickupSummary(state) {
   if (state.pickup?.status === 'active') return { desc: `Upoważniona: ${untilOptions[state.pickup.until].short}`, tint: 'blue' };
-  if (state.pickup?.status === 'used') return { desc: `Dziś ${clock(state.pickup.usedAt)} · odebrała ze szkoły: ${zosiaForAnna(state)}`, tint: 'green' };
+  if (state.pickup?.status === 'used') return { desc: `Dziś ${clock(state.pickup.usedAt)} · upoważnienie użyte: ${scopeText(state, state.pickup, 'anna')}`, tint: 'green' };
   return null;
 }
 
@@ -55,16 +65,15 @@ export const pickupScreens = {
       if (state.pickup?.status === 'active') {
         return `
           ${serviceHeader({ iconName: 'people', tint: 'green', title: 'Upoważnienie aktywne', desc: `${mamaFor(state)} · ${untilOptions[state.pickup.until].short}`, badge: newBadge() })}
-          ${list([
-            state.pickup.school ? row({ iconName: 'check', tint: 'green', title: `Odbiór ze szkoły · ${zosiaForAnna(state)}`, desc: school.name, trailing: '' }) : '',
-            state.pickup.doctor ? row({ iconName: 'check', tint: 'green', title: `Wizyta u lekarza · ${antekForAnna(state)}`, trailing: '' }) : '',
-          ].filter(Boolean))}
-          ${infoBox('Dostaniesz powiadomienie, gdy szkoła zeskanuje kod.')}
+          ${list([row({ iconName: 'check', tint: 'green', title: scopeText(state, state.pickup, 'anna'), trailing: '' })])}
+          ${infoBox('Dostaniesz powiadomienie, gdy ktoś zeskanuje kod.')}
           <button class="btn btn-secondary btn-danger-text" data-action="revokePickup">Odwołaj upoważnienie</button>`;
       }
       const draft = state.pickupDraft;
+      const options = [...subjects.find((x) => x.id === draft.subject).purposes, 'other'];
+      const ready = draft.purpose !== 'other' || draft.text.trim();
       return `
-        ${serviceHeader({ iconName: 'people', tint: 'green', title: 'Upoważnij bliską osobę', desc: 'Nie możesz odebrać dziecka ze szkoły albo pójść z nim do lekarza? Upoważnij kogoś z rodziny. Szkoła sprawdzi to kodem QR.', badge: newBadge() })}
+        ${serviceHeader({ iconName: 'people', tint: 'green', title: 'Upoważnij bliską osobę', desc: 'Nie możesz czegoś załatwić osobiście? Upoważnij kogoś z rodziny. Osoba sprawdzająca potwierdzi to kodem QR.', badge: newBadge() })}
         ${sectionTitle('Kogo upoważniasz?')}
         <div class="choices" role="radiogroup" aria-label="Kogo upoważniasz">
           <button class="choice choice-on" role="radio" aria-checked="true">
@@ -72,11 +81,32 @@ export const pickupScreens = {
             <span class="row-text"><span class="row-title">${mamaFor(state)}</span><span class="row-desc">${fullName('krystyna')} · Matka</span></span>
           </button>
         </div>
+        ${sectionTitle('W czyjej sprawie?')}
+        <div class="chips" role="radiogroup" aria-label="W czyjej sprawie">
+          ${subjects
+            .map(({ id }) => {
+              const on = draft.subject === id;
+              return `<button class="chip ${on ? 'chip-on' : ''}" role="radio" aria-checked="${on}" data-action="pickupSubject" data-id="${id}">${id === 'me' ? 'Moja' : contactName(state, 'anna', id)}</button>`;
+            })
+            .join('')}
+        </div>
         ${sectionTitle('Do czego?')}
-        ${list([
-          row({ title: `Odbiór ze szkoły · ${zosiaForAnna(state)}`, desc: `${school.name}, klasa ${school.klass}`, action: 'pickupScope', id: 'school', trailing: toggle(draft.school) }),
-          row({ title: `Wizyta u lekarza · ${antekForAnna(state)}`, desc: 'Pediatra i szczepienia', action: 'pickupScope', id: 'doctor', trailing: toggle(draft.doctor) }),
-        ])}
+        <div class="choices" role="radiogroup" aria-label="Do czego">
+          ${options
+            .map((id) => {
+              const on = draft.purpose === id;
+              return `
+            <button class="choice ${on ? 'choice-on' : ''}" role="radio" aria-checked="${on}" data-action="pickupPurpose" data-id="${id}">
+              <span class="radio" aria-hidden="true"></span>
+              <span class="row-text"><span class="row-title">${purposes[id].title}</span><span class="row-desc">${purposes[id].desc}</span></span>
+            </button>`;
+            })
+            .join('')}
+        </div>
+        ${draft.purpose === 'other' ? `
+        <label class="field-label" for="pickup-text">Opis sprawy</label>
+        <input class="text-input" id="pickup-text" data-pickup-text data-keep-focus maxlength="80" placeholder="${draft.subject === 'me' ? 'np. Odbiór garnituru z pralni' : 'np. Odbiór z treningu w środę'}" value="${draft.text}">` : ''}
+        ${['other', 'doctor'].includes(draft.purpose) ? infoBox('To nie zastępuje pełnomocnictwa w sprawach pieniędzy, nieruchomości ani dostępu do danych medycznych. Instytucja może mieć własne zasady.') : ''}
         ${sectionTitle('Do kiedy?')}
         <div class="choices" role="radiogroup" aria-label="Do kiedy">
           ${Object.entries(untilOptions)
@@ -89,13 +119,19 @@ export const pickupScreens = {
             )
             .join('')}
         </div>
-        ${infoBox('Szkoła zobaczy tylko: kto może odebrać, kogo, do kiedy i kto upoważnił. Bez adresu i numeru PESEL.')}
-        <button class="btn btn-primary" data-action="authorizeConfirm" ${draft.school || draft.doctor ? '' : 'disabled'}>Upoważnij</button>`;
+        ${infoBox('Osoba sprawdzająca zobaczy tylko: kto jest upoważniony, do czego, do kiedy i kto upoważnił. Bez adresu i numeru PESEL.')}
+        <button class="btn btn-primary" data-action="authorizeConfirm" ${ready ? '' : 'disabled'}>Upoważnij</button>`;
     },
     actions: {
-      pickupScope: (el) =>
+      pickupSubject: (el) =>
         store.update((s) => {
-          s.pickupDraft[el.dataset.id] = !s.pickupDraft[el.dataset.id];
+          s.pickupDraft.subject = el.dataset.id;
+          s.pickupDraft.purpose = subjects.find((x) => x.id === el.dataset.id).purposes[0];
+          return s;
+        }),
+      pickupPurpose: (el) =>
+        store.update((s) => {
+          s.pickupDraft.purpose = el.dataset.id;
           return s;
         }),
       pickupUntil: (el) =>
@@ -106,13 +142,13 @@ export const pickupScreens = {
       authorizeConfirm: (el, persona) =>
         withBiometric(persona, () => {
           const state = store.get();
-          const pickup = { ...state.pickupDraft, status: 'active', usedAt: null };
+          const pickup = { ...state.pickupDraft, text: state.pickupDraft.text.trim(), status: 'active', usedAt: null };
           patch({ pickup });
-          addHistory({ persona: 'anna', text: `Upoważniłaś: ${mamaFor(state)} · ${untilOptions[pickup.until].short}` });
-          addHistory({ persona: 'krystyna', actor: 'anna', text: `Upoważniła Cię: ${scopeText(state, pickup)} · ${untilOptions[pickup.until].short}` });
+          addHistory({ persona: 'anna', text: `Upoważniłaś: ${mamaFor(state)} · ${scopeText(state, pickup, 'anna')} · ${untilOptions[pickup.until].short}` });
+          addHistory({ persona: 'krystyna', actor: 'anna', text: `Upoważniła Cię: ${scopeText(state, pickup, 'krystyna')} · ${untilOptions[pickup.until].short}` });
           notify('krystyna', {
             title: annaFor(state),
-            body: `Upoważniła Cię: ${scopeText(state, pickup)}. Ważne ${untilOptions[pickup.until].short}.`,
+            body: `Upoważniła Cię: ${scopeText(state, pickup, 'krystyna')}. Ważne ${untilOptions[pickup.until].short}.`,
             action: { label: 'Pokaż kod', go: 'pickupPass' },
           });
         }),
@@ -125,61 +161,66 @@ export const pickupScreens = {
     },
   },
 
-  // Telefon Krystyny: kod do pokazania w szkole
+  // Telefon Krystyny: kod do pokazania osobie, która sprawdza upoważnienie
   pickupPass: {
     kind: 'inner',
     title: 'Upoważnienie',
     speech: (state) =>
       state.pickup?.status === 'active'
-        ? `Możesz dziś odebrać ze szkoły: ${zosiaForKrystyna(state)}. Upoważniła Cię: ${annaFor(state)}. Pokaż ten kod w szkole.`
+        ? `Twoje upoważnienie: ${scopeText(state, state.pickup, 'krystyna')}. Upoważniła Cię: ${annaFor(state)}. Pokaż ten kod.`
         : null,
     render: (state) => {
       const pickup = state.pickup;
       if (!pickup || pickup.status === 'revoked') return infoBox('Nie masz teraz żadnego upoważnienia.');
+      const checker = isSchool(pickup) ? 'Nauczycielka' : 'Osoba sprawdzająca';
       if (pickup.status === 'used') {
         return `
           <div class="success">
             <span class="success-icon">${icon('check', { size: 40 })}</span>
-            <h2 class="service-title">Szkoła potwierdziła odbiór</h2>
-            <p class="service-desc">${zosiaForKrystyna(state)} · ${clock(pickup.usedAt)}. Informację dostała: ${annaFor(state)}.</p>
+            <h2 class="service-title">${isSchool(pickup) ? 'Szkoła potwierdziła odbiór' : 'Upoważnienie sprawdzone'}</h2>
+            <p class="service-desc">${scopeText(state, pickup, 'krystyna')} · ${clock(pickup.usedAt)}. Informację dostała: ${annaFor(state)}.</p>
           </div>
-          ${teacherView(state)}
+          ${checkerView(state)}
           <button class="btn btn-primary" data-home>Gotowe</button>`;
       }
       return `
         <div class="pass">
-          <p class="ai-label">Możesz odebrać ze szkoły</p>
-          <h2 class="service-title">${zosiaForKrystyna(state)}</h2>
+          <p class="ai-label">Twoje upoważnienie</p>
+          <h2 class="service-title">${scopeText(state, pickup, 'krystyna')}</h2>
           ${qrSvg(170)}
-          <p class="service-desc">Pokaż ten kod nauczycielce. Ważne ${untilOptions[pickup.until].short}.</p>
+          <p class="service-desc">Pokaż ten kod${isSchool(pickup) ? ' nauczycielce' : ''}. Ważne ${untilOptions[pickup.until].short}.</p>
         </div>
         ${list([row({ iconName: 'people', tint: 'green', title: annaFor(state), desc: 'Upoważniła Cię', trailing: '' })])}
-        <div class="m-ok" role="status">${icon('checkCircle', { size: 22 })}<p>Nauczycielka zobaczy tylko imię i nazwisko i to upoważnienie. Bez adresu i numeru PESEL.</p></div>
-        <button class="btn btn-secondary" data-action="teacherScan">${icon('qr', { size: 20 })} Nauczycielka skanuje kod</button>
-        <p class="footnote center">W prototypie ten przycisk udaje skaner w szkole.</p>`;
+        <div class="m-ok" role="status">${icon('checkCircle', { size: 22 })}<p>${checker} zobaczy tylko imię i nazwisko i to upoważnienie. Bez adresu i numeru PESEL.</p></div>
+        <button class="btn btn-secondary" data-action="teacherScan">${icon('qr', { size: 20 })} ${checker} skanuje kod</button>
+        <p class="footnote center">W prototypie ten przycisk udaje skaner.</p>`;
     },
     actions: {
       teacherScan: () => {
         const state = store.get();
         const usedAt = new Date().toISOString();
-        patch({ pickup: { ...state.pickup, status: 'used', usedAt } });
-        addHistory({ persona: 'krystyna', actor: 'institution', who: school.name, text: 'Sprawdziła Twoje upoważnienie do odbioru dziecka: imię, nazwisko, zakres i termin' });
-        notify('anna', { title: mamaFor(state), body: `Odebrała ze szkoły: ${zosiaForAnna(state)} · ${clock(usedAt)}. Szkoła sprawdziła upoważnienie.`, tone: 'ok' });
+        const pickup = state.pickup;
+        patch({ pickup: { ...pickup, status: 'used', usedAt } });
+        addHistory({ persona: 'krystyna', actor: 'institution', who: isSchool(pickup) ? school.name : 'Osoba sprawdzająca', text: 'Sprawdziła Twoje upoważnienie: imię, nazwisko, zakres i termin' });
+        notify('anna', { title: mamaFor(state), body: `Upoważnienie użyte: ${scopeText(state, pickup, 'anna')} · ${clock(usedAt)}.`, tone: 'ok' });
       },
     },
   },
 };
 
-// Co zobaczyła szkoła po zeskanowaniu kodu
-function teacherView(state) {
+// Co zobaczył sprawdzający po zeskanowaniu kodu. Dane osób i termin są z rejestru, a opis wpisany ręcznie jest oznaczony.
+function checkerView(state) {
+  const pickup = state.pickup;
+  const child = pickup.subject !== 'me';
   return `
     <div class="teacher-view">
-      <p class="ai-label">Nauczycielka zobaczyła</p>
+      <p class="ai-label">${isSchool(pickup) ? 'Nauczycielka' : 'Osoba sprawdzająca'} zobaczyła</p>
       <dl>
-        <dt>Odbiera</dt><dd>${fullName('krystyna')}</dd>
-        <dt>Dziecko</dt><dd>${fullName('zosia')}, klasa ${school.klass}</dd>
-        <dt>Upoważniła</dt><dd>${fullName('anna')} (matka)</dd>
-        <dt>Ważne</dt><dd>${untilOptions[state.pickup.until].short}</dd>
+        <dt>Upoważniona</dt><dd>${fullName('krystyna')}</dd>
+        <dt>${pickup.purpose === 'other' ? 'Do czego (opis od upoważniającej)' : 'Do czego'}</dt><dd>${purposeText(pickup)}</dd>
+        ${child ? `<dt>Dziecko</dt><dd>${fullName(pickup.subject)}${isSchool(pickup) ? `, klasa ${school.klass}` : ''}</dd>` : ''}
+        <dt>Upoważniła</dt><dd>${fullName('anna')}${child ? ' (matka)' : ''}</dd>
+        <dt>Ważne</dt><dd>${untilOptions[pickup.until].short}</dd>
       </dl>
       <p class="footnote">Bez adresu, numeru PESEL i zdjęć dokumentów.</p>
     </div>`;

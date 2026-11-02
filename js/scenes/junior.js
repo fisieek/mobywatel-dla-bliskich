@@ -1,5 +1,5 @@
 // Sceny Zosi (11 lat, mObywatel Junior), Cała rodzina:
-// · KTOŚ DO MNIE PISZE? (filar Ochrona) — obcy w czacie gry chce zdjęć i straszy. Zosia dostaje radę po dziecięcemu
+// · KTOŚ DO MNIE PISZE? (filar Ochrona) — obcy, który poznał Zosię w grze, pisze do niej, chce zdjęć i straszy. Zosia dostaje radę po dziecięcemu
 //   i sama wybiera, komu powiedzieć: 116 111, mamie albo Dyżurnet.pl. Mama nie dostaje nic bez jej zgody.
 // · ZGODA OD MAMY W MINUTĘ (filar Pomoc) — Zosia skanuje kod z kartki od wychowawczyni, Anna podpisuje zgodę w pracy.
 import { store, notify, patch, addHistory, replace, withBiometric, home } from '../store.js';
@@ -13,11 +13,10 @@ import { stopSpeaking } from '../speech.js';
 const mamaForZosia = (state) => contactName(state, 'zosia', 'anna');
 const zosiaForAnna = (state) => contactName(state, 'anna', 'zosia');
 
-// ---------- Czat od obcego (ekran innej aplikacji, jak ekran rozmowy u Krystyny) ----------
+// ---------- Wiadomości od obcego (ekran innej aplikacji, jak ekran rozmowy u Krystyny) ----------
 
 const chat = {
-  app: 'Kosmiczne Klocki · czat w grze',
-  from: 'kuba_2013',
+  from: '+48 500 000 000',
   lines: [
     'hej, widziałem cię w grze, super grasz',
     'masz jakieś swoje zdjęcia? wyślij mi, tylko nikomu nie mów',
@@ -56,15 +55,26 @@ export function chatOverlay(state, persona) {
     .map((line, i) => `<p class="chat-bubble" style="animation-delay:${i * LINE_DELAY_MS - elapsed}ms">${line}</p>`)
     .join('');
   return `
-    <div class="chat-screen ${isNew}" role="dialog" aria-label="Czat w grze">
+    <div class="chat-screen ${isNew}" role="dialog" aria-label="Wiadomości od nieznanego numeru">
       <div class="chat-head">
-        <span class="chat-avatar" aria-hidden="true">K</span>
-        <div><p class="chat-from">${chat.from}</p><p class="chat-app">${chat.app}</p></div>
+        <span class="chat-back" aria-hidden="true">${icon('chevronLeft', { size: 24 })}</span>
+        <div class="chat-contact">
+          <span class="chat-avatar" aria-hidden="true">${icon('people', { size: 24 })}</span>
+          <p class="chat-from">${chat.from}</p>
+        </div>
       </div>
-      <div class="chat-thread" aria-live="polite">${bubbles}</div>
+      <div class="chat-thread" aria-live="polite">
+        <p class="chat-meta"><strong>iMessage</strong><br>Dzisiaj 9:38</p>
+        ${bubbles}
+        <p class="chat-meta chat-unknown" style="animation-delay:${chat.lines.length * LINE_DELAY_MS - elapsed}ms">Nadawcy nie ma na Twojej liście kontaktów.</p>
+      </div>
+      <div class="chat-compose" aria-hidden="true">
+        <span class="chat-plus">+</span>
+        <span class="chat-field">iMessage</span>
+      </div>
       <button class="call-swipe chat-swipe" data-chat="minimize">
         <span class="call-swipe-bar" aria-hidden="true"></span>
-        Przesuń w górę, żeby wyjść z gry
+        Przesuń w górę, żeby wyjść z Wiadomości
       </button>
     </div>`;
 }
@@ -74,7 +84,7 @@ export function chatOverlay(state, persona) {
 const situations = {
   insult: {
     title: 'Ktoś mnie obraża',
-    advice: ['Nie odpisuj i nie obrażaj w odpowiedzi.', 'Zrób zrzut ekranu i nie kasuj rozmowy. To dowód.', 'Możesz zablokować tę osobę w grze albo w aplikacji.'],
+    advice: ['Nie odpisuj i nie obrażaj w odpowiedzi.', 'Zrób zrzut ekranu i nie kasuj rozmowy. To dowód.', 'Możesz zablokować tę osobę w telefonie.'],
     report: false,
   },
   stranger: {
@@ -223,7 +233,7 @@ export const juniorScreens = {
       }
       return `
         ${serviceHeader({ iconName: 'flag', tint: 'red', title: 'Zgłoś do Dyżurnet.pl', desc: 'Dyżurnet.pl to zespół NASK, który usuwa z internetu nielegalne treści, także zdjęcia dzieci.' })}
-        ${list([row({ iconName: 'check', tint: 'green', title: 'Zrzut ekranu rozmowy', desc: `Czat w grze: ${chat.from}`, trailing: '' })])}
+        ${list([row({ iconName: 'check', tint: 'green', title: 'Zrzut ekranu rozmowy', desc: `Wiadomości od: ${chat.from}`, trailing: '' })])}
         <button class="btn btn-primary" data-action="sendReport">Wyślij zgłoszenie</button>`;
     },
     actions: {
