@@ -199,6 +199,22 @@ const AUTO_HIDE_MS = 7000;
 // Powiadomienie z przyciskiem zostaje dłużej, potem przechodzi do Powiadomień (dzwonek z kropką)
 const AUTO_HIDE_ACTION_MS = 10000;
 
+// Pauza pokazu wstrzymuje znikanie powiadomień, żeby po wznowieniu pokaz mógł w nie dotknąć
+let notificationsHeld = false;
+
+export function holdNotifications(held) {
+  notificationsHeld = held;
+}
+
+// Powiadomienie, którego czas minął w czasie pauzy, po wznowieniu dostaje pełny czas od nowa
+function dismissLater(persona, id, ms) {
+  setTimeout(() => (notificationsHeld ? waitForRelease(persona, id, ms) : dismissNotification(persona, id)), ms);
+}
+
+function waitForRelease(persona, id, ms) {
+  setTimeout(() => (notificationsHeld ? waitForRelease(persona, id, ms) : dismissLater(persona, id, ms)), 500);
+}
+
 export function notify(persona, { title, body, tone = 'info', action = null }) {
   const id = `${Date.now()}-${nextId++}`;
   store.update((s) => {
@@ -206,7 +222,7 @@ export function notify(persona, { title, body, tone = 'info', action = null }) {
     s.notificationLog[persona].unshift({ id, title, body, tone, action, at: new Date().toISOString(), unread: true });
     return s;
   });
-  setTimeout(() => dismissNotification(persona, id), action ? AUTO_HIDE_ACTION_MS : AUTO_HIDE_MS);
+  dismissLater(persona, id, action ? AUTO_HIDE_ACTION_MS : AUTO_HIDE_MS);
 }
 
 export function markNotificationsRead(persona) {

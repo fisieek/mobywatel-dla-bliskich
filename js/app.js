@@ -15,7 +15,7 @@ import { juniorScreens, chatOverlay, chatAction, startStrangerChat } from './sce
 import { careScreens } from './scenes/care.js';
 import { renderGuide } from './guide.js';
 import { episodes, episodeDone, currentStep, ZOSIA_EPISODES, HIGHLIGHTS } from './episodes.js';
-import { startAutoplay, stopAutoplay, autoplayState, onAutoplayChange } from './autoplay.js';
+import { startAutoplay, stopAutoplay, pauseAutoplay, resumeAutoplay, autoplayState, onAutoplayChange } from './autoplay.js';
 import { initDevices, biometric } from './device.js';
 
 const tabs = [
@@ -249,17 +249,23 @@ function renderNextStep(state) {
   const run = autoplayState();
   const fresh = !state.seenEpisodes.length && !state.episodeOpen;
   const next = episodes[state.episode + 1];
+  const running = run && !run.failed;
   let play;
-  if (run && !run.failed) play = '<button class="next-step-play" data-autoplay="stop">Zatrzymaj</button>';
-  else if (fresh) play = '<button class="next-step-play" data-autoplay="highlights">▶ 70 s</button>';
+  if (running) {
+    play = `<span class="next-step-buttons">${run.paused
+      ? '<button class="next-step-play" data-autoplay="resume">▶ Wznów</button>'
+      : '<button class="next-step-play" data-autoplay="pause">❚❚ Pauza</button>'}<button class="next-step-play" data-autoplay="stop">Zakończ</button></span>`;
+  } else if (fresh) play = '<button class="next-step-play" data-autoplay="highlights">▶ Pokaz</button>';
   else if (!step && next) play = `<button class="next-step-play" data-episode="${state.episode + 1}">Dalej ▶</button>`;
   else play = `<button class="next-step-play" data-autoplay="episode" data-scene="${state.episode}">▶ Pokaz</button>`;
   let text;
-  if (run && !run.failed) text = `<strong>${run.highlights ? 'Najważniejsze' : 'Pokaz'}${run.sceneCount > 1 ? ` · scena ${run.sceneNumber} z ${run.sceneCount}` : ''}:</strong> ${run.scene}`;
-  else if (fresh) text = '<strong>Bliscy pomagają sobie w mObywatelu.</strong> Zobacz trzy najważniejsze sceny w 70 sekund.';
+  // Na telefonie panel jest pod aplikacją, więc w pokazie pasek mówi, jaki to problem
+  if (running) text = `<strong>${run.scene}${run.sceneCount > 1 ? ` (${run.sceneNumber} z ${run.sceneCount})` : ''}${run.paused ? ' · wstrzymany' : ''}:</strong> ${episodes[run.sceneIndex].brief}`;
+  else if (fresh) text = '<strong>Bliscy pomagają sobie w mObywatelu.</strong> Zobacz trzy najważniejsze scenariusze.';
   else if (step) text = `<strong>Teraz${step.phone ? ` · ${step.phone}` : ''}:</strong> ${step.text}`;
   else text = next ? `<strong>Scenariusz obejrzany.</strong> Następny: ${next.name}.` : '<strong>Wszystkie scenariusze obejrzane.</strong>';
   bar.innerHTML = `<p>${text}</p>${play}`;
+  bar.classList.toggle('next-step-running', Boolean(running));
 
   if (step?.persona && step.persona !== lastStepPersona && window.innerWidth <= MOBILE_MAX) {
     mobilePersona = step.persona;
@@ -423,6 +429,8 @@ function handleClick(event) {
   if (target.dataset.autoplay) {
     const kind = target.dataset.autoplay;
     if (kind === 'stop') return stopAutoplay();
+    if (kind === 'pause') return pauseAutoplay();
+    if (kind === 'resume') return resumeAutoplay();
     const highlights = kind === 'highlights';
     const indices = highlights ? HIGHLIGHTS : kind === 'all' ? episodes.map((_, i) => i) : [Number(target.dataset.scene)];
     return startAutoplay({ indices, highlights, prepare: openEpisode, showPersona });
@@ -433,8 +441,7 @@ function handleClick(event) {
   // Panel: rozwijanie scenariuszy jak w FAQ. Inny scenariusz startuje od nowa, ten sam tylko się zwija lub rozwija.
   if (target.dataset.episode) {
     const index = Number(target.dataset.episode);
-    // Moment z karty „W skrócie” zawsze otwiera scenariusz od początku
-    if (index !== store.get().episode || target.classList.contains('intro-moment')) return openEpisode(index);
+    if (index !== store.get().episode) return openEpisode(index);
     return store.update((s) => {
       s.episodeOpen = !s.episodeOpen;
       return s;

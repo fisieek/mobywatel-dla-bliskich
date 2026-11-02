@@ -40,6 +40,9 @@ function controlStart(s) {
 export const episodes = [
   {
     name: 'Pomoc',
+    // Jedno zdanie o problemie (pasek pokazu) i o tym, co się dzieje w scenariuszu (lista w panelu)
+    brief: 'Bliskiej osobie nie da się dziś bezpiecznie pomóc w sprawach urzędowych. Pomaga się na jej telefonie, z jej PIN-em.',
+    tagline: 'Krystyna rozumie pismo z urzędu, Anna przygotowuje odpowiedź, a Krystyna ją podpisuje.',
     group: 'main',
     problem: 'Bliskiej osobie nie da się dziś legalnie i bezpiecznie pomóc w sprawach urzędowych. Pomaga się na telefonie mamy, z jej PIN-em. Pisma urzędowe są trudne do zrozumienia, a aplikacja wygląda tak samo dla 20-latka i dla 71-latki.',
     audience: 'Seniorzy i ich dorosłe dzieci, rodzice dzieci z niepełnosprawnością, opiekunowie.',
@@ -60,6 +63,8 @@ export const episodes = [
   },
   {
     name: 'Ochrona',
+    brief: 'Oszuści dzwonią „z policji” i namawiają do zatwierdzenia czegoś, czego senior sam nie zaczął.',
+    tagline: 'Dzwoni fałszywy policjant. Aplikacja mówi: rozłącz się, a Anna dostaje ostrzeżenie.',
     group: 'main',
     problem: 'Oszuści dzwonią „z policji” albo „z banku” i namawiają do zatwierdzenia czegoś, czego użytkownik sam nie zaczął. Decyzja zapada w stresie, sam na sam z oszustem.',
     audience: 'Wszyscy użytkownicy, a szczególnie seniorzy.',
@@ -75,6 +80,8 @@ export const episodes = [
   },
   {
     name: 'Kontrola',
+    brief: 'Hotel czy wypożyczalnia widzą cały dowód, a nigdzie nie widać, kto jakie dane dostał.',
+    tagline: 'Wypożyczalnia dostaje 2 dane zamiast całego dowodu, a wszystko widać w historii.',
     group: 'main',
     problem: 'Hotel, wypożyczalnia czy operator widzą cały dokument, a często robią kserokopię. Nie ma jednego miejsca, które pokazuje, kto i jakie dane dostał.',
     audience: 'Wszyscy użytkownicy.',
@@ -88,6 +95,8 @@ export const episodes = [
   },
   {
     name: 'Moje leki',
+    brief: 'Tabletki kończą się nagle, recepta jest nieważna, a przychodnia odbiera telefon tylko w godzinach pracy.',
+    tagline: 'Kończy się lek. Anna prosi przychodnię o receptę, a kod do apteki jest na ekranie.',
     group: 'family',
     problem: 'Tabletki kończą się nagle, recepta jest już nieważna, a do przychodni można zadzwonić tylko w godzinach pracy.',
     audience: 'Osoby przyjmujące leki na stałe, głównie seniorzy, i ich bliscy.',
@@ -103,6 +112,8 @@ export const episodes = [
   },
   {
     name: 'Odbiór dziecka ze szkoły',
+    brief: 'Gdy dziecko odbiera babcia, szkoła dostaje kartkę, której nie ma jak sprawdzić.',
+    tagline: 'Anna upoważnia babcię do odbioru Zosi, a nauczycielka sprawdza kod QR.',
     group: 'family',
     problem: 'Gdy dziecko odbiera ktoś inny niż rodzic, szkoła dostaje kartkę, której nie ma jak sprawdzić.',
     audience: 'Rodzice uczniów i bliscy, którzy pomagają w opiece, oraz szkoły.',
@@ -115,6 +126,8 @@ export const episodes = [
   },
   {
     name: 'Ktoś do mnie pisze?',
+    brief: 'Obca osoba pisze do dziecka, straszy je albo chce zdjęć, a dziecko zostaje z tym samo.',
+    tagline: 'Obcy pisze do Zosi. Zosia dostaje radę i sama wybiera, komu powiedzieć.',
     group: 'family',
     problem: 'Obca osoba pisze do dziecka: obraża je, straszy albo chce zdjęć. Dziecko się wstydzi, kasuje wiadomości i zostaje z tym samo.',
     audience: 'Dzieci i nastolatki oraz ich rodzice.',
@@ -129,6 +142,8 @@ export const episodes = [
   },
   {
     name: 'Zgoda dla szkoły',
+    brief: 'Kartka ze zgodą gubi się w plecaku, a rodzic podpisuje ją w ostatniej chwili.',
+    tagline: 'Zosia skanuje kartkę od wychowawczyni, a Anna podpisuje zgodę w pracy.',
     group: 'family',
     problem: 'Kartka ze zgodą na wycieczkę gubi się w plecaku, a rodzic podpisuje ją wieczorem dzień przed terminem.',
     audience: 'Rodzice uczniów i szkoły.',
