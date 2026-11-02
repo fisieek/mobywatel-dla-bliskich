@@ -42,7 +42,7 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
 - `api/assistant.js` + `api/_lib/pllum.js` — funkcja na serwerze do łączenia z PLLuM. Strona jej nie wywołuje (decyzja z 2.11.2026), kod został na później.
 - `dev-server.mjs` — lokalny serwer: pliki + `/api/assistant`.
 - `js/episodes.js` — scenariusze jako odcinki: problem, grupa docelowa, reprezentanci, kroki i stan startowy każdego. Najpierw trzy filary (Pomoc, Ochrona, Kontrola), potem grupa „Cała rodzina”. `quickStart` to stan startowy w krótkim pokazie.
-- `js/guide.js` — panel „Scenariusze” obok telefonów: karta „W 60 sekund” (teza, trzy momenty, porównanie z prototypem referencyjnym), rozwijane odcinki jak FAQ, po jednym naraz.
+- `js/guide.js` — panel „Scenariusze” obok telefonów: karta „W skrócie” (teza, trzy momenty, porównanie z prototypem referencyjnym), rozwijane odcinki jak FAQ, po jednym naraz.
 - `js/autoplay.js` — pokaz automatyczny, który klika te same przyciski co człowiek, z podświetleniem dotknięcia: „Najważniejsze” (trzy filary, ok. 70 s) i „Wszystkie” (7 scen, ok. 3,5 min). Licznik pokazuje sceny, nie kroki.
 - `narzedzia/nagraj-film.mjs` — nagrywa film z pokazu „Najważniejsze” w 1920 × 1080 (Playwright i ffmpeg). Nie trafia na serwer.
 - `.github/workflows/sprawdz-link.yml` — codziennie sprawdza, czy wersja dla jury otwiera się bez logowania.
@@ -118,7 +118,7 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
   - telefon Zosi pojawia się sam przy jej scenariuszach, bez ręcznego przełącznika (na wąskim ekranie zostają zakładki Krystyna · Anna · Zosia),
   - asystent bez modelu językowego: przygotowane odpowiedzi do przykładowego pisma.
 - ✅ **Poprawki P0 po przeglądzie pod kątem konkursu** (2.11.2026):
-  - karta „W 60 sekund” na górze panelu: teza (sprawy załatwia się w rodzinie, referencja prowadzi jedną osobę), trzy momenty i przycisk „Pokaż najważniejsze”; na telefonie ten sam przycisk w pasku u góry,
+  - karta „W skrócie” na górze panelu: teza (sprawy załatwia się w rodzinie, referencja prowadzi jedną osobę), trzy momenty i przycisk „Pokaż najważniejsze”; na telefonie ten sam przycisk w pasku u góry,
   - „Prototyp referencyjny i my”: trzy sprawy porównane z wersją pod linkiem na mobywatel.ai (tryb skryptowy). Pytania o sprawy mamy i telefon od oszusta sprawdzone w routerze referencji (kopia MIT w publicznym repozytorium innego zgłoszenia), bez żadnych liczb z drugiej ręki,
   - kolejność: Pomoc, Ochrona, Kontrola, potem „Cała rodzina: kolejne pomysły”; Tryb prosty jest pierwszym krokiem Pomocy,
   - pokaz „Najważniejsze”: ok. 70 s zamiast ok. 3,5 min, licznik „scena 2 z 3” zamiast „krok 24 z 71”, pasek postępu,

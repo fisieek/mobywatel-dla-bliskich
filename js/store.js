@@ -6,10 +6,10 @@ const STORAGE_KEY = 'mobywatel-dla-bliskich:v14';
 
 function initialState() {
   return {
-    // Karta „W 60 sekund” na górze panelu: rozwinięta, dopóki ktoś nie zacznie oglądać
+    // Karta „W skrócie” na górze panelu: rozwinięta, dopóki ktoś nie zacznie oglądać
     introOpen: true,
     // Który scenariusz jest otwarty w panelu, czy rozwinięty i które już obejrzano.
-    // Na start żaden nie jest rozwinięty, żeby jako pierwsza była widoczna karta „W 60 sekund”.
+    // Na start żaden nie jest rozwinięty, żeby jako pierwsza była widoczna karta „W skrócie”.
     episode: 0,
     episodeOpen: false,
     summaryOpen: false,

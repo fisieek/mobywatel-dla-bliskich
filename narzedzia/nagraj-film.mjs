@@ -14,7 +14,7 @@ const { chromium } = createRequire(import.meta.url)('playwright');
 
 const url = process.argv[2] ?? 'http://localhost:4173/';
 const out = process.argv[3] ?? 'mobywatel-dla-bliskich-najwazniejsze.mp4';
-// Ile widać kartę „W 60 sekund” przed pokazem i ostatni ekran po nim
+// Ile widać kartę „W skrócie” przed pokazem i ostatni ekran po nim
 const INTRO_MS = 4000;
 const OUTRO_MS = 3500;
 const LIMIT_MS = 150000;
