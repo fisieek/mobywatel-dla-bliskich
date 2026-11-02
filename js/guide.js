@@ -196,32 +196,40 @@ function summary() {
 
 function autoplayBar(run) {
   if (!run) return '';
-  const where = run.sceneCount > 1 ? `scena ${run.sceneNumber} z ${run.sceneCount}: ${run.scene}` : run.scene;
+  const episode = episodes[run.sceneIndex];
+  const where = run.sceneCount > 1 ? `scena ${run.sceneNumber} z ${run.sceneCount}` : 'scena';
   if (run.failed) {
     return `
       <div class="autoplay autoplay-running" role="status">
-        <p>Pokaz zatrzymał się (${where}). Można kontynuować ręcznie.</p>
+        <p>Pokaz zatrzymał się (${run.scene}). Można kontynuować ręcznie.</p>
         <button class="btn btn-secondary btn-small" data-autoplay="stop">Zamknij</button>
       </div>`;
   }
   const percent = Math.round((run.index / run.total) * 100);
+  const status = run.paused ? 'Wstrzymany' : run.intro ? 'Za chwilę start' : '';
   // data-step: numer bieżącego kroku pokazu; korzysta z niego narzedzia/nagraj-film.mjs przy napisach
   return `
-    <div class="autoplay autoplay-running" role="status" data-step="${run.index}">
-      <p>${run.highlights ? 'Najważniejsze' : 'Pokaz'} · ${where}</p>
+    <div class="autoplay autoplay-running ${run.paused ? 'autoplay-paused' : ''}" role="status" data-step="${run.index}">
+      <div class="autoplay-top">
+        <p class="autoplay-where">${run.highlights ? 'Najważniejsze' : 'Pokaz'} · ${where}${status ? ` · <span class="autoplay-status">${status}</span>` : ''}</p>
+        <div class="autoplay-controls">
+          ${run.paused
+            ? '<button class="autoplay-btn autoplay-btn-main" data-autoplay="resume">▶ Wznów</button>'
+            : '<button class="autoplay-btn autoplay-btn-main" data-autoplay="pause">❚❚ Pauza</button>'}
+          <button class="autoplay-btn" data-autoplay="stop">Zakończ</button>
+        </div>
+      </div>
       <div class="autoplay-progress" role="progressbar" aria-label="Postęp pokazu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width: ${percent}%"></span></div>
-      <button class="btn btn-secondary btn-small" data-autoplay="stop">Zatrzymaj pokaz</button>
+      <p class="autoplay-scene">${episode.name}</p>
+      <dl class="autoplay-facts">
+        <dt>Problem</dt><dd>${episode.brief}</dd>
+        <dt>Dla kogo</dt><dd>${episode.audience}</dd>
+      </dl>
     </div>`;
 }
 
-// Karta „W skrócie”: teza, trzy najmocniejsze momenty i porównanie z prototypem referencyjnym.
+// Karta „W skrócie”: teza, krótki pokaz i porównanie z prototypem referencyjnym. Scenariusze są tuż pod nią.
 // Porównujemy z wersją pod linkiem na mobywatel.ai (tryb skryptowy), tak jak widzi ją jury.
-const moments = [
-  [0, 'Krystyna rozumie pismo z urzędu, Anna przygotowuje odpowiedź, a Krystyna podpisuje ją PIN-em.'],
-  [1, 'Dzwoni fałszywy policjant. Aplikacja mówi, że żadna instytucja teraz nie dzwoni, a Anna dostaje ostrzeżenie.'],
-  [2, 'Wypożyczalnia dostaje 2 dane zamiast całego dowodu. Krystyna widzi to w „Kto widział moje dane”.'],
-];
-
 const comparison = [
   ['Sprawy bliskiej osoby', 'Każda osoba pokazowa załatwia własne sprawy. Na pytanie o sprawy mamy, np. „Jakie recepty ma moja mama?”, wersja pod linkiem nie ma przygotowanej odpowiedzi.', 'Mama daje córce pozwolenie z zakresem. Córka przygotowuje odpowiedź, mama ją czyta i podpisuje. Każdy krok jest w historii.'],
   ['Telefon od oszusta', 'Scenariusz podejrzanego SMS-a, o który użytkownik pyta asystenta.', 'Podpis numeru już przy dzwonieniu, sprawdzenie w trakcie rozmowy, prośba o logowanie bez przycisku „Zatwierdź” i ostrzeżenie dla córki.'],
@@ -239,13 +247,8 @@ function intro(state, run) {
   return `
     <div class="intro">
       <button class="intro-toggle" data-intro aria-expanded="true"><span>W skrócie</span><span class="ep-chevron" aria-hidden="true"></span></button>
-      <p class="intro-thesis">Sprawy urzędowe często załatwia się w rodzinie. Prototyp referencyjny prowadzi jedną osobę w rozmowie z asystentem. <strong>My pokazujemy mObywatela, w którym bliscy pomagają sobie bezpiecznie: na dwóch telefonach naraz, ze zgodą, zakresem i historią.</strong></p>
-      <ol class="intro-moments">
-        ${moments
-          .map(([index, text]) => `<li><button class="intro-moment" data-episode="${index}"><span class="intro-moment-name">${episodes[index].name}</span><span>${text}</span></button></li>`)
-          .join('')}
-      </ol>
-      ${running ? '' : `<button class="btn btn-primary" data-autoplay="highlights">▶ Pokaż najważniejsze (ok. 70 s)</button>`}
+      <p class="intro-thesis">Sprawy urzędowe często załatwia się w rodzinie. <strong>Pokazujemy mObywatela, w którym bliscy pomagają sobie bezpiecznie: na dwóch telefonach naraz, ze zgodą, zakresem i historią.</strong></p>
+      ${running ? '' : `<button class="btn btn-primary intro-play" data-autoplay="highlights">▶ Pokaż najważniejsze (ok. 2 min)</button>`}
       <details class="guide-details intro-compare">
         <summary>Prototyp referencyjny i my</summary>
         <div class="compare">
@@ -259,7 +262,7 @@ function intro(state, run) {
               </div>`,
             )
             .join('')}
-          <p class="guide-note">Porównujemy z wersją pod linkiem na mobywatel.ai (tryb skryptowy), którą widzi jury. Pełna wersja z modelem językowym może odpowiadać na więcej pytań. Mocną stroną referencji jest rozmowa z asystentem, więc nie konkurujemy z nią wprost: dokładamy to, czego brakuje rodzinie.</p>
+          <p class="guide-note">Prototyp referencyjny prowadzi jedną osobę w rozmowie z asystentem. Porównujemy z wersją pod linkiem na mobywatel.ai (tryb skryptowy), którą widzi jury. Pełna wersja z modelem językowym może odpowiadać na więcej pytań. Mocną stroną referencji jest rozmowa z asystentem, więc nie konkurujemy z nią wprost: dokładamy to, czego brakuje rodzinie.</p>
         </div>
       </details>
     </div>`;
@@ -324,7 +327,7 @@ function episodeItem(state, index, run) {
     <li class="ep ${open ? 'ep-open' : ''}">
       <button class="ep-head" data-episode="${index}" aria-expanded="${open}">
         <span class="ep-number ${seen ? 'ep-number-seen' : ''}" aria-hidden="true">${seen ? '✓' : index + 1}</span>
-        <span class="ep-name">${episodes[index].name}</span>
+        <span class="ep-name">${episodes[index].name}${open ? '' : `<span class="ep-tagline">${episodes[index].tagline}</span>`}</span>
         <span class="ep-chevron" aria-hidden="true"></span>
       </button>
       ${open ? episodeBody(state, index, run) : ''}
@@ -363,8 +366,8 @@ export function renderGuide(state, run = null) {
       </ol>
     </div>
     <div class="guide-foot">
-      <button class="btn btn-secondary btn-small" data-autoplay="highlights">▶ Najważniejsze (70 s)</button>
-      <button class="btn btn-secondary btn-small" data-autoplay="all">Wszystkie (ok. 3,5 min)</button>
+      <button class="btn btn-secondary btn-small" data-autoplay="highlights">▶ Najważniejsze · 2 min</button>
+      <button class="btn btn-secondary btn-small" data-autoplay="all">Wszystkie · 6 min</button>
       <button class="btn btn-secondary btn-small" data-reset>Od początku</button>
     </div>`;
 }

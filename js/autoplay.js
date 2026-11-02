@@ -1,14 +1,20 @@
 // Pokaz automatyczny: panel klika za oglądającego, krok po kroku, z podświetleniem dotykanego miejsca.
 // Kroki to te same przyciski, których dotyka człowiek — pokaz nie ma osobnej logiki aplikacji.
+// Pokaz można wstrzymać i wznowić; w czasie pauzy powiadomienia na telefonach nie znikają.
+import { holdNotifications } from './store.js';
 
 const K = 'krystyna';
 const A = 'anna';
 const Z = 'zosia';
 
+// Tempo pokazu: przerwy zapisane przy krokach mnożymy przez TEMPO, żeby oglądający nadążał
+const TEMPO = 1.6;
 // Przerwa po kroku, żeby było widać, co się stało
 const STEP_PAUSE_MS = 1400;
 // Jak długo widać podświetlenie przed dotknięciem
-const HIGHLIGHT_MS = 900;
+const HIGHLIGHT_MS = 1300;
+// Na początku każdej sceny: czas na przeczytanie, jaki to problem i kogo dotyczy (pasek u góry panelu)
+const SCENE_INTRO_MS = 6000;
 // Najdłużej czekamy na przycisk, np. gdy przychodzi powiadomienie
 const WAIT_LIMIT_MS = 15000;
 
@@ -130,7 +136,7 @@ const scenes = [
   },
 ];
 
-// Krótki pokaz dla jury (ok. 70 s): trzy filary bez kroków, które nie są istotą sceny.
+// Krótki pokaz dla jury: trzy filary bez kroków, które nie są istotą sceny.
 // Pomoc zaczyna od chwili, gdy Krystyna ma już tryb prosty i pozwoliła Annie pomagać (stan `quickStart`).
 const highlightScenes = [
   {
@@ -186,12 +192,25 @@ const stepsFor = (indices, list) => {
   );
 };
 
-// Bieżący pokaz: null albo { index, total, scene, sceneIndex, sceneNumber, sceneCount, highlights, failed }
+// Bieżący pokaz: null albo { index, total, scene, sceneIndex, sceneNumber, sceneCount, highlights, paused, failed }
 let run = null;
 let runId = 0;
 const listeners = new Set();
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const isPaused = () => Boolean(run?.paused);
+
+// Czekanie, które stoi w miejscu w czasie pauzy. Zwraca false, gdy pokaz zakończono.
+async function wait(ms, id) {
+  let left = ms;
+  while (left > 0) {
+    if (id !== runId) return false;
+    const chunk = Math.min(100, left);
+    await sleep(chunk);
+    if (!isPaused()) left -= chunk;
+  }
+  return id === runId;
+}
 
 function emit() {
   listeners.forEach((fn) => fn(run));
@@ -205,13 +224,15 @@ export function onAutoplayChange(fn) {
 
 const fullSelector = (persona, selector) => (persona ? `[data-persona="${persona}"] ${selector}` : selector);
 
+// Czeka na przycisk; w czasie pauzy limit czekania się nie wyczerpuje
 async function waitFor(selector, id) {
-  const until = Date.now() + WAIT_LIMIT_MS;
-  while (Date.now() < until) {
+  let left = WAIT_LIMIT_MS;
+  while (left > 0) {
     if (id !== runId) return null;
     const el = document.querySelector(selector);
-    if (el && !el.disabled) return el;
+    if (el && !el.disabled && !isPaused()) return el;
     await sleep(200);
+    if (!isPaused()) left -= 200;
   }
   return null;
 }
@@ -229,7 +250,22 @@ export function stopAutoplay() {
   if (!run) return;
   runId += 1;
   run = null;
+  holdNotifications(false);
   document.querySelectorAll('.demo-tap').forEach((el) => el.classList.remove('demo-tap'));
+  emit();
+}
+
+export function pauseAutoplay() {
+  if (!run || run.failed || run.paused) return;
+  run = { ...run, paused: true };
+  holdNotifications(true);
+  emit();
+}
+
+export function resumeAutoplay() {
+  if (!run || !run.paused) return;
+  run = { ...run, paused: false };
+  holdNotifications(false);
   emit();
 }
 
@@ -240,19 +276,21 @@ export async function startAutoplay({ indices, highlights = false, prepare, show
   const id = ++runId;
   const allSteps = stepsFor(indices, highlights ? highlightScenes : scenes);
   const first = allSteps[0];
-  run = { index: 0, total: allSteps.length, scene: first.scene, sceneIndex: first.sceneIndex, sceneNumber: 1, sceneCount: first.sceneCount, highlights, failed: false };
+  run = { index: 0, total: allSteps.length, scene: first.scene, sceneIndex: first.sceneIndex, sceneNumber: 1, sceneCount: first.sceneCount, highlights, paused: false, failed: false };
   emit();
 
   for (let i = 0; i < allSteps.length; i++) {
     if (id !== runId) return;
     const { scene, sceneIndex, sceneNumber, step, first: firstOfScene } = allSteps[i];
+    const [persona, selector, pause = STEP_PAUSE_MS] = step;
+    run = { ...run, index: i + 1, scene, sceneIndex, sceneNumber, intro: firstOfScene };
     if (firstOfScene) {
       prepare(sceneIndex, { quick: highlights });
-      await sleep(800);
-      if (id !== runId) return;
+      emit();
+      // Najpierw chwila na przeczytanie problemu i grupy w pasku pokazu, dopiero potem pierwsze dotknięcie
+      if (!(await wait(SCENE_INTRO_MS, id))) return;
+      run = { ...run, intro: false };
     }
-    const [persona, selector, pause = STEP_PAUSE_MS] = step;
-    run = { ...run, index: i + 1, scene, sceneIndex, sceneNumber };
     emit();
     if (persona) showPersona(persona);
 
@@ -261,18 +299,18 @@ export async function startAutoplay({ indices, highlights = false, prepare, show
     if (id !== runId) return;
     if (!el) {
       // Coś poszło inaczej niż w scenariuszu — przerywamy i oddajemy stery
-      run = { ...run, failed: true };
+      holdNotifications(false);
+      run = { ...run, failed: true, paused: false };
       emit();
       return;
     }
     bringIntoView(el);
     el.classList.add('demo-tap');
-    await sleep(HIGHLIGHT_MS);
-    if (id !== runId) return;
+    if (!(await wait(HIGHLIGHT_MS, id))) return;
     // Ekran mógł się w międzyczasie przerysować — dotykamy aktualnego przycisku
     const target = el.isConnected ? el : document.querySelector(full);
     target?.click();
-    await sleep(pause);
+    if (!(await wait(pause * TEMPO, id))) return;
   }
   if (id !== runId) return;
   run = null;

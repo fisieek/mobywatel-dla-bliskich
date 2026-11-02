@@ -223,6 +223,8 @@ button:disabled {
 .guide-foot .btn {
   flex: 1 1 auto;
   width: auto;
+  padding: 0 10px;
+  white-space: nowrap;
 }
 
 /* Komputer: strona mieści się na ekranie, telefony stoją, a przewija się tylko środek panelu */
@@ -489,6 +491,98 @@ button:disabled {
   transition: width 0.4s ease;
 }
 
+/* Pasek pokazu: gdzie jesteśmy, pauza, problem i grupa bieżącej sceny (stoi w miejscu, nie przewija się) */
+.autoplay-running {
+  gap: 8px;
+}
+
+.autoplay-paused {
+  background: var(--mo-amber-wash);
+}
+
+.autoplay-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.autoplay-where {
+  font-size: 13px;
+  color: var(--mo-blue);
+}
+
+.autoplay-status {
+  color: var(--mo-amber);
+}
+
+.autoplay-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.autoplay-btn {
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--mo-surface);
+  color: var(--mo-blue);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.autoplay-btn-main {
+  background: var(--mo-blue);
+  color: #fff;
+}
+
+.autoplay-btn-main:hover {
+  background: var(--mo-blue-dark);
+}
+
+.autoplay-scene {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.autoplay-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.autoplay-facts dt {
+  padding-top: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--mo-text-2);
+}
+
+.autoplay-facts dd {
+  margin: 0;
+}
+
+/* Lista scenariuszy: pod nazwą jedno zdanie, co się w nim dzieje */
+.ep-tagline {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--mo-text-2);
+}
+
+.next-step-buttons {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
 /* Karta „W skrócie” na górze panelu: teza, trzy momenty, krótki pokaz i porównanie z referencją */
 .intro {
   display: grid;
@@ -538,36 +632,9 @@ button:disabled {
   line-height: 1.45;
 }
 
-.intro-moments {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-}
-
-.intro-moment {
-  display: grid;
-  gap: 2px;
-  width: 100%;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: var(--mo-bg);
-  text-align: left;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.intro-moment:hover {
-  background: var(--mo-blue-wash);
-}
-
-.intro-moment-name {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--mo-blue);
+.intro-play {
+  min-height: 44px;
+  font-size: 16px;
 }
 
 .intro-compare {
@@ -2818,6 +2885,16 @@ label.btn {
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  /* W pokazie: pełny opis problemu, przyciski pod nim */
+  .next-step-running {
+    flex-wrap: wrap;
+  }
+
+  .next-step-running p {
+    flex-basis: 100%;
+    -webkit-line-clamp: 4;
   }
 
   .next-step-play {

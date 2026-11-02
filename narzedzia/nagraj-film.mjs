@@ -25,7 +25,7 @@ const srtOut = out.replace(/\.mp4$/i, '') + '.srt';
 // Ile widać kartę „W skrócie” przed pokazem i ostatni ekran po nim (napisy na starcie i na końcu potrzebują czasu)
 const INTRO_MS = 5000;
 const OUTRO_MS = 5000;
-const LIMIT_MS = 150000;
+const LIMIT_MS = 240000;
 
 // Układ klatki: obraz strony 90% (1728 × 972) u góry, pasek na napisy pod nim
 const W = 1920;
