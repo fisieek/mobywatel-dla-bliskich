@@ -4,6 +4,7 @@
 
 const STORAGE_KEY = 'mobywatel-dla-bliskich:urzadzenie';
 const MOBILE_MAX = 860;
+const MIN_READABLE_ZOOM = 0.62;
 
 // Wymiary całej obudowy: ekran + ramka ekranu + metalowa krawędź (style w app.css)
 export const devices = {
@@ -34,6 +35,7 @@ function fit() {
   if (window.innerWidth <= MOBILE_MAX) {
     stage.style.removeProperty('--device-zoom');
     stage.classList.remove('stage-guide-below');
+    document.body.classList.remove('fit-screen');
     return;
   }
   const device = devices[current];
@@ -41,19 +43,22 @@ function fit() {
   const padding = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
   const gap = parseFloat(styles.columnGap) || 32;
   const width = stage.clientWidth - padding;
-  const guide = 300;
+  const guide = 340;
   const caption = 30;
-  const top = stage.getBoundingClientRect().top + window.scrollY;
+  const top = document.querySelector('.stage-header').offsetHeight;
+  const footer = document.querySelector('.stage-footer').offsetHeight;
 
-  const byHeight = Math.min(1, (window.innerHeight - top - 2 * parseFloat(styles.paddingTop) - caption) / TALLEST);
+  const byHeight = Math.min(1, (window.innerHeight - top - footer - 2 * parseFloat(styles.paddingTop) - caption) / TALLEST);
   const guideBeside = (width - guide - 2 * gap) / (2 * device.width);
   const guideBelow = (width - gap) / (2 * device.width);
-  // Przewodnik zostaje obok telefonów, jeśli nie trzeba ich przez to zmniejszać
-  const beside = guideBeside >= byHeight;
+  // Panel zostaje obok telefonów, chyba że telefony byłyby przez to za małe, żeby coś na nich przeczytać.
+  // Wtedy (rozłożony iPhone Duo na mniejszym ekranie) panel idzie pod telefony i przewija się cała strona.
+  const beside = guideBeside >= Math.min(byHeight, MIN_READABLE_ZOOM);
   const zoom = Math.max(0.45, Math.min(byHeight, beside ? guideBeside : guideBelow));
 
   stage.style.setProperty('--device-zoom', zoom.toFixed(3));
   stage.classList.toggle('stage-guide-below', !beside);
+  document.body.classList.toggle('fit-screen', beside);
 }
 
 function apply() {

@@ -2,7 +2,7 @@
 // więc to, co zrobi Anna, od razu widzi Krystyna (i odwrotnie).
 import { defaultNicknames } from './personas.js';
 
-const STORAGE_KEY = 'mobywatel-dla-bliskich:v10';
+const STORAGE_KEY = 'mobywatel-dla-bliskich:v11';
 
 function initialState() {
   return {
@@ -28,11 +28,6 @@ function initialState() {
     pin: '',
     // Chwilowa nakładka na telefonie (np. Face ID): { krystyna: null, anna: null }
     overlay: { krystyna: null, anna: null, zosia: null },
-    // Za kogo działa Anna: 'ja' | 'mama' | 'antek'
-    actingAs: 'ja',
-    // Czy Anna przełączyła się na mamę sama (przez przełącznik), czy zrobiła to aplikacja przy otwarciu pisma.
-    // W tym drugim wypadku po wyjściu z pisma wraca do siebie.
-    autoActing: false,
     // Nazwy nadane bliskim na ekranie „Moi bliscy” (bez odmiany, np. „Mama”)
     nicknames: structuredClone(defaultNicknames),
     // Nazwa wpisywana, ale jeszcze niezapisana: { 'krystyna:anna': 'Ania' }
@@ -41,6 +36,8 @@ function initialState() {
     simpleMode: { krystyna: false, anna: false, zosia: false },
     // Czy tryb prosty zaproponowała bliska osoba (zmienia opis na ekranie propozycji)
     simpleOffered: false,
+    // Co ktoś wpisał w zakładce Szukaj
+    search: { krystyna: '', anna: '', zosia: '' },
     // Na jakim ekranie ktoś dotknął „Nie wiem, co zrobić”
     helpFrom: { krystyna: '', anna: '', zosia: '' },
     // Czy na ekranie zgody w trybie prostym ktoś otworzył „Inne możliwości”
@@ -145,23 +142,11 @@ export const store = {
 
 // Nawigacja
 
-// Anna wraca do siebie, gdy wychodzi z pisma mamy, które aplikacja otworzyła jej „jako mama”
-function leaveAutoActing(s, persona) {
-  const top = s.nav[persona][s.nav[persona].length - 1];
-  if (persona !== 'anna' || !s.autoActing || top === 'mamaLetter') return false;
-  s.autoActing = false;
-  s.actingAs = 'ja';
-  return true;
-}
-
 function navigate(persona, change) {
-  let returned = false;
   store.update((s) => {
     change(s);
-    returned = leaveAutoActing(s, persona);
     return s;
   });
-  if (returned) notify('anna', { title: 'Wróciłaś do swojego konta', body: 'Działasz teraz jako Ty.' });
 }
 
 export function go(persona, screen) {

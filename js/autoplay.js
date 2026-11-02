@@ -20,7 +20,8 @@ const scenes = [
     scene: 0,
     group: 'core',
     steps: [
-      [K, '.offer-card', 1800],
+      [K, '[data-tab="more"]'],
+      [K, '.row[data-go="simpleOffer"]', 1800],
       [K, '[data-action="enable"]', 2600],
     ],
   },
@@ -104,6 +105,7 @@ const scenes = [
     scene: 5,
     group: 'family',
     steps: [
+      [A, '[data-tab="services"]'],
       [A, '.row[data-go="authorize"]', 1800],
       [A, '[data-action="authorizeConfirm"]', 2400],
       [K, '[data-notification-go="pickupPass"]', 2000],
@@ -119,6 +121,7 @@ const scenes = [
     steps: [
       [null, '[data-guide-action="strangerChat"]', 5000],
       [Z, '[data-chat="minimize"]'],
+      [Z, '[data-tab="services"]'],
       [Z, '.row[data-go="whoIsWriting"]'],
       [Z, '[data-action="situation"][data-id="threat"]', 3200],
       [Z, '[data-action="tellMom"]', 2400],
@@ -131,7 +134,7 @@ const scenes = [
     scene: 7,
     group: 'family',
     steps: [
-      [Z, '[data-tab="documents"]'],
+      [Z, '[data-tab="services"]'],
       [Z, '.row[data-go="schoolConsentScan"]'],
       [Z, '.btn[data-action="scanSchool"]', 1600],
       [Z, '[data-action="askConsent"]', 1800],

@@ -184,6 +184,7 @@ export const medsScreens = {
   mamaMeds: {
     kind: 'inner',
     title: 'Leki',
+    helping: 'krystyna',
     render: (state) => {
       if (state.meds === 'ok') return infoBox(`${mamaFor(state)}: brak próśb o pomoc z lekami.`);
       if (state.meds === 'requested') {

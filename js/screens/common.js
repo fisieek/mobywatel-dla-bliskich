@@ -3,56 +3,35 @@
 import { store, notify, markNotificationsRead, openTab, addHistory } from '../store.js';
 import { icon } from '../icons.js';
 import { people, family, fullName, contactName } from '../personas.js';
-import { documents, list, row, newBadge, sectionTitle, serviceHeader, infoBox, comingSoon } from '../ui.js';
+import { documents, list, row, newBadge, sectionTitle, serviceHeader, infoBox, coreNotice, docMini, shortcut } from '../ui.js';
+import { servicesFor, documentCatalog, findService, searchCatalog } from '../catalog.js';
+import { zosiaServices } from '../scenes/junior.js';
 
-const coreService = (title) => ({ title, go: 'coreService' });
-
-// Kategorie i usługi jak na info.mobywatel.gov.pl/uslugi (wybór) + nasze nowe
-const serviceCategories = [
-  {
-    name: 'Rodzina i bliscy',
-    isNew: true,
-    rows: [{ iconName: 'people', tint: 'green', title: 'Pomoc bliskich', desc: 'Pozwól bliskiej osobie pomagać Ci w sprawach urzędowych', go: 'helpers', isNew: true }],
-  },
-  {
-    name: 'Ochrona danych',
-    rows: [
-      { iconName: 'globe', tint: 'violet', ...coreService('Bezpiecznie w sieci') },
-      { iconName: 'phoneQuestion', tint: 'violet', title: 'Ktoś do mnie dzwoni?', desc: 'Sprawdź, czy dzwoni naprawdę policja, bank albo urząd', go: 'whoIsCalling', isNew: true },
-      { iconName: 'eye', tint: 'violet', title: 'Kto widział moje dane', desc: 'Historia logowań, udostępnień i podpisów', go: 'myData', isNew: true },
-      { iconName: 'shieldLock', tint: 'violet', ...coreService('Zastrzeż PESEL') },
-      { iconName: 'shield', tint: 'violet', ...coreService('Sprawdź PESEL') },
-    ],
-  },
-  {
-    name: 'Sprawy urzędowe',
-    rows: [
-      { iconName: 'folder', tint: 'blue', ...coreService('Twoje sprawy') },
-      { iconName: 'signature', tint: 'blue', ...coreService('Podpis kwalifikowany') },
-      { iconName: 'call', tint: 'blue', ...coreService('E-wizyta w ZUS') },
-    ],
-  },
-  { name: 'Zdrowie', rows: [{ iconName: 'pill', tint: 'red', ...coreService('Recepty') }] },
-  {
-    name: 'Kierowca i pojazdy',
-    rows: [
-      { iconName: 'car', tint: 'amber', ...coreService('Punkty karne') },
-      { iconName: 'car', tint: 'amber', ...coreService('Sprawdź OC') },
-    ],
-  },
-];
+// Usługi: kategorie jak na info.mobywatel.gov.pl/uslugi, nasze nowe wpięte między istniejące
+function servicesList(state, persona) {
+  return servicesFor(persona)
+    .map(
+      (category) => `
+      ${sectionTitle(category.name, category.isNew ? newBadge() : '')}
+      ${list(
+        category.rows.map((r) =>
+          row({
+            ...r,
+            tint: category.tint,
+            desc: r.go === 'authorize' && state.pickup?.status === 'active' ? 'Aktywne · dotknij, żeby zobaczyć albo odwołać' : r.desc,
+            badge: r.isNew ? newBadge() : '',
+          }),
+        ),
+      )}`,
+    )
+    .join('');
+}
 
 const servicesScreen = {
   kind: 'tab',
   title: 'Usługi',
-  render: () =>
-    serviceCategories
-      .map(
-        (cat) => `
-        ${sectionTitle(cat.name, cat.isNew ? newBadge() : '')}
-        ${list(cat.rows.map((r) => row({ ...r, badge: r.isNew ? newBadge() : '' })))}`,
-      )
-      .join(''),
+  titleBadge: (state, persona) => (persona === 'zosia' ? newBadge('mObywatel Junior') : ''),
+  render: (state, persona) => (persona === 'zosia' ? zosiaServices(state) : servicesList(state, persona)),
 };
 
 const qrScreen = {
@@ -64,66 +43,124 @@ const qrScreen = {
           row({ iconName: 'qr', title: 'Zgoda dla szkoły', desc: 'Zeskanuj kod z kartki od wychowawczyni', go: 'schoolConsentScan' }),
           row({ iconName: 'idCheck', title: 'Pokaż legitymację', desc: 'W autobusie, w muzeum, w kinie', go: 'doc-legitymacja' }),
         ])
-      : `
-    ${list([
-      row({ iconName: 'qr', title: 'Zeskanuj kod QR', desc: 'Potwierdź swoje dane lub zaloguj się', go: 'qrScan' }),
-      row({ iconName: 'idCheck', title: 'Pokaż kod QR', desc: 'Pozwól komuś sprawdzić Twój dokument', go: 'qrShow' }),
-    ])}
-    <p class="footnote">W scenie Kontrola Anna zeskanuje tu kod wypożyczalni i pokaże tylko te dane, które są potrzebne.</p>`,
+      : list([
+          row({ iconName: 'qr', title: 'Zeskanuj kod QR', desc: 'Potwierdź swoje dane lub zaloguj się', go: 'qrScan' }),
+          row({ iconName: 'idCheck', title: 'Pokaż kod QR', desc: 'Pozwól komuś sprawdzić Twój dokument', go: 'qrShow' }),
+        ]),
 };
+
+// Zakładka Szukaj jak w aplikacji: pole, Nowości (tu trafiają też nasze funkcje) i Popularne, a w trakcie pisania wyniki
+const searchNews = [
+  { title: 'Tryb prosty', iconName: 'textSize', tint: 'blue', go: 'simpleOffer', isNew: true },
+  { title: 'Pomoc bliskich', iconName: 'people', tint: 'green', go: 'helpers', isNew: true },
+  { title: 'Ktoś do mnie dzwoni?', iconName: 'phoneQuestion', tint: 'violet', go: 'whoIsCalling', isNew: true },
+  { title: 'Kto widział moje dane', iconName: 'eye', tint: 'violet', go: 'myData', isNew: true },
+  { title: 'Dane w KRS', brand: 'IC026_pozostale', go: 'core:Dane w KRS' },
+  { title: 'Prawo wykonywania zawodu farmaceuty', iconName: 'idCheck', tint: 'blue', go: 'core:Prawo wykonywania zawodu farmaceuty' },
+];
+const searchPopular = ['Zastrzeż PESEL', 'Recepty', 'Załatw sprawę', 'Punkty karne'];
+
+function searchResults(query, persona) {
+  const results = searchCatalog(query, persona, people[persona].documents);
+  if (!results.length) return infoBox(`Nic nie znaleźliśmy dla: ${escapeAttr(query)}.`);
+  return list(
+    results.map((r) =>
+      row({
+        ...(r.card ? { leading: docMini(r.card) } : { brand: r.brand, iconName: r.iconName, tint: r.tint }),
+        title: r.title,
+        desc: r.kind,
+        go: r.go,
+        badge: r.isNew ? newBadge() : '',
+      }),
+    ),
+  );
+}
+
+const escapeAttr = (text) => text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
 const searchScreen = {
   kind: 'tab',
   title: 'Szukaj',
-  render: () => `
-    <div class="search-field">${icon('search', { size: 20 })}<span>Szukaj usług i dokumentów</span></div>
-    ${sectionTitle('Popularne')}
-    ${list([row(coreService('Zastrzeż PESEL')), row(coreService('Recepty')), row(coreService('Sprawdź OC'))])}`,
+  render: (state, persona) => {
+    const query = state.search[persona];
+    return `
+      <div class="search-row">
+        <label class="search-field">${icon('search', { size: 20 })}<input class="search-input" data-search data-keep-focus aria-label="Szukaj w aplikacji" placeholder="Szukaj w aplikacji" value="${escapeAttr(query)}"></label>
+        ${query ? '<button class="link" data-action="clearSearch">Anuluj</button>' : ''}
+      </div>
+      ${
+        query.trim()
+          ? searchResults(query, persona)
+          : `
+      ${sectionTitle('Nowości')}
+      <div class="shortcuts">${searchNews.map(shortcut).join('')}</div>
+      ${sectionTitle('Popularne')}
+      ${list(searchPopular.map((title) => row({ title, go: `core:${title}` })))}`
+      }`;
+  },
+  actions: {
+    clearSearch: (el, persona) =>
+      store.update((s) => {
+        s.search[persona] = '';
+        return s;
+      }),
+  },
 };
 
 function toggle(on) {
   return `<span class="toggle ${on ? 'toggle-on' : ''}" aria-hidden="true"><span></span></span>`;
 }
 
+// Więcej dokładnie jak w aplikacji (lista od Filipa z telefonu, 2.11.2026). Nowy jest tylko Tryb prosty, reszta to ślepe uliczki.
+const moreRow = (title, iconName, go = `core:${title}`) => row({ iconName, tint: 'plain', title, go });
+
 const moreScreen = {
   kind: 'tab',
   title: 'Więcej',
   render: (state, persona) => `
-    <div class="profile-card">
-      <div class="avatar" aria-hidden="true">${people[persona].firstName[0]}</div>
-      <div><p class="profile-name">${people[persona].firstName} ${people[persona].lastName}</p><p class="muted">Dane fikcyjne</p></div>
-    </div>
+    ${sectionTitle('Twoje dane')}
+    ${list([
+      moreRow('Dane kontaktowe', 'addressBook'),
+      moreRow('Dane zameldowania', 'homePin'),
+      moreRow('Dane paszportu', 'passport'),
+    ])}
     ${sectionTitle('Ustawienia')}
     ${list([
-      row({
-        iconName: 'textSize',
-        title: 'Tryb prosty',
-        desc: 'Większy tekst, mniej przycisków, czytanie na głos',
-        action: 'toggleSimple',
-        badge: newBadge(),
-        trailing: toggle(state.simpleMode[persona]),
-      }),
-      row({ iconName: 'people', tint: 'green', title: 'Pomoc bliskich', desc: 'Kto może Ci pomagać i w czym', go: 'helpers', badge: newBadge() }),
-      row({ iconName: 'people', tint: 'blue', title: 'Moi bliscy', desc: 'Nazwy, pod którymi widzisz bliskie osoby', go: 'contacts', badge: newBadge() }),
-      row({ iconName: 'settings', ...coreService('Ustawienia aplikacji') }),
-      row({ iconName: 'info', ...coreService('Pomoc i kontakt') }),
+      moreRow('Zmień hasło', 'lock'),
+      moreRow('Logowanie biometryczne', 'fingerprint'),
+      moreRow('Powiadomienia', 'bell'),
+      moreRow('Wygląd', 'sun'),
+      row({ iconName: 'textSize', tint: 'plain', title: 'Tryb prosty', desc: 'Większy tekst, mniej przycisków, czytanie na głos', go: 'simpleOffer', badge: newBadge(), trailing: toggle(state.simpleMode[persona]) }),
+      moreRow('Język aplikacji', 'globe'),
+      moreRow('Wydane certyfikaty', 'certificate'),
+    ])}
+    ${sectionTitle('Pozostałe')}
+    ${list([
+      row({ iconName: 'history', tint: 'plain', title: 'Historia aktywności', desc: 'Także: kto widział moje dane', go: 'myData', badge: newBadge() }),
+      moreRow('O aplikacji', 'info'),
+      moreRow('Pomoc techniczna', 'help'),
+      moreRow('Oceń aplikację', 'star'),
+      moreRow('Wirtualny asystent', 'assistant', 'assistant'),
+      moreRow('Zagłosuj na pomysł', 'bulb'),
+      moreRow('Dezaktywuj aplikację', 'power'),
     ])}`,
-  actions: {
-    toggleSimple: (el, persona) =>
-      store.update((s) => {
-        s.simpleMode[persona] = !s.simpleMode[persona];
-        return s;
-      }),
-  },
 };
 
-function docDetail(docId) {
+// Skróty pod dokumentem jak na zrzutach z App Store. Pierwszy, „Potwierdź swoje dane”, jest przy każdym.
+const docShortcuts = {
+  mdowod: [['Zastrzeż dokument', 'ban'], ['Pozostałe skróty', 'dots']],
+  prawoJazdy: [['Punkty karne', 'car'], ['Mandaty', 'receipt'], ['Usuń dokument', 'trash']],
+};
+
+// ownerId — gdy rodzic ogląda dokument dziecka; bez niego dokument właściciela telefonu
+function docDetail(docId, ownerId) {
   const doc = documents[docId];
   return {
     kind: 'inner',
     title: doc.name,
     render: (state, persona) => {
-      const owner = state.actingAs === 'mama' && persona === 'anna' ? people.krystyna : people[persona];
+      const owner = people[ownerId ?? persona];
+      const shortcuts = docShortcuts[docId] ?? [['Usuń dokument', 'trash']];
       return `
         <p class="doc-time">Czas: 9:41:21 ${new Date().toLocaleDateString('pl-PL')}</p>
         <div class="doc-big" style="background:${doc.bg}">
@@ -138,19 +175,25 @@ function docDetail(docId) {
         <div class="doc-valid">${icon('checkCircle', { size: 28 })}<span>Dokument ważny</span></div>
         <div class="round-actions">
           <button data-go="qrShow"><i>${icon('qr', { size: 22 })}</i><span>Potwierdź swoje dane</span></button>
-          <button data-go="coreService"><i>${icon('ban', { size: 22 })}</i><span>Zastrzeż dokument</span></button>
-          <button data-go="coreService"><i>${icon('dots', { size: 22 })}</i><span>Pozostałe skróty</span></button>
+          ${shortcuts.map(([title, iconName]) => `<button data-go="core:${title}"><i>${icon(iconName, { size: 22 })}</i><span>${title}</span></button>`).join('')}
         </div>`;
     },
   };
 }
 
-const placeholder = (title, sceneName, extra = {}) => ({
-  kind: 'inner',
-  title,
-  render: () => comingSoon(sceneName),
-  ...extra,
-});
+// Ślepa uliczka dla istniejącej funkcji: nazwa, jedno zdanie o usłudze i informacja, że jej nie odtwarzamy
+function coreScreen(title) {
+  const service = findService(title);
+  const isDocument = documentCatalog.some((d) => d.title === title);
+  return {
+    kind: 'inner',
+    title: isDocument ? 'Dokument' : title,
+    render: () => `
+      ${service?.about ? serviceHeader({ brand: service.brand, iconName: service.iconName, tint: service.tint, title, desc: service.about }) : ''}
+      ${isDocument ? serviceHeader({ iconName: 'idCheck', tint: 'blue', title }) : ''}
+      ${coreNotice()}`,
+  };
+}
 
 const screens = {
   services: servicesScreen,
@@ -161,12 +204,12 @@ const screens = {
   // Ikony w nagłówku (istniejące w mObywatelu)
   assistant: {
     kind: 'inner',
-    title: 'Wirtualny Asystent',
+    title: 'Wirtualny asystent',
     render: () => `
-      ${serviceHeader({ iconName: 'assistant', tint: 'blue', title: 'Wirtualny Asystent', desc: 'Odpowiada na pytania o sprawy urzędowe i aplikację. Działa w mObywatelu na polskim modelu językowym PLLuM.' })}
-      ${comingSoon('Pomoc (asystent wyjaśnia papierowe pismo)')}`,
+      ${serviceHeader({ iconName: 'assistant', tint: 'blue', title: 'Wirtualny asystent', desc: 'Odpowiada na pytania o sprawy urzędowe i aplikację. Działa w mObywatelu na polskim modelu językowym PLLuM.' })}
+      ${infoBox('W prototypie asystent działa przy pismach z urzędu: wyjaśnia je po ludzku i pomaga przygotować odpowiedź.')}`,
   },
-  inbox: placeholder('Skrzynka', 'Pomoc'),
+  inbox: { kind: 'inner', title: 'Skrzynka', render: () => coreNotice() },
   // Powiadomienia, które zniknęły z ekranu, zostają tutaj — razem z przyciskami
   notifications: {
     kind: 'inner',
@@ -238,7 +281,10 @@ const screens = {
     title: 'Tryb prosty',
     render: (state, persona) => {
       if (state.simpleMode[persona]) {
-        return `${infoBox('Tryb prosty jest włączony. Wyłączysz go w każdej chwili w Więcej → Tryb prosty.')}<button class="btn btn-primary" data-home>Gotowe</button>`;
+        return `
+          ${infoBox('Tryb prosty jest włączony.')}
+          <button class="btn btn-primary" data-back>Gotowe</button>
+          <button class="btn btn-secondary" data-action="disable">Wyłącz tryb prosty</button>`;
       }
       return `
         ${serviceHeader({ iconName: 'textSize', tint: 'blue', title: 'Wolisz większe litery i mniej przycisków?', desc: state.simpleOffered ? `Proponuje to: ${contactName(state, persona, people[persona].contact)}. Decydujesz Ty.` : 'Ten sam mObywatel, tylko prościej. Wyłączysz go w każdej chwili w Więcej.', badge: newBadge() })}
@@ -259,6 +305,13 @@ const screens = {
         const contactId = people[persona].contact;
         // Bliska osoba, która to zaproponowała, dowiaduje się o decyzji
         if (store.get().simpleOffered) notify(contactId, { title: contactName(store.get(), contactId, persona), body: 'Włączyła tryb prosty.' });
+        openTab(persona, 'documents');
+      },
+      disable: (el, persona) => {
+        store.update((s) => {
+          s.simpleMode[persona] = false;
+          return s;
+        });
         openTab(persona, 'documents');
       },
     },
@@ -289,15 +342,19 @@ const screens = {
     kind: 'inner',
     title: 'Usługa mObywatela',
     render: () =>
-      infoBox('Ta usługa działa już w prawdziwym mObywatelu. W prototypie jej nie odtwarzamy — pokazujemy tylko nowe funkcje oznaczone etykietą „Nowość”.'),
+      coreNotice(),
   },
-  customize: placeholder('Dostosuj', 'żadnej — to istniejąca funkcja mObywatela'),
-  addDocument: placeholder('Dodaj dokument', 'żadnej — to istniejąca funkcja mObywatela'),
+  customize: { kind: 'inner', title: 'Dostosuj', render: () => coreNotice() },
+  // Dodaj: pełna lista dokumentów z info.mobywatel.gov.pl
+  addDocument: {
+    kind: 'inner',
+    title: 'Dodaj dokument',
+    render: () => list(documentCatalog.map((d) => row({ leading: docMini(d.card), title: d.title, go: `core:${d.title}` }))),
+  },
   qrShow: {
     kind: 'inner',
     title: 'Pokaż kod QR',
-    render: () =>
-      infoBox('Pokazywanie kodu QR działa już w prawdziwym mObywatelu. W scenie Kontrola Anna <strong>skanuje</strong> kod wypożyczalni: Kod QR → Zeskanuj kod QR.'),
+    render: () => coreNotice(),
   },
 };
 
@@ -344,7 +401,8 @@ function contactDetail(contactId) {
 }
 
 export function resolveCommonScreen(id) {
-  if (id.startsWith('doc-')) return docDetail(id.slice(4));
+  if (id.startsWith('doc-')) return docDetail(...id.slice(4).split(':'));
+  if (id.startsWith('core:')) return coreScreen(id.slice(5));
   if (id.startsWith('contact-')) return contactDetail(id.slice(8));
   return screens[id];
 }

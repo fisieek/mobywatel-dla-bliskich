@@ -3,7 +3,7 @@
 import { store, go, back, home, openTab, currentScreen, dismissNotification } from './store.js';
 import { icon } from './icons.js';
 import { speak, canSpeak, stopSpeaking, isSpeaking, onSpeakingChange } from './speech.js';
-import { fullName, actingAsPeople } from './personas.js';
+import { fullName, contactName } from './personas.js';
 import { documentsScreen, callContactScreen, callScreenFor } from './screens/documents.js';
 import { resolveCommonScreen } from './screens/common.js';
 import { helpScreens, onPhotoSelected } from './scenes/help.js';
@@ -12,6 +12,7 @@ import { controlScreens } from './scenes/control.js';
 import { resolveMedsScreen, startMedsLow } from './scenes/meds.js';
 import { pickupScreens } from './scenes/pickup.js';
 import { juniorScreens, chatOverlay, chatAction, startStrangerChat } from './scenes/junior.js';
+import { careScreens } from './scenes/care.js';
 import { renderGuide, currentStep, currentScene, ZOSIA_SCENES } from './guide.js';
 import { startAutoplay, stopAutoplay, autoplayState, onAutoplayChange } from './autoplay.js';
 import { initDevices, biometric } from './device.js';
@@ -24,8 +25,8 @@ const tabs = [
   { id: 'more', iconName: 'grid', label: 'Więcej' },
 ];
 
-// mObywatel Junior (Zosia) ma mniej zakładek: dokumenty, kod QR i ustawienia
-const juniorTabs = ['documents', 'qr', 'more'];
+// mObywatel Junior (Zosia) ma mniej zakładek
+const juniorTabs = ['documents', 'services', 'qr', 'more'];
 
 const resolve = (value, state, persona) => (typeof value === 'function' ? value(state, persona) : value);
 
@@ -35,6 +36,7 @@ function resolveScreen(id) {
   if (id.startsWith('call-')) return callScreenFor(id.slice(5));
   return (
     helpScreens[id] ??
+    careScreens[id] ??
     protectScreens[id] ??
     controlScreens[id] ??
     resolveMedsScreen(id) ??
@@ -62,7 +64,7 @@ function tabHeader(screen, state, persona) {
     : persona === 'zosia'
       ? bell
       : `
-      <button class="icon-btn" data-go="assistant" aria-label="Wirtualny Asystent">${icon('assistant')}</button>
+      <button class="icon-btn" data-go="assistant" aria-label="Wirtualny asystent">${icon('assistant')}</button>
       <button class="icon-btn" data-go="inbox" aria-label="Skrzynka">${icon('envelope')}</button>
       <button class="icon-btn" data-go="notifications" aria-label="Powiadomienia">${icon('bell')}${unread ? '<i class="dot"></i>' : ''}</button>`;
   return `
@@ -71,7 +73,6 @@ function tabHeader(screen, state, persona) {
       <span class="spacer"></span>
       ${icons}
     </header>
-    ${actingBanner(state, persona)}
     <div class="large-title-row">
       <h1 class="large-title">${resolve(screen.title, state, persona)}</h1>
       ${resolve(screen.titleBadge, state, persona) ?? ''}
@@ -85,16 +86,13 @@ function innerHeader(screen, state, persona) {
       <h1 class="nav-title">${resolve(screen.title, state, persona)}</h1>
       <button class="icon-btn nav-help" data-go="coreService" aria-label="Pomoc">${icon('help', { size: 22 })}</button>
     </header>
-    ${actingBanner(state, persona)}`;
+    ${helpingBanner(screen, state, persona)}`;
 }
 
-function actingBanner(state, persona) {
-  if (persona !== 'anna' || state.actingAs === 'ja') return '';
-  return `
-    <div class="acting-banner" role="status">
-      <span>Działasz jako: <strong>${fullName(actingAsPeople[state.actingAs])}</strong></span>
-      <button class="link link-light" data-action-global="actAsMe">Wróć do siebie</button>
-    </div>`;
+// Na ekranach ze sprawami bliskiej osoby stale widać, komu pomagasz
+function helpingBanner(screen, state, persona) {
+  if (!screen.helping) return '';
+  return `<div class="acting-banner" role="status"><span>Pomagasz: <strong>${contactName(state, persona, screen.helping)}</strong></span></div>`;
 }
 
 // Tryb prosty: zamiast pięciu małych zakładek dwa duże przyciski — powrót na start i stałe wyjście „Nie wiem, co zrobić”
@@ -117,7 +115,7 @@ function tabbar(state, persona) {
           const on = t.id === active;
           return `
           <button class="tab ${on ? 'tab-active' : ''}" data-tab="${t.id}" ${on ? 'aria-current="page"' : ''}>
-            ${icon(t.iconName, { filled: on && ['cards', 'folder'].includes(t.iconName) })}<span>${t.label}</span>
+            ${icon(t.iconName, { filled: on })}<span>${t.label}</span>
           </button>`;
         })
         .join('')}
@@ -253,7 +251,7 @@ function renderNextStep(state) {
   const run = autoplayState();
   const play = run && !run.failed
     ? '<button class="next-step-play" data-autoplay="stop">Zatrzymaj</button>'
-    : '<button class="next-step-play" data-autoplay="core">▶ Pokaż sam</button>';
+    : '<button class="next-step-play" data-autoplay="core">▶ Pokaz</button>';
   bar.innerHTML = step
     ? `<p><strong>Teraz${step.phone ? ` · ${step.phone}` : ''}:</strong> ${step.text}</p>${play}`
     : `<p><strong>Gotowe.</strong> Podsumowanie jest pod telefonem.</p>${play}`;
@@ -321,7 +319,23 @@ function render(state) {
   renderCaptions(state);
   renderNextStep(state);
   renderMobileSwitch(state);
-  document.querySelector('[data-guide]').innerHTML = renderGuide(state, autoplayState());
+  renderGuidePanel(state);
+}
+
+// Panel przewija się osobno: po przerysowaniu zostaje w tym samym miejscu, a przy zmianie scenariusza pokazuje bieżący
+let lastGuideScene = null;
+
+function renderGuidePanel(state) {
+  const guide = document.querySelector('[data-guide]');
+  const scrollTop = guide.querySelector('[data-guide-body]')?.scrollTop ?? 0;
+  guide.innerHTML = renderGuide(state, autoplayState());
+  const body = guide.querySelector('[data-guide-body]');
+  body.scrollTop = scrollTop;
+  const scene = currentScene(state, autoplayState());
+  if (scene === lastGuideScene) return;
+  lastGuideScene = scene;
+  const current = body.querySelector('.scene-current');
+  if (current) body.scrollTop += current.getBoundingClientRect().top - body.getBoundingClientRect().top - 12;
 }
 
 function resetDemo() {
@@ -401,7 +415,7 @@ function handleClick(event) {
   if (phone) {
     const persona = phone.dataset.persona;
     const screen = resolveScreen(currentScreen(persona));
-    const { go: goTo, tab, action, actionGlobal, dismiss, notificationGo } = target.dataset;
+    const { go: goTo, tab, action, dismiss, notificationGo } = target.dataset;
 
     if (target.dataset.call) return callAction(persona, target.dataset.call);
     if (target.dataset.chat) return chatAction(target.dataset.chat);
@@ -417,12 +431,6 @@ function handleClick(event) {
     if (notificationGo) {
       dismissNotification(persona, target.dataset.id);
       return go(persona, notificationGo);
-    }
-    if (actionGlobal === 'actAsMe') {
-      return store.update((s) => {
-        s.actingAs = 'ja';
-        return s;
-      });
     }
     if (action) return screen.actions?.[action]?.(target, persona);
     return;
@@ -455,6 +463,14 @@ document.addEventListener('input', (event) => {
   if (event.target.matches('[data-draft]')) {
     store.quietly((s) => {
       s.reply = event.target.value;
+    });
+  }
+  // Wyniki szukania zmieniają się w trakcie pisania, więc tu ekran się przerysowuje (kursor zostaje dzięki data-keep-focus)
+  if (event.target.matches('[data-search]')) {
+    const persona = event.target.closest('[data-persona]').dataset.persona;
+    store.update((s) => {
+      s.search[persona] = event.target.value;
+      return s;
     });
   }
   if (event.target.matches('[data-nickname]')) {

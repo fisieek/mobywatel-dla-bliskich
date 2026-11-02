@@ -1,115 +1,19 @@
-// Zakładka „Dokumenty” — ekran główny mObywatela.
-// Zwykły tryb wygląda jak w aplikacji; nowe są: tryb prosty i przełącznik „Działam jako”.
-import { store, notify } from '../store.js';
-import { people, contactName, fullName, actingAsLabel } from '../personas.js';
-import { docStack, list, row, newBadge, sectionTitle, infoBox } from '../ui.js';
-import { protectionStatus, blockedStatus, blockedToday } from '../scenes/protect.js';
-import { clock } from '../dates.js';
+// Zakładka „Dokumenty” — ekran główny mObywatela. Są tu tylko dokumenty, jak w aplikacji.
+// Wyjątek to tryb prosty: nie ma w nim zakładek, a ten sam ekran staje się ekranem startowym.
+import { notify } from '../store.js';
+import { people, contactName, fullName } from '../personas.js';
+import { docStack, list, row, newBadge, sectionTitle } from '../ui.js';
+import { protectionStatus, blockedStatus } from '../scenes/protect.js';
 import { medsStatus } from '../scenes/meds.js';
-import { pickupStatus, pickupSummary } from '../scenes/pickup.js';
-import { zosiaHome } from '../scenes/junior.js';
+import { pickupStatus } from '../scenes/pickup.js';
 
 // Imiona bez odmiany: „Anna Nowak, Córka” albo nadana nazwa, np. „Mama”
-const mamaFor = (state) => contactName(state, 'anna', 'krystyna');
 const contactFor = (state, persona) => contactName(state, persona, people[persona].contact);
 
-function setActingAs(id) {
-  store.update((s) => {
-    s.actingAs = id;
-    return s;
-  });
-}
-
-function actingAsSwitcher(state) {
-  const chip = (id) => {
-    const disabled = id === 'mama' && state.guardian !== 'active';
-    const selected = state.actingAs === id;
-    return `
-      <button class="segment ${selected ? 'segment-selected' : ''}" data-action="actAs" data-id="${id}"
-        aria-pressed="${selected}" ${disabled ? `disabled title="${mamaFor(state)}: brak pozwolenia na pomoc"` : ''}>
-        ${actingAsLabel(state, id)}
-      </button>`;
-  };
+function standardHome(persona) {
   return `
-    <div class="acting-as">
-      <p class="acting-as-label">Działam jako ${newBadge()}</p>
-      <div class="segmented" role="group" aria-label="Działam jako">${chip('ja')}${chip('mama')}${chip('zosia')}${chip('antek')}</div>
-      ${state.guardian === 'active' ? '' : `<p class="hint">„${mamaFor(state)}” pojawi się tu po udzieleniu pozwolenia na pomoc.</p>`}
-    </div>`;
-}
-
-function mamaLettersStatus(state) {
-  if (['requested', 'opened'].includes(state.letter)) return 'Prośba o pomoc z 1 pismem';
-  if (['drafting', 'drafted'].includes(state.letter)) return 'Przygotowujesz odpowiedź';
-  if (state.letter === 'awaiting') return 'Czeka na podpis';
-  if (state.letter === 'signed') return 'Wysłane ✓';
-  return 'Brak pism, przy których prosi o pomoc';
-}
-
-// Wiersz mamy na ekranie Anny mówi, co się dziś wydarzyło — nie zawsze „wszystko w porządku”
-function mamaSummary(state) {
-  if (state.protection.push === 'pending') return { desc: 'Teraz: ktoś próbuje zalogować się na to konto', tint: 'red' };
-  if (blockedToday(state)) return { desc: `Dziś ${clock(state.protection.blockedAt)} · zablokowana próba logowania`, tint: 'red' };
-  if (['requested', 'opened'].includes(state.letter)) return { desc: 'Prosi o pomoc z pismem z urzędu', tint: 'amber' };
-  if (state.letter === 'awaiting') return { desc: 'Odpowiedź czeka na podpis', tint: 'amber' };
-  if (state.meds === 'requested') return { desc: 'Prosi o pomoc z receptą', tint: 'amber' };
-  const pickup = pickupSummary(state);
-  if (pickup) return pickup;
-  if (state.letter === 'signed') return { desc: 'Odpowiedź do urzędu wysłana ✓', tint: 'green' };
-  return { desc: 'Wszystko w porządku · brak nowych pism i terminów', tint: 'green' };
-}
-
-function annaContent(state) {
-  if (state.actingAs === 'mama') {
-    return `
-      ${list([row({ iconName: 'letter', title: 'Pisma', desc: mamaLettersStatus(state), go: 'mamaLetter', badge: newBadge() })])}
-      ${sectionTitle('Dokumenty')}
-      ${docStack(people.krystyna.documents, 'Krystyna Nowak')}`;
-  }
-  if (state.actingAs === 'zosia') {
-    return `
-      ${docStack(people.zosia.documents, fullName('zosia'))}
-      ${infoBox('Legitymację szkolną dziecka rodzic może dodać do swojego mObywatela już dziś (mObywatel Junior).')}`;
-  }
-  if (state.actingAs === 'antek') {
-    return infoBox(
-      `${actingAsLabel(state, 'antek')}: brak dokumentów w aplikacji. Już dziś rodzic może dodać do swojego mObywatela legitymację szkolną dziecka (mObywatel Junior). <strong>Nowość:</strong> to samo dla młodszych dzieci — sprawy i dokumenty dziecka w jednym miejscu, bez osobnego pełnomocnictwa, bo rejestr zna relację rodzic–dziecko.`,
-    );
-  }
-  const summary = mamaSummary(state);
-  const mamaRow = state.guardian === 'active'
-    ? list([row({ iconName: 'people', tint: summary.tint, title: mamaFor(state), desc: summary.desc, action: 'actAs', id: 'mama' })])
-    : '';
-  const pickup = state.pickup?.status === 'active' ? 'Aktywne · dotknij, żeby zobaczyć albo odwołać' : 'Odbiór dziecka ze szkoły, wizyta u lekarza';
-  return `
-    ${mamaRow}
-    ${docStack(people.anna.documents)}
-    ${list([
-      row({ iconName: 'people', tint: 'green', title: 'Upoważnij bliską osobę', desc: pickup, go: 'authorize', badge: newBadge() }),
-      row({ iconName: 'eye', tint: 'violet', title: 'Moja historia', desc: 'Kto i kiedy widział Twoje dane', go: 'myData', badge: newBadge() }),
-    ])}`;
-}
-
-// Zwykły mObywatel Krystyny: na górze propozycja trybu prostego (pierwsza scena)
-function simpleModeOffer() {
-  return `
-    <button class="offer-card" data-go="simpleOffer">
-      <span class="offer-icon" aria-hidden="true">Aa</span>
-      <span class="row-text">
-        <span class="row-title">Wolisz większe litery i mniej przycisków? ${newBadge()}</span>
-        <span class="row-desc">Włącz tryb prosty. Możesz go wyłączyć w każdej chwili.</span>
-      </span>
-    </button>`;
-}
-
-function standardHome(persona, state) {
-  if (persona === 'zosia') return `${zosiaHome(state)}${docStack(people.zosia.documents)}`;
-  const actingForSomeone = persona === 'anna' && state.actingAs !== 'ja';
-  return `
-    ${actingForSomeone ? '' : '<div class="title-links"><button class="link" data-go="customize">Dostosuj</button><button class="link" data-go="addDocument">Dodaj</button></div>'}
-    ${persona === 'krystyna' ? simpleModeOffer() : ''}
-    ${persona === 'anna' ? actingAsSwitcher(state) : ''}
-    ${persona === 'anna' ? annaContent(state) : docStack(people[persona].documents)}`;
+    ${persona === 'zosia' ? '' : '<div class="title-links"><button class="link" data-go="customize">Dostosuj</button><button class="link" data-go="addDocument">Dodaj</button></div>'}
+    ${docStack(people[persona].documents)}`;
 }
 
 function simpleStatus(persona, state) {
@@ -167,15 +71,13 @@ function simpleHome(persona, state) {
     ${list(simpleRows(persona, state))}
     ${sectionTitle('Moje dokumenty')}
     ${docStack(people[persona].documents)}
+    <button class="btn btn-secondary" data-tab="services">Wszystkie usługi</button>
     <button class="btn btn-secondary" data-tab="more">Więcej opcji</button>`;
 }
 
 export const documentsScreen = {
   kind: 'tab',
-  title: (state, persona) => {
-    if (persona === 'zosia') return `Cześć, ${fullName(persona)}`;
-    return state.simpleMode[persona] ? `Dzień dobry, ${fullName(persona)}` : 'Dokumenty';
-  },
+  title: (state, persona) => (state.simpleMode[persona] ? `Dzień dobry, ${fullName(persona)}` : 'Dokumenty'),
   titleBadge: (state, persona) => {
     if (persona === 'zosia') return newBadge('mObywatel Junior');
     return state.simpleMode[persona] ? newBadge('Tryb prosty') : '';
@@ -185,10 +87,7 @@ export const documentsScreen = {
     const choices = simpleRows(persona, state).map((html) => html.match(/class="row-title">([^<]*)/)?.[1]).filter(Boolean);
     return `Dzień dobry, ${fullName(persona)}. ${simpleStatus(persona, state).text} Możesz wybrać: ${choices.join(', ')}.`;
   },
-  render: (state, persona) => (state.simpleMode[persona] ? simpleHome(persona, state) : standardHome(persona, state)),
-  actions: {
-    actAs: (el) => setActingAs(el.dataset.id),
-  },
+  render: (state, persona) => (state.simpleMode[persona] ? simpleHome(persona, state) : standardHome(persona)),
 };
 
 // Połączenie z bliską osobą. Na drugim telefonie dzwoniący jest podpisany tak, jak widzi go odbiorca.
