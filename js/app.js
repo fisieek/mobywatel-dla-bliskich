@@ -14,7 +14,7 @@ import { pickupScreens } from './scenes/pickup.js';
 import { juniorScreens, chatOverlay, chatAction, startStrangerChat } from './scenes/junior.js';
 import { careScreens } from './scenes/care.js';
 import { renderGuide } from './guide.js';
-import { episodes, episodeDone, currentStep, ZOSIA_EPISODES } from './episodes.js';
+import { episodes, episodeDone, currentStep, ZOSIA_EPISODES, HIGHLIGHTS } from './episodes.js';
 import { startAutoplay, stopAutoplay, autoplayState, onAutoplayChange } from './autoplay.js';
 import { initDevices, biometric } from './device.js';
 
@@ -247,12 +247,19 @@ function renderNextStep(state) {
   const bar = document.querySelector('[data-next-step]');
   const step = currentStep(state);
   const run = autoplayState();
-  const play = run && !run.failed
-    ? '<button class="next-step-play" data-autoplay="stop">Zatrzymaj</button>'
-    : `<button class="next-step-play" data-autoplay="episode" data-scene="${state.episode}">▶ Pokaz</button>`;
-  bar.innerHTML = step
-    ? `<p><strong>Teraz${step.phone ? ` · ${step.phone}` : ''}:</strong> ${step.text}</p>${play}`
-    : `<p><strong>Scenariusz obejrzany.</strong> Następne są pod telefonem.</p>${play}`;
+  const fresh = !state.seenEpisodes.length && !state.episodeOpen;
+  const next = episodes[state.episode + 1];
+  let play;
+  if (run && !run.failed) play = '<button class="next-step-play" data-autoplay="stop">Zatrzymaj</button>';
+  else if (fresh) play = '<button class="next-step-play" data-autoplay="highlights">▶ 70 s</button>';
+  else if (!step && next) play = `<button class="next-step-play" data-episode="${state.episode + 1}">Dalej ▶</button>`;
+  else play = `<button class="next-step-play" data-autoplay="episode" data-scene="${state.episode}">▶ Pokaz</button>`;
+  let text;
+  if (run && !run.failed) text = `<strong>${run.highlights ? 'Najważniejsze' : 'Pokaz'}${run.sceneCount > 1 ? ` · scena ${run.sceneNumber} z ${run.sceneCount}` : ''}:</strong> ${run.scene}`;
+  else if (fresh) text = '<strong>Bliscy pomagają sobie w mObywatelu.</strong> Zobacz trzy najważniejsze sceny w 70 sekund.';
+  else if (step) text = `<strong>Teraz${step.phone ? ` · ${step.phone}` : ''}:</strong> ${step.text}`;
+  else text = next ? `<strong>Scenariusz obejrzany.</strong> Następny: ${next.name}.` : '<strong>Wszystkie scenariusze obejrzane.</strong>';
+  bar.innerHTML = `<p>${text}</p>${play}`;
 
   if (step?.persona && step.persona !== lastStepPersona && window.innerWidth <= MOBILE_MAX) {
     mobilePersona = step.persona;
@@ -283,11 +290,25 @@ function renderCaptions(state) {
   });
 }
 
+// Komputer: gdy krok dotyczy jednego telefonu, drugi przygasa, żeby było wiadomo, gdzie patrzeć
+function markActivePhone(state) {
+  const run = autoplayState();
+  const step = state.episodeOpen || (run && !run.failed) ? currentStep(state) : null;
+  const active = step?.persona ?? null;
+  // Telefon z nowym powiadomieniem zostaje jasny: to, że wiadomość przeszła do drugiej osoby, jest częścią sceny
+  document.querySelectorAll('.phone').forEach((phone) => {
+    const persona = phone.dataset.persona;
+    const idle = Boolean(active) && persona !== active && !state.notifications[persona].length;
+    phone.classList.toggle('phone-idle', idle);
+  });
+}
+
 function render(state) {
   renderPhone('krystyna', state);
   renderPhone('anna', state);
   renderPhone('zosia', state);
   placeLeftPhone(state);
+  markActivePhone(state);
   renderCaptions(state);
   renderNextStep(state);
   renderMobileSwitch(state);
@@ -335,14 +356,18 @@ function renderGuidePanel(state) {
 }
 
 // Otwiera scenariusz od jego własnego stanu startowego. Lista obejrzanych zostaje.
-function openEpisode(index) {
+// quick — krótki pokaz zaczyna od dalszego stanu (`quickStart`), jeśli scenariusz go ma.
+function openEpisode(index, { quick = false } = {}) {
   stopSpeaking();
-  const seen = store.get().seenEpisodes;
+  const { seenEpisodes: seen } = store.get();
   store.reset();
   store.update((s) => {
-    episodes[index].start(s);
+    const start = quick && episodes[index].quickStart ? episodes[index].quickStart : episodes[index].start;
+    start(s);
     s.episode = index;
     s.seenEpisodes = seen;
+    s.episodeOpen = true;
+    s.introOpen = false;
     return s;
   });
   mobilePersona = ZOSIA_EPISODES.includes(index) ? 'zosia' : episodes[index].steps.find((step) => step.phone)?.phone === 'Telefon Anny' ? 'anna' : 'krystyna';
@@ -394,12 +419,13 @@ function handleClick(event) {
   const target = event.target.closest('button');
   if (!target || target.disabled) return;
 
-  // „Pokaż sam”: start i stop pokazu
+  // „Pokaż sam”: start i stop pokazu. „Najważniejsze” to krótka wersja trzech filarów dla jury.
   if (target.dataset.autoplay) {
     const kind = target.dataset.autoplay;
     if (kind === 'stop') return stopAutoplay();
-    const indices = kind === 'all' ? episodes.map((_, i) => i) : [Number(target.dataset.scene)];
-    return startAutoplay({ indices, prepare: openEpisode, showPersona });
+    const highlights = kind === 'highlights';
+    const indices = highlights ? HIGHLIGHTS : kind === 'all' ? episodes.map((_, i) => i) : [Number(target.dataset.scene)];
+    return startAutoplay({ indices, highlights, prepare: openEpisode, showPersona });
   }
   // Dotknięcie przez człowieka w trakcie pokazu oddaje mu stery
   if (event.isTrusted && autoplayState()) stopAutoplay();
@@ -407,13 +433,20 @@ function handleClick(event) {
   // Panel: rozwijanie scenariuszy jak w FAQ. Inny scenariusz startuje od nowa, ten sam tylko się zwija lub rozwija.
   if (target.dataset.episode) {
     const index = Number(target.dataset.episode);
-    if (index !== store.get().episode) return openEpisode(index);
+    // Moment z karty „W skrócie” zawsze otwiera scenariusz od początku
+    if (index !== store.get().episode || target.classList.contains('intro-moment')) return openEpisode(index);
     return store.update((s) => {
       s.episodeOpen = !s.episodeOpen;
       return s;
     });
   }
   if (target.dataset.episodeRestart) return openEpisode(Number(target.dataset.episodeRestart));
+  if ('intro' in target.dataset) {
+    return store.update((s) => {
+      s.introOpen = !s.introOpen;
+      return s;
+    });
+  }
   if ('summary' in target.dataset) {
     return store.update((s) => {
       s.summaryOpen = !s.summaryOpen;
