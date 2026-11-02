@@ -2,7 +2,6 @@
 import { episodes, episodeDone, stepIndex } from './episodes.js';
 
 const cardsFor = [
-  () => simpleSceneDone(),
   () => helpSceneDone(),
   (state) => protectSceneDone(state),
   (state) => controlSceneDone(state),
@@ -36,10 +35,12 @@ function helpSceneDone() {
       ${whoDoesIt([
         ['Finlandia, Suomi.fi', 'pełnomocnictwa z zakresem, terminem i historią użycia. 75% korzystających jest z nich zadowolonych.'],
         ['Estonia, Smart-ID', 'podpis osobnym PIN-em, bez dokumentu przy telefonie.'],
+        ['Wielka Brytania, GOV.UK', 'prosty język i jedna rzecz na stronę to zasada dla wszystkich usług publicznych.'],
+        ['Apple i Samsung', 'uproszczony tryb całego telefonu (Assistive Access, tryb łatwy). My robimy to samo w mObywatelu.'],
       ])}
       ${counter(
-        'Wizyta w urzędzie z mamą albo jej PIN w cudzym telefonie. Pomoc bliskiej osoby w mObywatelu tylko przy receptach.',
-        '1 zgoda, 1 podpis PIN-em, każdy krok w historii.',
+        'Wizyta w urzędzie z mamą albo jej PIN w cudzym telefonie. Pomoc bliskiej osoby w mObywatelu tylko przy receptach. Ten sam ekran dla 20-latka i 71-latki.',
+        '1 zgoda, 1 podpis PIN-em, każdy krok w historii. Tryb prosty: duże przyciski, czytanie na głos i „Nie wiem, co zrobić”.',
       )}`,
   };
 }
@@ -110,18 +111,6 @@ function controlSceneDone(state) {
       ])}
       ${counter('Kserokopia dowodu albo cały dokument w obcych rękach. Brak śladu.', '2 dane zamiast całego dokumentu i wpis w historii z „Cofnij zgodę”.')}
       <p class="guide-note">Kierunek, który państwo już obrało (weryfikacja wieku, Europejski Portfel Tożsamości Cyfrowej), rozszerzamy poza sam wiek.</p>`,
-  };
-}
-
-function simpleSceneDone() {
-  return {
-    tries: '',
-    cards: `
-      ${whoDoesIt([
-        ['Wielka Brytania, GOV.UK', 'prosty język i jedna rzecz na stronę to zasada dla wszystkich usług publicznych.'],
-        ['Apple i Samsung', 'uproszczony tryb całego telefonu (Assistive Access, tryb łatwy). My robimy to samo w mObywatelu.'],
-      ])}
-      ${counter('Pięć zakładek, ikony bez podpisów, drobny tekst.', 'Jedna karta z tym, co ważne dziś, duże przyciski, czytanie na głos i „Nie wiem, co zrobić”.')}`,
   };
 }
 
@@ -207,17 +196,72 @@ function summary() {
 
 function autoplayBar(run) {
   if (!run) return '';
+  const where = run.sceneCount > 1 ? `scena ${run.sceneNumber} z ${run.sceneCount}: ${run.scene}` : run.scene;
   if (run.failed) {
     return `
       <div class="autoplay autoplay-running" role="status">
-        <p>Pokaz zatrzymał się na kroku ${run.index} z ${run.total}. Można kontynuować ręcznie.</p>
+        <p>Pokaz zatrzymał się (${where}). Można kontynuować ręcznie.</p>
         <button class="btn btn-secondary btn-small" data-autoplay="stop">Zamknij</button>
       </div>`;
   }
+  const percent = Math.round((run.index / run.total) * 100);
+  // data-step: numer bieżącego kroku pokazu; korzysta z niego narzedzia/nagraj-film.mjs przy napisach
   return `
-    <div class="autoplay autoplay-running" role="status">
-      <p>Pokaz trwa · ${run.scene} · krok ${run.index} z ${run.total}</p>
+    <div class="autoplay autoplay-running" role="status" data-step="${run.index}">
+      <p>${run.highlights ? 'Najważniejsze' : 'Pokaz'} · ${where}</p>
+      <div class="autoplay-progress" role="progressbar" aria-label="Postęp pokazu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width: ${percent}%"></span></div>
       <button class="btn btn-secondary btn-small" data-autoplay="stop">Zatrzymaj pokaz</button>
+    </div>`;
+}
+
+// Karta „W skrócie”: teza, trzy najmocniejsze momenty i porównanie z prototypem referencyjnym.
+// Porównujemy z wersją pod linkiem na mobywatel.ai (tryb skryptowy), tak jak widzi ją jury.
+const moments = [
+  [0, 'Krystyna rozumie pismo z urzędu, Anna przygotowuje odpowiedź, a Krystyna podpisuje ją PIN-em.'],
+  [1, 'Dzwoni fałszywy policjant. Aplikacja mówi, że żadna instytucja teraz nie dzwoni, a Anna dostaje ostrzeżenie.'],
+  [2, 'Wypożyczalnia dostaje 2 dane zamiast całego dowodu. Krystyna widzi to w „Kto widział moje dane”.'],
+];
+
+const comparison = [
+  ['Sprawy bliskiej osoby', 'Każda osoba pokazowa załatwia własne sprawy. Na pytanie o sprawy mamy, np. „Jakie recepty ma moja mama?”, wersja pod linkiem nie ma przygotowanej odpowiedzi.', 'Mama daje córce pozwolenie z zakresem. Córka przygotowuje odpowiedź, mama ją czyta i podpisuje. Każdy krok jest w historii.'],
+  ['Telefon od oszusta', 'Scenariusz podejrzanego SMS-a, o który użytkownik pyta asystenta.', 'Podpis numeru już przy dzwonieniu, sprawdzenie w trakcie rozmowy, prośba o logowanie bez przycisku „Zatwierdź” i ostrzeżenie dla córki.'],
+  ['Jedna sprawa, kilka osób', 'Rozmowa jednej osoby z asystentem na jednym telefonie.', 'Sprawa przechodzi między telefonami Krystyny, Anny i Zosi. Każdy widzi tylko swoją część.'],
+];
+
+function intro(state, run) {
+  if (!state.introOpen) {
+    return `
+      <div class="intro intro-closed">
+        <button class="intro-toggle" data-intro aria-expanded="false"><span>W skrócie: o co chodzi w tym prototypie</span><span class="ep-chevron" aria-hidden="true"></span></button>
+      </div>`;
+  }
+  const running = Boolean(run && !run.failed);
+  return `
+    <div class="intro">
+      <button class="intro-toggle" data-intro aria-expanded="true"><span>W skrócie</span><span class="ep-chevron" aria-hidden="true"></span></button>
+      <p class="intro-thesis">Sprawy urzędowe często załatwia się w rodzinie. Prototyp referencyjny prowadzi jedną osobę w rozmowie z asystentem. <strong>My pokazujemy mObywatela, w którym bliscy pomagają sobie bezpiecznie: na dwóch telefonach naraz, ze zgodą, zakresem i historią.</strong></p>
+      <ol class="intro-moments">
+        ${moments
+          .map(([index, text]) => `<li><button class="intro-moment" data-episode="${index}"><span class="intro-moment-name">${episodes[index].name}</span><span>${text}</span></button></li>`)
+          .join('')}
+      </ol>
+      ${running ? '' : `<button class="btn btn-primary" data-autoplay="highlights">▶ Pokaż najważniejsze (ok. 70 s)</button>`}
+      <details class="guide-details intro-compare">
+        <summary>Prototyp referencyjny i my</summary>
+        <div class="compare">
+          ${comparison
+            .map(
+              ([what, reference, ours]) => `
+              <div class="compare-row">
+                <p class="summary-what">${what}</p>
+                <div class="counter-row"><span>Referencja</span><p>${reference}</p></div>
+                <div class="counter-row counter-new"><span>U nas</span><p>${ours}</p></div>
+              </div>`,
+            )
+            .join('')}
+          <p class="guide-note">Porównujemy z wersją pod linkiem na mobywatel.ai (tryb skryptowy), którą widzi jury. Pełna wersja z modelem językowym może odpowiadać na więcej pytań. Mocną stroną referencji jest rozmowa z asystentem, więc nie konkurujemy z nią wprost: dokładamy to, czego brakuje rodzinie.</p>
+        </div>
+      </details>
     </div>`;
 }
 
@@ -297,8 +341,17 @@ export function renderGuide(state, run = null) {
       ${autoplayBar(run)}
     </div>
     <div class="guide-body" data-guide-body>
+      ${intro(state, run)}
       <ol class="eps">
-        ${episodes.map((_, i) => episodeItem(state, i, run)).join('')}
+        ${episodes
+          .map((episode, i) => {
+            const groupStart = episode.group === 'family' && episodes[i - 1]?.group !== 'family';
+            const heading = groupStart
+              ? `<li class="eps-group"><p class="eps-group-title">Cała rodzina: kolejne pomysły</p><p class="eps-group-desc">Ten sam wzorzec zgody i historii w innych sprawach rodziny.</p></li>`
+              : '';
+            return heading + episodeItem(state, i, run);
+          })
+          .join('')}
         <li class="ep ${state.summaryOpen ? 'ep-open' : ''}">
           <button class="ep-head" data-summary aria-expanded="${state.summaryOpen}">
             <span class="ep-number ep-number-summary" aria-hidden="true">Σ</span>
@@ -310,7 +363,8 @@ export function renderGuide(state, run = null) {
       </ol>
     </div>
     <div class="guide-foot">
-      <button class="btn btn-secondary btn-small" data-autoplay="all">▶ Pokaż wszystkie po kolei</button>
-      <button class="btn btn-secondary btn-small" data-reset>Zacznij od początku</button>
+      <button class="btn btn-secondary btn-small" data-autoplay="highlights">▶ Najważniejsze (70 s)</button>
+      <button class="btn btn-secondary btn-small" data-autoplay="all">Wszystkie (ok. 3,5 min)</button>
+      <button class="btn btn-secondary btn-small" data-reset>Od początku</button>
     </div>`;
 }

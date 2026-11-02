@@ -16,18 +16,12 @@ const WAIT_LIMIT_MS = 15000;
 // `scene` to numer scenariusza w panelu (od 0).
 const scenes = [
   {
-    name: 'Tryb prosty',
+    name: 'Pomoc',
     scene: 0,
     steps: [
       [K, '[data-tab="more"]'],
       [K, '.row[data-go="simpleOffer"]', 1800],
       [K, '[data-action="enable"]', 2600],
-    ],
-  },
-  {
-    name: 'Pomoc',
-    scene: 1,
-    steps: [
       [K, '.row[data-go="helpers"]'],
       [K, 'button[data-go="helpersChoose"]'],
       [K, '.row[data-go="helpersScope"]'],
@@ -55,7 +49,7 @@ const scenes = [
   },
   {
     name: 'Ochrona',
-    scene: 2,
+    scene: 1,
     steps: [
       [null, '[data-guide-action="scamCall"]', 1800],
       [K, '[data-call="answer"]', 5000],
@@ -70,7 +64,7 @@ const scenes = [
   },
   {
     name: 'Kontrola',
-    scene: 3,
+    scene: 2,
     steps: [
       [A, '[data-tab="qr"]'],
       [A, '.row[data-go="qrScan"]'],
@@ -82,7 +76,7 @@ const scenes = [
   },
   {
     name: 'Moje leki',
-    scene: 4,
+    scene: 3,
     steps: [
       [null, '[data-guide-action="medsLow"]', 1800],
       [K, '[data-notification-go="meds"]'],
@@ -97,7 +91,7 @@ const scenes = [
   },
   {
     name: 'Odbiór dziecka ze szkoły',
-    scene: 5,
+    scene: 4,
     steps: [
       [A, '[data-tab="services"]'],
       [A, '.row[data-go="authorize"]', 1800],
@@ -110,7 +104,7 @@ const scenes = [
   },
   {
     name: 'Ktoś do mnie pisze?',
-    scene: 6,
+    scene: 5,
     steps: [
       [null, '[data-guide-action="strangerChat"]', 5000],
       [Z, '[data-chat="minimize"]'],
@@ -124,7 +118,7 @@ const scenes = [
   },
   {
     name: 'Zgoda dla szkoły',
-    scene: 7,
+    scene: 6,
     steps: [
       [Z, '[data-tab="services"]'],
       [Z, '.row[data-go="schoolConsentScan"]'],
@@ -136,12 +130,63 @@ const scenes = [
   },
 ];
 
-const stepsFor = (indices) =>
-  scenes
-    .filter((scene) => indices.includes(scene.scene))
-    .flatMap((scene) => scene.steps.map((step, i) => ({ scene: scene.name, sceneIndex: scene.scene, step, first: i === 0 })));
+// Krótki pokaz dla jury (ok. 70 s): trzy filary bez kroków, które nie są istotą sceny.
+// Pomoc zaczyna od chwili, gdy Krystyna ma już tryb prosty i pozwoliła Annie pomagać (stan `quickStart`).
+const highlightScenes = [
+  {
+    name: 'Pomoc',
+    scene: 0,
+    steps: [
+      [K, '.row[data-go="letters"]'],
+      [K, 'button[data-go="camera"]'],
+      [K, '[data-action="shoot"]', 2200],
+      [K, '[data-action="requestHelp"]', 1600],
+      [A, '[data-notification-go="mamaLetter"]'],
+      [A, '[data-action="draft"]', 1800],
+      [A, '[data-action="sendToMama"]', 1600],
+      [K, '[data-notification-go="replyReview"]', 2000],
+      [K, '[data-go="signPin"]', 1000],
+      [K, '[data-action="key"][data-id="1"]', 200],
+      [K, '[data-action="key"][data-id="9"]', 200],
+      [K, '[data-action="key"][data-id="5"]', 200],
+      [K, '[data-action="key"][data-id="5"]', 2000],
+    ],
+  },
+  {
+    name: 'Ochrona',
+    scene: 1,
+    steps: [
+      [null, '[data-guide-action="scamCall"]', 1500],
+      [K, '[data-call="answer"]', 3800],
+      [K, '[data-call="minimize"]', 1000],
+      [K, '.simple-status-tap', 1200],
+      [K, '[data-id="police"]', 2400],
+      [K, '[data-action="hangup"]', 1200],
+      [K, '[data-notification-go="loginRequest"]', 1600],
+      [K, '[data-action="reject"]', 2400],
+    ],
+  },
+  {
+    name: 'Kontrola',
+    scene: 2,
+    steps: [
+      [A, '[data-tab="qr"]', 1000],
+      [A, '.row[data-go="qrScan"]', 1000],
+      [A, '.btn[data-action="scan"]', 1600],
+      [A, '[data-action="share"]', 2200],
+      [K, '.row[data-go="myData"]', 3200],
+    ],
+  },
+];
 
-// Bieżący pokaz: null albo { index, total, scene, sceneIndex, failed }
+const stepsFor = (indices, list) => {
+  const chosen = list.filter((scene) => indices.includes(scene.scene));
+  return chosen.flatMap((scene, number) =>
+    scene.steps.map((step, i) => ({ scene: scene.name, sceneIndex: scene.scene, sceneNumber: number + 1, sceneCount: chosen.length, step, first: i === 0 })),
+  );
+};
+
+// Bieżący pokaz: null albo { index, total, scene, sceneIndex, sceneNumber, sceneCount, highlights, failed }
 let run = null;
 let runId = 0;
 const listeners = new Set();
@@ -188,24 +233,26 @@ export function stopAutoplay() {
   emit();
 }
 
-// indices — które scenariusze pokazać; prepare(i) ustawia stan startowy scenariusza; showPersona — pokazuje telefon, którego dotyczy krok
-export async function startAutoplay({ indices, prepare, showPersona }) {
+// indices — które scenariusze pokazać; highlights — krótka wersja dla jury;
+// prepare(i, { quick }) ustawia stan startowy scenariusza; showPersona — pokazuje telefon, którego dotyczy krok
+export async function startAutoplay({ indices, highlights = false, prepare, showPersona }) {
   stopAutoplay();
   const id = ++runId;
-  const allSteps = stepsFor(indices);
-  run = { index: 0, total: allSteps.length, scene: allSteps[0].scene, sceneIndex: allSteps[0].sceneIndex, failed: false };
+  const allSteps = stepsFor(indices, highlights ? highlightScenes : scenes);
+  const first = allSteps[0];
+  run = { index: 0, total: allSteps.length, scene: first.scene, sceneIndex: first.sceneIndex, sceneNumber: 1, sceneCount: first.sceneCount, highlights, failed: false };
   emit();
 
   for (let i = 0; i < allSteps.length; i++) {
     if (id !== runId) return;
-    const { scene, sceneIndex, step, first } = allSteps[i];
-    if (first) {
-      prepare(sceneIndex);
+    const { scene, sceneIndex, sceneNumber, step, first: firstOfScene } = allSteps[i];
+    if (firstOfScene) {
+      prepare(sceneIndex, { quick: highlights });
       await sleep(800);
       if (id !== runId) return;
     }
     const [persona, selector, pause = STEP_PAUSE_MS] = step;
-    run = { ...run, index: i + 1, scene, sceneIndex };
+    run = { ...run, index: i + 1, scene, sceneIndex, sceneNumber };
     emit();
     if (persona) showPersona(persona);
 

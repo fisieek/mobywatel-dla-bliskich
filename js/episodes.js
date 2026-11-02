@@ -1,4 +1,6 @@
 // Scenariusze jako osobne odcinki. Każdy ma problem, grupę docelową, reprezentanta tej grupy i kroki po kolei.
+// Najpierw trzy filary (`group: 'main'`), potem kolejne pomysły dla całej rodziny (`group: 'family'`).
+// Tryb prosty jest pierwszym krokiem Pomocy, a nie osobnym odcinkiem.
 // Każdy zaczyna się od własnego stanu (`start`), więc można otworzyć dowolny bez przechodzenia poprzednich.
 // Problemy i grupy dla pierwszych czterech: context/docs/strategia-priorytety.md, sekcja 3.
 
@@ -37,25 +39,17 @@ function controlStart(s) {
 
 export const episodes = [
   {
-    name: 'Tryb prosty',
-    problem: 'Ten sam ekran służy dziś 20-latkowi i 75-latkowi: pięć zakładek, drobny tekst, ikony. Osoby mniej obyte z telefonem boją się aplikacji i z niej nie korzystają.',
-    audience: 'Seniorzy i osoby z mniejszymi kompetencjami cyfrowymi.',
-    people: [krystyna],
-    start: () => {},
-    steps: [
-      { phone: K, text: 'Otwórz zakładkę Więcej.', done: (s) => s.simpleMode.krystyna || s.nav.krystyna[0] === 'more' },
-      { phone: K, text: 'Dotknij „Tryb prosty”.', done: (s) => s.simpleMode.krystyna || s.nav.krystyna.includes('simpleOffer') },
-      { phone: K, text: 'Dotknij „Włącz tryb prosty”.', done: (s) => s.simpleMode.krystyna },
-    ],
-  },
-  {
     name: 'Pomoc',
-    problem: 'Bliskiej osobie nie da się dziś legalnie i bezpiecznie pomóc w sprawach urzędowych. Pomaga się na telefonie mamy, z jej PIN-em. Do tego pisma urzędowe są trudne do zrozumienia.',
+    group: 'main',
+    problem: 'Bliskiej osobie nie da się dziś legalnie i bezpiecznie pomóc w sprawach urzędowych. Pomaga się na telefonie mamy, z jej PIN-em. Pisma urzędowe są trudne do zrozumienia, a aplikacja wygląda tak samo dla 20-latka i dla 71-latki.',
     audience: 'Seniorzy i ich dorosłe dzieci, rodzice dzieci z niepełnosprawnością, opiekunowie.',
     people: [krystyna, anna],
-    start: simpleOn,
+    start: () => {},
+    // Krótki pokaz zaczyna od chwili, gdy Krystyna ma już tryb prosty i pomoc Anny
+    quickStart: familyReady,
     note: 'Odpowiedzi asystenta są w prototypie przykładowe.',
     steps: [
+      { phone: K, text: 'Krystyna woli większe litery i mniej przycisków. Otwórz zakładkę Więcej → „Tryb prosty” i dotknij „Włącz tryb prosty”.', done: (s) => s.simpleMode.krystyna },
       { phone: K, text: 'Na ekranie głównym dotknij „Pozwól bliskiej osobie Ci pomagać”, wybierz Annę i potwierdź zakres pomocy.', done: (s) => s.guardian !== 'none' },
       { phone: A, text: 'Otwórz powiadomienie od mamy i przyjmij prośbę.', done: (s) => s.guardian === 'active' },
       { phone: K, text: 'Krystyna dostała papierowe pismo. Dotknij „Moje pisma” i sfotografuj je. Asystent wyjaśni je prostym językiem.', done: (s) => letterAtLeast(s, 'explained') },
@@ -66,6 +60,7 @@ export const episodes = [
   },
   {
     name: 'Ochrona',
+    group: 'main',
     problem: 'Oszuści dzwonią „z policji” albo „z banku” i namawiają do zatwierdzenia czegoś, czego użytkownik sam nie zaczął. Decyzja zapada w stresie, sam na sam z oszustem.',
     audience: 'Wszyscy użytkownicy, a szczególnie seniorzy.',
     people: [krystyna],
@@ -80,6 +75,7 @@ export const episodes = [
   },
   {
     name: 'Kontrola',
+    group: 'main',
     problem: 'Hotel, wypożyczalnia czy operator widzą cały dokument, a często robią kserokopię. Nie ma jednego miejsca, które pokazuje, kto i jakie dane dostał.',
     audience: 'Wszyscy użytkownicy.',
     people: [anna, krystyna],
@@ -92,6 +88,7 @@ export const episodes = [
   },
   {
     name: 'Moje leki',
+    group: 'family',
     problem: 'Tabletki kończą się nagle, recepta jest już nieważna, a do przychodni można zadzwonić tylko w godzinach pracy.',
     audience: 'Osoby przyjmujące leki na stałe, głównie seniorzy, i ich bliscy.',
     people: [krystyna, anna],
@@ -106,6 +103,7 @@ export const episodes = [
   },
   {
     name: 'Odbiór dziecka ze szkoły',
+    group: 'family',
     problem: 'Gdy dziecko odbiera ktoś inny niż rodzic, szkoła dostaje kartkę, której nie ma jak sprawdzić.',
     audience: 'Rodzice uczniów i bliscy, którzy pomagają w opiece, oraz szkoły.',
     people: [anna, krystyna],
@@ -117,6 +115,7 @@ export const episodes = [
   },
   {
     name: 'Ktoś do mnie pisze?',
+    group: 'family',
     problem: 'Obca osoba pisze do dziecka: obraża je, straszy albo chce zdjęć. Dziecko się wstydzi, kasuje wiadomości i zostaje z tym samo.',
     audience: 'Dzieci i nastolatki oraz ich rodzice.',
     people: [zosia],
@@ -130,6 +129,7 @@ export const episodes = [
   },
   {
     name: 'Zgoda dla szkoły',
+    group: 'family',
     problem: 'Kartka ze zgodą na wycieczkę gubi się w plecaku, a rodzic podpisuje ją wieczorem dzień przed terminem.',
     audience: 'Rodzice uczniów i szkoły.',
     people: [zosia, anna],
@@ -143,7 +143,10 @@ export const episodes = [
 ];
 
 // Scenariusze dziejące się na telefonie Zosi: wtedy jej telefon stoi zamiast telefonu Krystyny
-export const ZOSIA_EPISODES = [6, 7];
+export const ZOSIA_EPISODES = [5, 6];
+
+// Krótki pokaz dla jury: trzy filary (Pomoc, Ochrona, Kontrola)
+export const HIGHLIGHTS = [0, 1, 2];
 
 export const episodeDone = (state, index) => episodes[index].steps.every((step) => step.done(state));
 
