@@ -41,9 +41,11 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
 - `js/ocr.js` — odczyt tekstu ze zdjęcia. Nieużywany od 2.11.2026, zostawiony na później.
 - `api/assistant.js` + `api/_lib/pllum.js` — funkcja na serwerze do łączenia z PLLuM. Strona jej nie wywołuje (decyzja z 2.11.2026), kod został na później.
 - `dev-server.mjs` — lokalny serwer: pliki + `/api/assistant`.
-- `js/episodes.js` — scenariusze jako odcinki: problem, grupa docelowa, reprezentanci, kroki i stan startowy każdego.
-- `js/guide.js` — panel „Scenariusze” obok telefonów: rozwijane odcinki jak FAQ, po jednym naraz.
-- `js/autoplay.js` — „Pokaż sam”: pokaz całego demo (ok. 2 min), który klika te same przyciski co człowiek, z podświetleniem dotknięcia.
+- `js/episodes.js` — scenariusze jako odcinki: problem, grupa docelowa, reprezentanci, kroki i stan startowy każdego. Najpierw trzy filary (Pomoc, Ochrona, Kontrola), potem grupa „Cała rodzina”. `quickStart` to stan startowy w krótkim pokazie.
+- `js/guide.js` — panel „Scenariusze” obok telefonów: karta „W 60 sekund” (teza, trzy momenty, porównanie z prototypem referencyjnym), rozwijane odcinki jak FAQ, po jednym naraz.
+- `js/autoplay.js` — pokaz automatyczny, który klika te same przyciski co człowiek, z podświetleniem dotknięcia: „Najważniejsze” (trzy filary, ok. 70 s) i „Wszystkie” (7 scen, ok. 3,5 min). Licznik pokazuje sceny, nie kroki.
+- `narzedzia/nagraj-film.mjs` — nagrywa film z pokazu „Najważniejsze” w 1920 × 1080 (Playwright i ffmpeg). Nie trafia na serwer.
+- `.github/workflows/sprawdz-link.yml` — codziennie sprawdza, czy wersja dla jury otwiera się bez logowania.
 - `js/speech.js` — „Przeczytaj na głos” w trybie prostym.
 - `js/icons.js` + `js/official-icons.js` + `assets/ikony/` — oficjalne ikony z systemu projektowego mObywatela (licencja MIT Centralnego Ośrodka Informatyki, `assets/ikony/LICENCJA.txt`) i kilka własnych tam, gdzie oficjalnych nie ma. Bez godła i logo dokumentów.
 
@@ -106,7 +108,7 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
   - **Ktoś do mnie pisze?** (Zosia, mObywatel Junior): obcy pisze do Zosi w Wiadomościach, chce zdjęć i straszy, trzy duże przyciski, rada po dziecięcemu, Zosia sama wybiera: 116 111, „Powiedz: Mama” albo Dyżurnet.pl; mama nie dostaje nic bez jej zgody,
   - **Zgoda dla szkoły** (Zosia → Anna): Zosia skanuje kod z kartki od wychowawczyni, Anna podpisuje zgodę w pracy,
   - trzeci telefon (Zosia, mObywatel Junior z trzema zakładkami); na komputerze w scenach Zosi zastępuje telefon Krystyny, przełącznik nad telefonem,
-  - „Pokaż sam” w dwóch częściach: „Tryb prosty i trzy filary” i „Cała rodzina” (po ok. 2 min).
+  - „Pokaż sam” w dwóch częściach: „Tryb prosty i trzy filary” i „Cała rodzina” (po ok. 2 min). Od 2.11.2026 zastąpione przez „Najważniejsze” i „Wszystkie”.
 - ✅ **Aktualny mObywatel i porządek w strukturze** (2.11.2026):
   - zakładka Dokumenty ma tylko dokumenty; zamiast przełącznika „Działam jako” jest Usługi → Pomoc bliskich,
   - pełne listy usług i dokumentów, działające Szukaj, Więcej według prawdziwej aplikacji, oficjalne ikony,
@@ -115,7 +117,25 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
   - upoważnienie jak cyfrowa kartka: czyja sprawa, kilka podpowiedzi i „Inna sprawa” opisana własnymi słowami,
   - telefon Zosi pojawia się sam przy jej scenariuszach, bez ręcznego przełącznika (na wąskim ekranie zostają zakładki Krystyna · Anna · Zosia),
   - asystent bez modelu językowego: przygotowane odpowiedzi do przykładowego pisma.
-- ⏳ Film 90 s z pokazu automatycznego do zgłoszenia.
+- ✅ **Poprawki P0 po przeglądzie pod kątem konkursu** (2.11.2026):
+  - karta „W 60 sekund” na górze panelu: teza (sprawy załatwia się w rodzinie, referencja prowadzi jedną osobę), trzy momenty i przycisk „Pokaż najważniejsze”; na telefonie ten sam przycisk w pasku u góry,
+  - „Prototyp referencyjny i my”: trzy sprawy porównane z wersją pod linkiem na mobywatel.ai (tryb skryptowy). Pytania o sprawy mamy i telefon od oszusta sprawdzone w routerze referencji (kopia MIT w publicznym repozytorium innego zgłoszenia), bez żadnych liczb z drugiej ręki,
+  - kolejność: Pomoc, Ochrona, Kontrola, potem „Cała rodzina: kolejne pomysły”; Tryb prosty jest pierwszym krokiem Pomocy,
+  - pokaz „Najważniejsze”: ok. 70 s zamiast ok. 3,5 min, licznik „scena 2 z 3” zamiast „krok 24 z 71”, pasek postępu,
+  - telefon, którego nie dotyczy bieżący krok, przygasa (chyba że właśnie dostał powiadomienie),
+  - na laptopie zwarty nagłówek i stopka w jednej linii: przy 1280 × 720 podpisy zakładek w telefonie mają 9,0 px zamiast 7,7 px, przy 1440 × 900 11,9 px zamiast 10,6 px,
+  - codzienne sprawdzanie linku dla jury i instrukcja zamrożenia wersji (niżej).
+- ⏳ Film: szkic 77 s z pokazu „Najważniejsze” (`narzedzia/nagraj-film.mjs`). Do zrobienia napisy lub głos.
+
+## Zgłoszenie: link i zamrożenie wersji
+Wymóg konkursu: link działa bez logowania do ogłoszenia wyników.
+
+- W formularzu podajemy tylko https://mobywatel-dla-bliskich-prototyp.vercel.app. Adresy konkretnych wdrożeń i gałęzi (`…-git-…`, `…-xxxxxxxx.vercel.app`) są za logowaniem Vercela (ochrona „Standard Protection”).
+- Przed wysłaniem: otworzyć link w oknie prywatnym, bez zalogowanego Vercela, na komputerze i na telefonie.
+- Po wysłaniu zamrozić wersję dla jury:
+  1. oznaczyć zgłoszony commit: `git tag zgloszenie-2026-11 && git push origin zgloszenie-2026-11`,
+  2. wyłączyć automatyczną publikację z `main`, dopisując do `vercel.json`: `"git": { "deploymentEnabled": { "main": false } }` (dalsza praca na gałęziach, a produkcję promujemy ręcznie w panelu Vercela).
+- Workflow „Sprawdź link dla jury” sprawdza link codziennie. Gdy przestanie działać, GitHub wyśle powiadomienie o nieudanym przebiegu.
 
 ## Zasady
 - **Imion nigdy nie odmieniamy.** Bliską osobę pokazujemy zawsze jako „Imię Nazwisko, Relacja” (np. „Anna Nowak, Córka”) albo pod nazwą nadaną na ekranie Więcej → Moi bliscy (np. „Mama”) — w tej samej formie w każdym zdaniu: „Zadzwoń do Mama”, „Poproś o pomoc: Anna Nowak, Córka”. Zdania budujemy tak, żeby imię stało w mianowniku (podmiot, etykieta po dwukropku albo tytuł powiadomienia). Wszystko idzie przez `contactName` w `js/personas.js`.

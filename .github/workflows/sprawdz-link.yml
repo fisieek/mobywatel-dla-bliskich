@@ -1,0 +1,49 @@
+# Sprawdza, czy wersja dla jury działa bez logowania (wymóg konkursu do ogłoszenia wyników).
+# Uruchamia się codziennie, ręcznie (Actions → Sprawdź link dla jury → Run workflow) i po zmianie tego pliku.
+# Gdy link nie działa, GitHub wysyła właścicielowi repozytorium powiadomienie o nieudanym przebiegu.
+name: Sprawdź link dla jury
+
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/sprawdz-link.yml
+
+permissions:
+  contents: read
+
+jobs:
+  link:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Strona otwiera się bez logowania
+        env:
+          URL: https://mobywatel-dla-bliskich-prototyp.vercel.app/
+        run: |
+          set -u
+          code=$(curl -sS -L -o page.html -w '%{http_code} %{url_effective}' "$URL")
+          echo "Odpowiedź: $code"
+          status=${code%% *}
+          final=${code#* }
+          if [ "$status" != "200" ]; then
+            echo "::error::Strona zwróciła kod $status zamiast 200. Jury może zobaczyć ekran logowania Vercela."
+            exit 1
+          fi
+          case "$final" in
+            https://mobywatel-dla-bliskich-prototyp.vercel.app/*) ;;
+            *) echo "::error::Strona przekierowała na $final (prawdopodobnie logowanie Vercela)."; exit 1 ;;
+          esac
+          if ! grep -q '<title>mObywatel dla bliskich' page.html; then
+            echo "::error::Pod adresem nie ma prototypu (brak tytułu strony)."
+            exit 1
+          fi
+          for file in js/app.js styles/app.css; do
+            status=$(curl -sS -o /dev/null -w '%{http_code}' "$URL$file")
+            if [ "$status" != "200" ]; then
+              echo "::error::Plik $file zwrócił kod $status."
+              exit 1
+            fi
+          done
+          echo "Link działa bez logowania."

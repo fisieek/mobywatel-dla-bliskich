@@ -4,3 +4,5 @@ dev-server.mjs
 .env.example
 .env.local
 .env
+narzedzia/
+.github/

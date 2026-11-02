@@ -475,6 +475,141 @@ button:disabled {
   font-weight: 600;
 }
 
+.autoplay-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(26, 92, 245, 0.18);
+  overflow: hidden;
+}
+
+.autoplay-progress span {
+  display: block;
+  height: 100%;
+  background: var(--mo-blue);
+  transition: width 0.4s ease;
+}
+
+/* Karta „W 60 sekund” na górze panelu: teza, trzy momenty, krótki pokaz i porównanie z referencją */
+.intro {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  border: 1px solid rgba(26, 92, 245, 0.35);
+  border-radius: 14px;
+  background: var(--mo-surface);
+  box-shadow: 0 2px 10px rgba(15, 25, 60, 0.07);
+  font-size: 14px;
+}
+
+.intro-closed {
+  padding: 0;
+  box-shadow: none;
+}
+
+.intro-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.intro-closed .intro-toggle {
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mo-blue);
+}
+
+.intro-closed .intro-toggle:hover {
+  background: var(--mo-bg);
+}
+
+.intro:not(.intro-closed) .ep-chevron {
+  transform: rotate(-135deg);
+  margin-bottom: -3px;
+}
+
+.intro-thesis {
+  line-height: 1.45;
+}
+
+.intro-moments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.intro-moment {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--mo-bg);
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.intro-moment:hover {
+  background: var(--mo-blue-wash);
+}
+
+.intro-moment-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--mo-blue);
+}
+
+.intro-compare {
+  margin-top: 0;
+}
+
+.compare {
+  display: grid;
+  gap: 12px;
+  padding-top: 10px;
+  font-size: 13px;
+}
+
+.compare-row {
+  display: grid;
+  gap: 4px;
+}
+
+.compare .counter-row {
+  grid-template-columns: 84px 1fr;
+}
+
+/* Podział listy: trzy filary, potem kolejne pomysły dla całej rodziny */
+.eps-group {
+  display: grid;
+  gap: 2px;
+  padding: 12px 4px 2px;
+}
+
+.eps-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--mo-text-2);
+}
+
+.eps-group-desc {
+  font-size: 13px;
+  color: var(--mo-text-2);
+}
+
 /* Podświetlenie miejsca, którego dotyka pokaz */
 .demo-tap {
   outline: 4px solid rgba(26, 92, 245, 0.85);
@@ -3080,5 +3215,89 @@ label.btn {
   .chat-unknown {
     animation: none;
     opacity: 1;
+  }
+}
+
+/* ---------- Pokaz dla jury: gdzie patrzeć i większe telefony na laptopie ---------- */
+
+@media (min-width: 861px) {
+  /* Telefon, którego nie dotyczy bieżący krok, przygasa */
+  .phone-frame {
+    transition: opacity 0.3s ease, filter 0.3s ease;
+  }
+
+  .phone-idle .phone-frame {
+    opacity: 0.55;
+    filter: saturate(0.6);
+  }
+
+  .phone-idle:hover .phone-frame {
+    opacity: 1;
+    filter: none;
+  }
+}
+
+.stage-compact-note,
+.footer-short {
+  display: none;
+}
+
+/* Niższy ekran (typowy laptop): zwarty nagłówek i stopka w jednej linii, żeby telefony były większe */
+@media (min-width: 861px) and (max-height: 900px) {
+  .stage-header-inner {
+    padding: 8px 24px;
+  }
+
+  .stage-intro {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 2px 14px;
+  }
+
+  .stage-title {
+    order: -1;
+    font-size: 20px;
+  }
+
+  .stage-lead {
+    display: none;
+  }
+
+  .stage-compact-note {
+    display: inline;
+    font-size: 13px;
+    color: var(--mo-text-2);
+  }
+
+  .stage {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .phone {
+    gap: 4px;
+  }
+
+  .footer-full {
+    display: none;
+  }
+
+  .footer-short {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .fit-screen .stage-footer {
+    padding-bottom: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phone-frame,
+  .autoplay-progress span {
+    transition: none;
   }
 }

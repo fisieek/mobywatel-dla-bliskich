@@ -2,13 +2,16 @@
 // więc to, co zrobi Anna, od razu widzi Krystyna (i odwrotnie).
 import { defaultNicknames } from './personas.js';
 
-const STORAGE_KEY = 'mobywatel-dla-bliskich:v13';
+const STORAGE_KEY = 'mobywatel-dla-bliskich:v14';
 
 function initialState() {
   return {
-    // Który scenariusz jest otwarty w panelu, czy rozwinięty i które już obejrzano
+    // Karta „W 60 sekund” na górze panelu: rozwinięta, dopóki ktoś nie zacznie oglądać
+    introOpen: true,
+    // Który scenariusz jest otwarty w panelu, czy rozwinięty i które już obejrzano.
+    // Na start żaden nie jest rozwinięty, żeby jako pierwsza była widoczna karta „W 60 sekund”.
     episode: 0,
-    episodeOpen: true,
+    episodeOpen: false,
     summaryOpen: false,
     seenEpisodes: [],
     // Pozwolenie Krystyny dla Anny (scena 1a): 'none' | 'pending' | 'active'
@@ -34,7 +37,7 @@ function initialState() {
     nicknames: structuredClone(defaultNicknames),
     // Nazwa wpisywana, ale jeszcze niezapisana: { 'krystyna:anna': 'Ania' }
     nicknameDrafts: {},
-    // Tryb prosty (nowość). Krystyna zaczyna w zwykłym mObywatelu i włącza go w pierwszej scenie.
+    // Tryb prosty (nowość). Krystyna zaczyna w zwykłym mObywatelu i włącza go w pierwszym kroku Pomocy.
     simpleMode: { krystyna: false, anna: false, zosia: false },
     // Czy tryb prosty zaproponowała bliska osoba (zmienia opis na ekranie propozycji)
     simpleOffered: false,
