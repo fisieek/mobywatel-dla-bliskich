@@ -205,8 +205,9 @@ function autoplayBar(run) {
       </div>`;
   }
   const percent = Math.round((run.index / run.total) * 100);
+  // data-step: numer bieżącego kroku pokazu; korzysta z niego narzedzia/nagraj-film.mjs przy napisach
   return `
-    <div class="autoplay autoplay-running" role="status">
+    <div class="autoplay autoplay-running" role="status" data-step="${run.index}">
       <p>${run.highlights ? 'Najważniejsze' : 'Pokaz'} · ${where}</p>
       <div class="autoplay-progress" role="progressbar" aria-label="Postęp pokazu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width: ${percent}%"></span></div>
       <button class="btn btn-secondary btn-small" data-autoplay="stop">Zatrzymaj pokaz</button>
