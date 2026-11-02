@@ -43,7 +43,7 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
 - `dev-server.mjs` — lokalny serwer: pliki + `/api/assistant`.
 - `js/episodes.js` — scenariusze jako odcinki: problem, grupa docelowa, reprezentanci, kroki i stan startowy każdego. Najpierw trzy filary (Pomoc, Ochrona, Kontrola), potem grupa „Cała rodzina”. `quickStart` to stan startowy w krótkim pokazie.
 - `js/guide.js` — panel „Scenariusze” obok telefonów: karta „W skrócie” (teza, trzy momenty, porównanie z prototypem referencyjnym), rozwijane odcinki jak FAQ, po jednym naraz.
-- `js/autoplay.js` — pokaz automatyczny, który klika te same przyciski co człowiek, z podświetleniem dotknięcia: „Najważniejsze” (trzy filary, ok. 70 s) i „Wszystkie” (7 scen, ok. 3,5 min). Licznik pokazuje sceny, nie kroki.
+- `js/autoplay.js` — pokaz automatyczny, który klika te same przyciski co człowiek, z podświetleniem dotknięcia: „Najważniejsze” (trzy filary, ok. 2 min) i „Wszystkie” (7 scen, ok. 6 min). Na początku każdej sceny chwila na przeczytanie problemu; pauza i wznowienie (w pauzie powiadomienia nie znikają). Tempo ustawia stała `TEMPO`.
 - `narzedzia/nagraj-film.mjs` + `narzedzia/napisy.mjs` — nagrywa film z pokazu „Najważniejsze” w 1920 × 1080 z napisami w pasku pod obrazem i osobnym plikiem .srt (Playwright i ffmpeg z libass). Napisy są przypięte do kroków pokazu, nie do sekund. Nie trafia na serwer.
 - `.github/workflows/sprawdz-link.yml` — codziennie sprawdza, czy wersja dla jury otwiera się bez logowania.
 - `js/speech.js` — „Przeczytaj na głos” w trybie prostym.
@@ -125,7 +125,12 @@ Wygląd odwzorowuje aktualną aplikację mObywatel na podstawie publicznych zrzu
   - telefon, którego nie dotyczy bieżący krok, przygasa (chyba że właśnie dostał powiadomienie),
   - na laptopie zwarty nagłówek i stopka w jednej linii: przy 1280 × 720 podpisy zakładek w telefonie mają 9,0 px zamiast 7,7 px, przy 1440 × 900 11,9 px zamiast 10,6 px,
   - codzienne sprawdzanie linku dla jury i instrukcja zamrożenia wersji (niżej).
-- ✅ Film 79 s z pokazu „Najważniejsze” z polskimi napisami (`node narzedzia/nagraj-film.mjs`). Do decyzji: głos lektora.
+- ✅ **Pokaz, za którym da się nadążyć** (2.11.2026, po pierwszym oglądaniu):
+  - scenariusze widać od razu pod krótką kartą „W skrócie”, każdy z jednym zdaniem, co się w nim dzieje,
+  - pokaz wolniejszy: „Najważniejsze” ok. 2 min, „Wszystkie” ok. 6 min; przed pierwszym dotknięciem w każdej scenie 6 s na przeczytanie,
+  - „Pauza” i „Wznów” obok „Zakończ”, także w pasku na telefonie,
+  - w pasku pokazu (nie przewija się) nazwa sceny, problem i to, kogo dotyczy.
+- ✅ Film z pokazu „Najważniejsze” z polskimi napisami (`node narzedzia/nagraj-film.mjs`). Do decyzji: głos lektora.
 
 ## Zgłoszenie: link i zamrożenie wersji
 Wymóg konkursu: link działa bez logowania do ogłoszenia wyników.
