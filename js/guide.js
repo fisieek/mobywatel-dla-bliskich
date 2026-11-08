@@ -1,5 +1,6 @@
 // Panel obok telefonów: scenariusze jako rozwijane odcinki, po jednym naraz.
 import { episodes, episodeDone, stepIndex } from './episodes.js';
+import { prologEnabled } from './postacie/prolog.js';
 
 const cardsFor = [
   () => helpSceneDone(),
@@ -309,7 +310,11 @@ function episodeBody(state, index, run) {
       ${done ? cards.tries : ''}
       ${running ? '' : `
       <div class="ep-actions">
-        ${done && next ? `<button class="btn btn-primary btn-small" data-episode="${index + 1}">Następny: ${next.name}</button>` : ''}
+        ${done && next
+          ? prologEnabled
+            ? `<button class="btn btn-primary btn-small" data-prolog-open>Dalej: wróć do bohaterek</button>`
+            : `<button class="btn btn-primary btn-small" data-episode="${index + 1}">Następny: ${next.name}</button>`
+          : ''}
         <button class="btn ${done ? 'btn-secondary' : 'btn-primary'} btn-small" data-autoplay="episode" data-scene="${index}">▶ Pokaż automatycznie</button>
         <button class="btn btn-secondary btn-small" data-episode-restart="${index}">Zacznij od nowa</button>
       </div>`}

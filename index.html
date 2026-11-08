@@ -12,6 +12,11 @@
     <link rel="stylesheet" href="styles/tokens.css" />
     <link rel="stylesheet" href="styles/app.css" />
     <link rel="stylesheet" href="styles/devices.css" />
+    <link rel="stylesheet" href="styles/prolog.css" />
+    <!-- three.js do postaci 3D w prologu: kopia w vendor/, bez zewnętrznych serwerów -->
+    <script type="importmap">
+      { "imports": { "three": "./vendor/three/build/three.module.min.js" } }
+    </script>
   </head>
   <body>
     <header class="stage-header">
@@ -25,6 +30,7 @@
             <span class="nowrap">Nowe elementy mają etykietę <span class="new-badge">Nowość</span></span>
           </p>
         </div>
+        <button class="stage-cast-btn" data-prolog-open>Bohaterki</button>
         <div class="device-picker" role="group" aria-label="Na jakim telefonie pokazać">
           <span class="device-picker-label">Pokaż na</span>
           <button data-device-pick="iphone18pro" aria-pressed="true">iPhone 18 Pro</button>
@@ -63,7 +69,7 @@
       </section>
 
       <section class="phone" data-persona="anna" aria-label="Telefon Anny">
-        <p class="phone-caption" data-caption="anna">Anna, 34 lata · córka Krystyny, sama wychowuje Zosię i Antka</p>
+        <p class="phone-caption" data-caption="anna">Anna, 34 lata · córka Krystyny, mama Zosi</p>
         <div class="phone-frame">
           <span class="hw hw-action" aria-hidden="true"></span>
           <span class="hw hw-volume-up" aria-hidden="true"></span>
@@ -101,11 +107,11 @@
 
     <footer class="stage-footer">
       <p class="footer-short">
-        Prototyp koncepcyjny, nie usługa administracji publicznej ani aplikacja mObywatel. Osoby i dane są fikcyjne. Bez godła i logo. Ikony: system projektowy mObywatela © 2025 Centralny Ośrodek Informatyki, <a href="assets/ikony/LICENCJA.txt">licencja MIT</a>.
+        Prototyp koncepcyjny, nie usługa administracji publicznej ani aplikacja mObywatel. Osoby i dane są fikcyjne. Bez godła i logo. Ikony: system projektowy mObywatela © 2025 Centralny Ośrodek Informatyki, <a href="assets/ikony/LICENCJA.txt">licencja MIT</a>. Postacie 3D: Microsoft Rocketbox, <a href="assets/postacie/LICENCJA-Rocketbox.txt">licencja MIT</a>.
       </p>
       <p class="footer-full">
         Prototyp koncepcyjny na konkurs mObywatel Challenge. Nie jest usługą administracji publicznej ani aplikacją mObywatel.
-        Wygląd odwzorowuje publicznie dostępne zrzuty aplikacji; godła i logo nie używamy. Ikony: system projektowy mObywatela © 2025 Centralny Ośrodek Informatyki, <a href="assets/ikony/LICENCJA.txt">licencja MIT</a>. Osoby i dane są fikcyjne.
+        Wygląd odwzorowuje publicznie dostępne zrzuty aplikacji; godła i logo nie używamy. Ikony: system projektowy mObywatela © 2025 Centralny Ośrodek Informatyki, <a href="assets/ikony/LICENCJA.txt">licencja MIT</a>. Postacie 3D: biblioteka Microsoft Rocketbox, <a href="assets/postacie/LICENCJA-Rocketbox.txt">licencja MIT</a>; grafika 3D: three.js, <a href="vendor/three/LICENSE">licencja MIT</a>. Osoby i dane są fikcyjne.
       </p>
     </footer>
 

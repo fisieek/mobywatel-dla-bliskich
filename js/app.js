@@ -17,6 +17,7 @@ import { renderGuide } from './guide.js';
 import { episodes, episodeDone, currentStep, ZOSIA_EPISODES, HIGHLIGHTS } from './episodes.js';
 import { startAutoplay, stopAutoplay, pauseAutoplay, resumeAutoplay, autoplayState, onAutoplayChange } from './autoplay.js';
 import { initDevices, biometric } from './device.js';
+import { initProlog, prolog, prologEnabled } from './postacie/prolog.js';
 
 const tabs = [
   { id: 'documents', iconName: 'cards', label: 'Dokumenty' },
@@ -256,7 +257,7 @@ function renderNextStep(state) {
       ? '<button class="next-step-play" data-autoplay="resume">▶ Wznów</button>'
       : '<button class="next-step-play" data-autoplay="pause">❚❚ Pauza</button>'}<button class="next-step-play" data-autoplay="stop">Zakończ</button></span>`;
   } else if (fresh) play = '<button class="next-step-play" data-autoplay="highlights">▶ Pokaz</button>';
-  else if (!step && next) play = `<button class="next-step-play" data-episode="${state.episode + 1}">Dalej ▶</button>`;
+  else if (!step && next) play = prologEnabled ? '<button class="next-step-play" data-prolog-open>Dalej ▶</button>' : `<button class="next-step-play" data-episode="${state.episode + 1}">Dalej ▶</button>`;
   else play = `<button class="next-step-play" data-autoplay="episode" data-scene="${state.episode}">▶ Pokaz</button>`;
   let text;
   // Na telefonie panel jest pod aplikacją, więc w pokazie pasek mówi, jaki to problem
@@ -288,7 +289,7 @@ function placeLeftPhone(state) {
 function renderCaptions(state) {
   const captions = {
     krystyna: `Krystyna, 71 lat · ${state.simpleMode.krystyna ? 'tryb prosty' : 'zwykły mObywatel'}`,
-    anna: 'Anna, 34 lata · córka Krystyny, sama wychowuje Zosię i Antka',
+    anna: 'Anna, 34 lata · córka Krystyny, mama Zosi',
     zosia: 'Zosia, 11 lat · mObywatel Junior',
   };
   Object.entries(captions).forEach(([persona, html]) => {
@@ -336,6 +337,8 @@ function renderGuidePanel(state) {
     store.quietly((s) => {
       s.seenEpisodes.push(s.episode);
     });
+    // Po pierwszym obejrzeniu scenariusza do końca wracamy do bohaterek (poza pokazem automatycznym)
+    if (prolog() && !autoplayState()) scheduleReturn(state.episode);
   }
   guide.innerHTML = renderGuide(state, autoplayState());
   const body = guide.querySelector('[data-guide-body]');
@@ -365,6 +368,7 @@ function renderGuidePanel(state) {
 // quick — krótki pokaz zaczyna od dalszego stanu (`quickStart`), jeśli scenariusz go ma.
 function openEpisode(index, { quick = false } = {}) {
   stopSpeaking();
+  cancelReturn();
   const { seenEpisodes: seen } = store.get();
   store.reset();
   store.update((s) => {
@@ -379,6 +383,44 @@ function openEpisode(index, { quick = false } = {}) {
   mobilePersona = ZOSIA_EPISODES.includes(index) ? 'zosia' : episodes[index].steps.find((step) => step.phone)?.phone === 'Telefon Anny' ? 'anna' : 'krystyna';
   lastStepPersona = null;
   renderMobileSwitch(store.get());
+}
+
+// Powrót do bohaterek po skończonym scenariuszu: 6 s na zobaczenie efektu na telefonie,
+// komunikat z odliczaniem i możliwością zostania przy telefonach
+const RETURN_MS = 6000;
+let returnTimer = null;
+
+function cancelReturn() {
+  clearTimeout(returnTimer);
+  returnTimer = null;
+  document.querySelector('[data-return-toast]')?.remove();
+}
+
+function scheduleReturn(episode) {
+  cancelReturn();
+  const toast = document.createElement('div');
+  toast.className = 'return-toast';
+  toast.dataset.returnToast = '';
+  toast.setAttribute('role', 'status');
+  toast.innerHTML = `
+    <p><strong>Scenariusz obejrzany ✓</strong> Za chwilę wracamy do bohaterek.</p>
+    <button class="return-toast-stay" data-return-stay>Zostań tutaj</button>
+    <span class="return-toast-bar" style="animation-duration: ${RETURN_MS}ms"></span>`;
+  document.body.appendChild(toast);
+  toast.querySelector('[data-return-stay]').addEventListener('click', cancelReturn);
+  returnTimer = setTimeout(() => {
+    cancelReturn();
+    // Ktoś w międzyczasie otworzył inny scenariusz albo pokaz — zostajemy
+    if (store.get().episode !== episode || autoplayState()) return;
+    prolog()?.showStart();
+  }, RETURN_MS);
+}
+
+// Scenariusz z wprowadzeniem bohaterki, gdy prolog jest włączony
+function requestEpisode(index) {
+  const p = prolog();
+  if (p) return p.request(index);
+  return openEpisode(index);
 }
 
 function resetDemo() {
@@ -433,7 +475,9 @@ function handleClick(event) {
     if (kind === 'resume') return resumeAutoplay();
     const highlights = kind === 'highlights';
     const indices = highlights ? HIGHLIGHTS : kind === 'all' ? episodes.map((_, i) => i) : [Number(target.dataset.scene)];
-    return startAutoplay({ indices, highlights, prepare: openEpisode, showPersona });
+    // Przed każdą sceną pokazu jej bohaterka mówi jedno zdanie (prolog z postaciami 3D)
+    const introduce = prolog() ? (i) => prolog().introduce(i, { short: true, auto: true }) : null;
+    return startAutoplay({ indices, highlights, prepare: openEpisode, showPersona, introduce });
   }
   // Dotknięcie przez człowieka w trakcie pokazu oddaje mu stery
   if (event.isTrusted && autoplayState()) stopAutoplay();
@@ -441,7 +485,9 @@ function handleClick(event) {
   // Panel: rozwijanie scenariuszy jak w FAQ. Inny scenariusz startuje od nowa, ten sam tylko się zwija lub rozwija.
   if (target.dataset.episode) {
     const index = Number(target.dataset.episode);
-    if (index !== store.get().episode) return openEpisode(index);
+    const { episode, episodeOpen } = store.get();
+    // Przed nowym scenariuszem jego bohaterka wprowadza w problem (także przy pierwszym rozwinięciu bieżącego)
+    if (index !== episode || (!episodeOpen && !prolog()?.introSeen(index))) return requestEpisode(index);
     return store.update((s) => {
       s.episodeOpen = !s.episodeOpen;
       return s;
@@ -553,3 +599,23 @@ onSpeakingChange(() => render(store.get()));
 onAutoplayChange(() => render(store.get()));
 render(store.get());
 initDevices(() => render(store.get()));
+initProlog({
+  episodes,
+  openEpisode,
+  // Otwarty i jeszcze nieobejrzany do końca scenariusz (do „Kontynuuj” / „Wróć do”)
+  currentEpisode: () => {
+    const { episodeOpen, episode, seenEpisodes } = store.get();
+    return episodeOpen && !seenEpisodes.includes(episode) ? episode : null;
+  },
+  // Pierwszy scenariusz po kolei, którego jeszcze nie obejrzano do końca
+  nextEpisode: () => {
+    const i = episodes.findIndex((_, index) => !store.get().seenEpisodes.includes(index));
+    return i === -1 ? null : i;
+  },
+  openSummary: () =>
+    store.update((s) => {
+      s.summaryOpen = true;
+      s.episodeOpen = false;
+      return s;
+    }),
+});

@@ -9,7 +9,7 @@ const A = 'Telefon Anny';
 const Z = 'Telefon Zosi';
 
 const krystyna = { name: 'Krystyna Nowak, 71 lat', desc: 'Emerytka z Wejherowa, mieszka sama. Telefon ma, ale boi się, że coś zepsuje.' };
-const anna = { name: 'Anna Nowak, 34 lata', desc: 'Córka Krystyny, pracuje na etacie, sama wychowuje Zosię i Antka. Pomaga mamie na odległość.' };
+const anna = { name: 'Anna Nowak, 34 lata', desc: 'Córka Krystyny, pracuje na etacie, sama wychowuje Zosię. Pomaga mamie na odległość.' };
 const zosia = { name: 'Zosia Nowak, 11 lat', desc: 'Córka Anny, chodzi do 5 klasy. Ma mObywatela Junior z legitymacją szkolną.' };
 
 const LETTER_ORDER = ['none', 'reading', 'explained', 'requested', 'opened', 'drafting', 'drafted', 'awaiting', 'signed'];

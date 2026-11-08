@@ -15,6 +15,8 @@ const STEP_PAUSE_MS = 1400;
 const HIGHLIGHT_MS = 1300;
 // Na początku każdej sceny: czas na przeczytanie, jaki to problem i kogo dotyczy (pasek u góry panelu)
 const SCENE_INTRO_MS = 6000;
+// Po wprowadzeniu bohaterki: chwila, żeby zobaczyć telefony przed pierwszym dotknięciem
+const AFTER_INTRO_MS = 1500;
 // Najdłużej czekamy na przycisk, np. gdy przychodzi powiadomienie
 const WAIT_LIMIT_MS = 15000;
 
@@ -271,7 +273,8 @@ export function resumeAutoplay() {
 
 // indices — które scenariusze pokazać; highlights — krótka wersja dla jury;
 // prepare(i, { quick }) ustawia stan startowy scenariusza; showPersona — pokazuje telefon, którego dotyczy krok
-export async function startAutoplay({ indices, highlights = false, prepare, showPersona }) {
+// introduce(i) — opcjonalne wprowadzenie bohaterki przed sceną (Promise); bez niego pasek z problemem przez SCENE_INTRO_MS
+export async function startAutoplay({ indices, highlights = false, prepare, showPersona, introduce = null }) {
   stopAutoplay();
   const id = ++runId;
   const allSteps = stepsFor(indices, highlights ? highlightScenes : scenes);
@@ -287,8 +290,12 @@ export async function startAutoplay({ indices, highlights = false, prepare, show
     if (firstOfScene) {
       prepare(sceneIndex, { quick: highlights });
       emit();
-      // Najpierw chwila na przeczytanie problemu i grupy w pasku pokazu, dopiero potem pierwsze dotknięcie
-      if (!(await wait(SCENE_INTRO_MS, id))) return;
+      // Najpierw bohaterka mówi, o co chodzi (albo chwila na przeczytanie problemu w pasku pokazu), dopiero potem pierwsze dotknięcie
+      if (introduce) {
+        await introduce(sceneIndex);
+        if (id !== runId) return;
+        if (!(await wait(AFTER_INTRO_MS, id))) return;
+      } else if (!(await wait(SCENE_INTRO_MS, id))) return;
       run = { ...run, intro: false };
     }
     emit();

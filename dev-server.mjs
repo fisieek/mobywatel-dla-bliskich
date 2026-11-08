@@ -17,6 +17,10 @@ const TYPES = {
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.json': 'application/json',
+  '.webp': 'image/webp',
+  '.jpg': 'image/jpeg',
+  '.fbx': 'application/octet-stream',
+  '.txt': 'text/plain; charset=utf-8',
 };
 
 async function loadEnv() {

@@ -1,0 +1,521 @@
+/* Prolog: bohaterki w 3D przed telefonami (js/postacie/prolog.js).
+   Na komputerze cała trójka stoi obok siebie, dymek jest nad głową mówiącej, podpisy pod stopami.
+   Na wąskim ekranie kamera przybliża mówiącą, a dymek i podpisy są pod sceną. */
+
+.prolog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #eef2fb 55%, #dfe6f5 100%);
+  color: var(--mo-text);
+}
+
+.prolog[hidden] {
+  display: none;
+}
+
+body.prolog-open {
+  overflow: hidden;
+}
+
+.prolog-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.prolog-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.prolog .btn {
+  width: auto;
+  margin: 0;
+  white-space: normal;
+  text-align: center;
+}
+
+.prolog-done {
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--mo-green);
+}
+
+/* Nagłówek ekranu startowego */
+.prolog-head {
+  position: absolute;
+  top: 24px;
+  left: 32px;
+  max-width: 440px;
+  transition: opacity 0.4s;
+}
+
+.prolog-eyebrow {
+  font-size: 13px;
+  color: var(--mo-text-2);
+}
+
+.prolog-title {
+  margin-top: 4px;
+  font-size: 30px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.prolog-lead {
+  margin-top: 8px;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--mo-text-2);
+}
+
+.prolog:not([data-mode='start']) .prolog-head {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Kto teraz mówi / który scenariusz */
+.prolog-chip {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--mo-surface);
+  box-shadow: 0 2px 10px rgba(15, 25, 60, 0.1);
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.prolog-chip:empty,
+.prolog[data-mode='start'] .prolog-chip {
+  display: none;
+}
+
+/* Dymek z tym, co mówi postać */
+.prolog-bubble {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translate(-50%, calc(-100% - 14px));
+  width: max-content;
+  max-width: min(440px, 42vw);
+  padding: 14px 18px 16px;
+  background: var(--mo-surface);
+  border-radius: 18px;
+  box-shadow: 0 10px 34px rgba(15, 25, 60, 0.16);
+  font-size: 19px;
+  line-height: 1.4;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.prolog-bubble.on {
+  opacity: 1;
+}
+
+.prolog-bubble::after {
+  content: '';
+  position: absolute;
+  left: calc(50% + var(--tail, 0px));
+  bottom: -8px;
+  width: 18px;
+  height: 18px;
+  background: var(--mo-surface);
+  border-radius: 3px;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.prolog-bubble strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mo-blue);
+}
+
+/* Podpisy pod bohaterkami na ekranie startowym */
+.prolog-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.prolog:not([data-mode='start']) .prolog-cards {
+  display: none;
+}
+
+.prolog-card {
+  position: absolute;
+  width: 240px;
+  transform: translateX(-50%);
+  padding: 14px 16px 16px;
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 18px rgba(15, 25, 60, 0.08);
+  text-align: center;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.prolog-card-hover {
+  box-shadow: 0 0 0 2px var(--mo-blue), 0 8px 24px rgba(15, 25, 60, 0.12);
+}
+
+.prolog-card-name {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.prolog-card-role {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--mo-text-2);
+}
+
+.prolog-card-problem {
+  margin: 8px 0 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.prolog-card .btn {
+  display: inline-flex;
+}
+
+/* Przyciski na dole */
+.prolog-actions {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: min(920px, calc(100% - 32px));
+}
+
+.prolog[data-mode='start'] .prolog-actions {
+  left: auto;
+  right: 24px;
+  top: 24px;
+  bottom: auto;
+  transform: none;
+  width: 360px;
+  max-width: 360px;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Podczas przedstawiania się i wprowadzeń: pasek na dole, na półprzezroczystym tle (zasłania tylko nogi postaci) */
+.prolog:not([data-mode='start']) .prolog-actions:not(:empty) {
+  width: max-content;
+  max-width: min(920px, calc(100% - 32px));
+  padding: 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 6px 24px rgba(15, 25, 60, 0.1);
+}
+
+/* Wyjście do ekranu z bohaterkami, zawsze w tym samym miejscu */
+.prolog-close {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--mo-surface);
+  box-shadow: 0 2px 10px rgba(15, 25, 60, 0.1);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mo-blue);
+  cursor: pointer;
+}
+
+.prolog[data-mode='start'] .prolog-close,
+.prolog[data-auto] .prolog-close {
+  display: none;
+}
+
+.prolog-actions-title {
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mo-text-2);
+}
+
+.prolog-episodes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.prolog-episode {
+  flex: 0 1 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px;
+  border-radius: var(--radius-card);
+  background: var(--mo-surface);
+  box-shadow: 0 0 0 1.5px var(--mo-blue), 0 4px 14px rgba(15, 25, 60, 0.08);
+  text-align: left;
+  cursor: pointer;
+}
+
+.prolog-episode:hover {
+  background: var(--mo-blue-wash);
+}
+
+.prolog-episode-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--mo-blue);
+}
+
+.prolog-episode-tagline {
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--mo-text-2);
+}
+
+.prolog-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  color: var(--mo-text-2);
+}
+
+.prolog:not(.prolog-ready) .prolog-cards,
+.prolog:not(.prolog-ready) .prolog-actions {
+  visibility: hidden;
+}
+
+.prolog button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Przycisk „Bohaterki” w nagłówku strony z telefonami */
+.stage-cast-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--mo-blue-wash);
+  color: var(--mo-blue);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Komunikat po skończonym scenariuszu: za chwilę powrót do bohaterek */
+.return-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 40;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 14px 18px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--mo-text);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(15, 25, 60, 0.25);
+  font-size: 15px;
+  animation: return-toast-in 0.25s ease-out;
+}
+
+.return-toast strong {
+  margin-right: 4px;
+}
+
+.return-toast-stay {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.return-toast-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: var(--mo-blue);
+  transform-origin: left;
+  animation: return-toast-progress linear forwards;
+}
+
+@keyframes return-toast-in {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+}
+
+@keyframes return-toast-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .return-toast { animation: none; }
+}
+
+/* Bez 3D (stara przeglądarka): podpisy w rzędzie, dymek pod nimi */
+.prolog-text-only .prolog-cards,
+.prolog-text-only .prolog-bubble {
+  position: static;
+}
+
+/* ---------- Wąski ekran ---------- */
+@media (max-width: 860px) {
+  .prolog {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .prolog-head {
+    order: -1;
+    position: relative;
+    top: auto;
+    left: auto;
+    padding: 16px 16px 0;
+    max-width: none;
+  }
+
+  .prolog-title {
+    font-size: 24px;
+  }
+
+  .prolog-lead {
+    font-size: 15px;
+  }
+
+  .prolog:not([data-mode='start']) .prolog-head {
+    display: none;
+  }
+
+  .prolog-canvas {
+    position: relative;
+    inset: auto;
+    flex: 1 1 auto;
+    min-height: 160px;
+  }
+
+  .prolog-chip {
+    top: 12px;
+    left: auto;
+    right: 12px;
+    transform: none;
+    max-width: calc(100% - 150px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .prolog-close {
+    top: 12px;
+    left: 12px;
+    padding: 8px 12px;
+  }
+
+  .prolog-bubble,
+  .prolog-cards,
+  .prolog-actions {
+    position: static;
+    transform: none;
+  }
+
+  .prolog-bubble {
+    margin: 0 16px 8px;
+    width: auto;
+    max-width: none;
+    font-size: 17px;
+  }
+
+  .prolog-bubble:not(.on) {
+    display: none;
+  }
+
+  .prolog-bubble::after {
+    left: 50%;
+    top: -8px;
+    bottom: auto;
+  }
+
+  .prolog-cards {
+    display: grid;
+    gap: 8px;
+    padding: 0 16px 8px;
+  }
+
+  .prolog-card {
+    position: static;
+    width: auto;
+    transform: none;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 2px 12px;
+    padding: 10px 12px;
+    text-align: left;
+  }
+
+  .prolog-card-role,
+  .prolog-card-name {
+    grid-column: 1;
+  }
+
+  .prolog-card-problem {
+    display: none;
+  }
+
+  .prolog-card .btn {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .prolog-actions,
+  .prolog[data-mode='start'] .prolog-actions,
+  .prolog:not([data-mode='start']) .prolog-actions,
+  .prolog:not([data-mode='start']) .prolog-actions:not(:empty) {
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    position: static;
+    transform: none;
+    width: auto;
+    max-width: none;
+    margin: 0 16px 16px;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .prolog-episode {
+    flex: 1 1 100%;
+  }
+}

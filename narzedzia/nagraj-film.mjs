@@ -18,7 +18,8 @@ import { cues } from './napisy.mjs';
 // require, a nie import: tak znajdzie też Playwright zainstalowany globalnie
 const { chromium } = createRequire(import.meta.url)('playwright');
 
-const url = process.argv[2] ?? 'http://localhost:4173/';
+// ?prolog=0: film zaczyna się od telefonów, bez ekranu z bohaterkami 3D
+const url = process.argv[2] ?? 'http://localhost:4173/?prolog=0';
 const out = process.argv[3] ?? 'mobywatel-dla-bliskich-najwazniejsze.mp4';
 const srtOut = out.replace(/\.mp4$/i, '') + '.srt';
 
