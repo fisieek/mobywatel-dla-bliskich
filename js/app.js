@@ -18,6 +18,7 @@ import { episodes, episodeDone, currentStep, ZOSIA_EPISODES, HIGHLIGHTS } from '
 import { startAutoplay, stopAutoplay, pauseAutoplay, resumeAutoplay, autoplayState, onAutoplayChange } from './autoplay.js';
 import { initDevices, biometric } from './device.js';
 import { initProlog, prolog, prologEnabled } from './postacie/prolog.js';
+import { initTypography } from './typografia.js';
 
 const tabs = [
   { id: 'documents', iconName: 'cards', label: 'Dokumenty' },
@@ -594,6 +595,8 @@ document.addEventListener('change', (event) => {
     onPhotoSelected(event.target.closest('[data-persona]').dataset.persona, event.target.files[0]);
   }
 });
+// Twarde spacje po słowach z 1–2 liter na całej stronie, także w tym, co dorysują telefony i prolog
+initTypography();
 store.subscribe(render);
 onSpeakingChange(() => render(store.get()));
 onAutoplayChange(() => render(store.get()));
