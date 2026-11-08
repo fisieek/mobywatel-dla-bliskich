@@ -192,6 +192,12 @@ export class Character {
     resolve?.(false);
   }
 
+  // Miejsce na scenie (oś X, cm)
+  setX(x) {
+    this.x = x;
+    this.group.position.x = x;
+  }
+
   // Głowa (i trochę szyja) odwraca się w stronę punktu na osi X sceny; null — patrzy przed siebie
   lookAt(x) {
     this.yawTarget = x === null || x === undefined ? 0 : THREE.MathUtils.clamp(Math.atan2(x - this.x, 110), -0.6, 0.6);

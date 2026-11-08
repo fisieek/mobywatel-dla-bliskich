@@ -11,7 +11,7 @@ export const people = [
     age: '71 lat',
     role: 'Emerytka z Wejherowa',
     problem: 'Boi się, że coś zepsuje w telefonie, a pisma z urzędu są dla niej niezrozumiałe.',
-    x: -115,
+    x: -125,
     folder: 'krystyna',
     materials: {
       f015_body: { map: 'cialo.webp' },
@@ -50,7 +50,7 @@ export const people = [
     age: '11 lat',
     role: 'Córka Anny, uczennica 5 klasy',
     problem: 'Ma mObywatela Junior. W szkole i w sieci czasem nie wie, do kogo się zwrócić.',
-    x: 115,
+    x: 125,
     folder: 'zosia',
     materials: {
       cf001_body: { map: 'cialo.webp', roughness: 0.8 },

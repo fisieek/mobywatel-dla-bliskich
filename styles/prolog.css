@@ -154,7 +154,7 @@ body.prolog-open {
 
 .prolog-card {
   position: absolute;
-  width: 240px;
+  width: var(--card-w, 240px);
   transform: translateX(-50%);
   padding: 14px 16px 16px;
   border-radius: var(--radius-card);
@@ -388,6 +388,22 @@ body.prolog-open {
 .prolog-text-only .prolog-cards,
 .prolog-text-only .prolog-bubble {
   position: static;
+}
+
+/* Niskie okno na komputerze: krótsze podpisy i bez akapitu wstępu, żeby nic nie wychodziło poza ekran */
+@media (min-width: 861px) and (max-height: 640px) {
+  .prolog-lead,
+  .prolog-card-problem {
+    display: none;
+  }
+
+  .prolog-card {
+    padding: 10px 12px 12px;
+  }
+
+  .prolog-card .btn {
+    margin-top: 8px;
+  }
 }
 
 /* ---------- Wąski ekran ---------- */

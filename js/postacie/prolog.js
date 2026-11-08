@@ -374,11 +374,20 @@ class Prolog {
   frame(focusId = this.focusId) {
     if (!this.stage) return;
     const narrow = window.matchMedia(NARROW).matches;
+    this.spread(narrow);
     const focus = this.mode !== 'start' && focusId ? this.characters[focusId] : null;
     if (narrow && focus) this.stage.frame({ centerX: focus.x, halfWidth: 55, bottom: focus.height * 0.3, top: focus.height + 22 });
     else if (narrow) this.stage.frame({ centerX: 0, halfWidth: 185, bottom: -10, top: 200 });
     else if (focus) this.stage.frame({ centerX: focus.x, halfWidth: 80, bottom: focus.height * 0.18, top: focus.height + 78 });
-    else this.stage.frame({ centerX: 0, halfWidth: 200, bottom: -125, top: 245 });
+    else this.stage.frame({ centerX: 0, halfWidth: this.spacing + 85, bottom: -125, top: 245 });
+  }
+
+  // Odstęp między bohaterkami: w niskim, szerokim oknie kamera mieści je w pionie, więc stoją bliżej siebie na ekranie.
+  // Rozsuwamy je wtedy tak, żeby pod każdą zmieścił się podpis szerokości ok. 230 px z przerwą 20 px.
+  spread(narrow) {
+    const pxPerCm = (this.stage.height || 800) / 370;
+    this.spacing = narrow ? 125 : Math.min(210, Math.max(125, 250 / pxPerCm));
+    people.forEach((p, i) => this.characters[p.id]?.setX((i - 1) * this.spacing));
   }
 
   // Dymek nad głową mówiącej i podpisy pod stopami (na komputerze); na wąskim ekranie układ jest w CSS
@@ -386,12 +395,15 @@ class Prolog {
     if (!this.stage || window.matchMedia(NARROW).matches) return;
     const { camera, width, height } = this.stage;
     if (this.mode === 'start') {
-      for (const p of people) {
+      const points = people.map((p) => this.characters[p.id].screenPoint(camera, width, height, 'feet'));
+      // Podpis jest najwyżej tak szeroki jak odstęp między postaciami, z przerwą 20 px — podpisy nigdy na siebie nie nachodzą
+      const gap = Math.min(...points.slice(1).map((pt, i) => pt.x - points[i].x));
+      this.el.style.setProperty('--card-w', `${Math.min(260, Math.max(170, gap - 20))}px`);
+      people.forEach((p, i) => {
         const card = this.el.querySelector(`[data-prolog-card="${p.id}"]`);
-        const pt = this.characters[p.id].screenPoint(camera, width, height, 'feet');
-        card.style.left = `${pt.x}px`;
-        card.style.top = `${pt.y + 10}px`;
-      }
+        card.style.left = `${points[i].x}px`;
+        card.style.top = `${points[i].y + 10}px`;
+      });
     }
     if (this.speakerId) {
       const pt = this.characters[this.speakerId].screenPoint(camera, width, height, 'head');
