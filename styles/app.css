@@ -2250,6 +2250,10 @@ label.btn {
   background: var(--mo-green);
 }
 
+.alert-info {
+  background: var(--mo-blue);
+}
+
 .alert-icon {
   width: 68px;
   height: 68px;

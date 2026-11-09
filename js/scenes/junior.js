@@ -2,16 +2,18 @@
 // · KTOŚ DO MNIE PISZE? (filar Ochrona) — obcy, który poznał Zosię w grze, pisze do niej, chce zdjęć i straszy. Zosia dostaje radę po dziecięcemu
 //   i sama wybiera, komu powiedzieć: 116 111, mamie albo Dyżurnet.pl. Mama nie dostaje nic bez jej zgody.
 // · ZGODA OD MAMY W MINUTĘ (filar Pomoc) — Zosia skanuje kod z kartki od wychowawczyni, Anna podpisuje zgodę w pracy.
-import { store, notify, patch, addHistory, replace, withBiometric, home } from '../store.js';
+import { store, notify, patch, addHistory, replace, go, withBiometric, home } from '../store.js';
 import { icon } from '../icons.js';
 import { list, row, newBadge, serviceHeader, infoBox, sectionTitle } from '../ui.js';
-import { contactName } from '../personas.js';
-import { daysFromToday, longDate } from '../dates.js';
+import { contactName, contactCase } from '../personas.js';
+import { daysFromToday, longDate, clock } from '../dates.js';
 import { qrSvg } from './control.js';
 import { stopSpeaking } from '../speech.js';
 
 const mamaForZosia = (state) => contactName(state, 'zosia', 'anna');
 const zosiaForAnna = (state) => contactName(state, 'anna', 'zosia');
+const mamaGenForZosia = (state) => contactCase(state, 'zosia', 'anna', 'gen');
+const zosiaGenForAnna = (state) => contactCase(state, 'anna', 'zosia', 'gen');
 
 // ---------- Wiadomości od obcego (ekran innej aplikacji, jak ekran rozmowy u Krystyny) ----------
 
@@ -64,7 +66,7 @@ export function chatOverlay(state, persona) {
         </div>
       </div>
       <div class="chat-thread" aria-live="polite">
-        <p class="chat-meta"><strong>iMessage</strong><br>Dzisiaj 9:38</p>
+        <p class="chat-meta"><strong>iMessage</strong><br>Dzisiaj ${clock(state.chat.since)}</p>
         ${bubbles}
         <p class="chat-meta chat-unknown" style="animation-delay:${chat.lines.length * LINE_DELAY_MS - elapsed}ms">Nadawcy nie ma na Twojej liście kontaktów.</p>
       </div>
@@ -132,7 +134,7 @@ export function zosiaServices(state) {
   return list([
     row({ iconName: 'phoneQuestion', tint: 'violet', title: 'Ktoś do mnie pisze?', desc: 'Obraża Cię, straszy albo chce zdjęć?', go: 'whoIsWriting', badge: newBadge() }),
     row({ iconName: 'qr', tint: 'blue', title: 'Zgoda dla szkoły', desc: 'Zeskanuj kod z kartki od wychowawczyni', go: 'schoolConsentScan', badge: newBadge() }),
-    row({ iconName: 'call', tint: 'green', title: `Zadzwoń do ${mamaForZosia(state)}`, go: 'callContact' }),
+    row({ iconName: 'call', tint: 'green', title: `Zadzwoń do ${mamaGenForZosia(state)}`, go: 'callContact' }),
     row({ iconName: 'people', tint: 'blue', title: 'Moi bliscy', desc: 'Nazwy, pod którymi widzisz bliskie osoby', go: 'contacts', badge: newBadge() }),
   ]);
 }
@@ -155,7 +157,7 @@ export const juniorScreens = {
           s.writing.situation = el.dataset.id;
           return s;
         });
-        replace(persona, 'writingHelp');
+        go(persona, 'writingHelp');
       },
     },
   },
@@ -181,7 +183,7 @@ export const juniorScreens = {
             : row({ iconName: 'people', tint: 'blue', title: `Powiedz: ${mama}`, desc: 'Wyślemy tylko: „Chcę Ci coś powiedzieć”', action: 'tellMom' }),
           s.report ? row({ iconName: 'flag', tint: 'red', title: 'Zgłoś do Dyżurnet.pl', desc: 'Usuwają z internetu zdjęcia dzieci', go: 'reportDyzurnet' }) : '',
         ].filter(Boolean))}
-        <p class="footnote">${mama}: nic nie dostanie bez Twojej zgody.</p>`;
+        <p class="footnote">${mama} nic nie dostanie bez Twojej zgody.</p>`;
     },
     actions: {
       tellMom: () => {
@@ -193,9 +195,9 @@ export const juniorScreens = {
         notify('anna', {
           title: zosiaForAnna(state),
           body: 'Chce Ci coś powiedzieć. Zadzwoń spokojnie. Nie wiesz jeszcze o czym — sama zdecyduje, co powie.',
-          action: { label: `Zadzwoń do ${zosiaForAnna(state)}`, go: 'call-zosia' },
+          action: { label: `Zadzwoń do ${zosiaGenForAnna(state)}`, go: 'call-zosia' },
         });
-        notify('zosia', { title: 'Wysłane', body: `${mamaForZosia(state)}: wie tylko tyle, że chcesz coś powiedzieć.` });
+        notify('zosia', { title: 'Wysłane', body: `${mamaForZosia(state)} wie tylko tyle, że chcesz coś powiedzieć.` });
       },
     },
   },
@@ -215,7 +217,7 @@ export const juniorScreens = {
         <p class="muted">Telefon zaufania dla dzieci i młodzieży · łączę…</p>
       </div>
       ${infoBox('Bezpłatnie, o każdej porze. Nie musisz podawać imienia. W prototypie nigdzie nie dzwonimy.')}
-      <button class="btn btn-danger" data-home>Rozłącz</button>`,
+      <button class="btn btn-danger" data-back>Rozłącz</button>`,
   },
 
   reportDyzurnet: {
@@ -286,7 +288,7 @@ export const juniorScreens = {
           ${tripCards()}
           <button class="btn btn-primary" data-home>Gotowe</button>`;
       }
-      if (state.school === 'declined') return infoBox(`${mama}: nie zgodziła się. Porozmawiajcie w domu.`);
+      if (state.school === 'declined') return infoBox(`${mama} nie zgodziła się. Porozmawiajcie w domu.`);
       return `
         <h2 class="service-title">${trip.title}</h2>
         ${tripCards()}
@@ -323,6 +325,15 @@ export const juniorScreens = {
           </div>
           <button class="btn btn-primary" data-home>Gotowe</button>`;
       }
+      if (state.school === 'declined') {
+        return `
+          <div class="success">
+            <span class="success-icon">${icon('check', { size: 40 })}</span>
+            <h2 class="service-title">Odmowa zapisana</h2>
+            <p class="service-desc">Szkoła wie, że się nie zgadzasz. Wiadomość dostała: ${zosia}.</p>
+          </div>
+          <button class="btn btn-primary" data-home>Gotowe</button>`;
+      }
       if (state.school !== 'requested') return infoBox('Brak zgód do podpisania.');
       return `
         <h2 class="service-title">${trip.title}</h2>
@@ -342,6 +353,7 @@ export const juniorScreens = {
         }),
       declineConsent: () => {
         patch({ school: 'declined' });
+        addHistory({ persona: 'anna', text: `Nie zgodziłaś się: ${trip.title} · ${zosiaForAnna(store.get())}` });
         notify('zosia', { title: mamaForZosia(store.get()), body: 'Nie zgodziła się na wycieczkę. Porozmawiajcie w domu.' });
       },
     },

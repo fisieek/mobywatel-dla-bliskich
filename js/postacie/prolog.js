@@ -221,7 +221,7 @@ class Prolog {
       ${main}
       <button class="btn btn-secondary btn-small" data-prolog-action="list">Lista scenariuszy</button>
       ${resume}
-      <button class="btn btn-secondary btn-small" data-autoplay="highlights">▶ Pokaz automatyczny (ok. 2,5 min)</button>`;
+      <button class="btn btn-secondary btn-small" data-autoplay="highlights">▶ Pokaz automatyczny (ok. 2 min)</button>`;
   }
 
   // Bohaterka macha i przedstawia się, a potem pokazuje swoje scenariusze

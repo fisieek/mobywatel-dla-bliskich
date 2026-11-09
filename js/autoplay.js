@@ -121,7 +121,7 @@ const scenes = [
       [Z, '[data-action="situation"][data-id="threat"]', 3200],
       [Z, '[data-action="tellMom"]', 2400],
       [A, '[data-notification-go="call-zosia"]', 2600],
-      [A, '.btn[data-home]'],
+      [A, '.btn[data-back]'],
     ],
   },
   {

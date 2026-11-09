@@ -6,7 +6,7 @@ import { store, replace, notify, patch, addHistory, withBiometric } from '../sto
 import { icon } from '../icons.js';
 import { list, row, newBadge, sectionTitle, serviceHeader, infoBox } from '../ui.js';
 import { revokeGuardian, GUARDIAN_UNTIL } from './help.js';
-import { contactName } from '../personas.js';
+import { contactName, contactCase } from '../personas.js';
 
 // Imiona bez odmiany: „Anna Nowak, Córka” na telefonie Krystyny, „Mama” na telefonie Anny
 const annaFor = (state) => contactName(state, 'krystyna', 'anna');
@@ -342,7 +342,7 @@ export const controlScreens = {
         <div class="success">
           <span class="success-icon">${icon('check', { size: 40 })}</span>
           <h2 class="service-title">Tylko to, czego potrzeba</h2>
-          <p class="service-desc">Twoje dane trafiły do: ${req.name}. Cel: ${req.purpose}.</p>
+          <p class="service-desc">Odbiorca: ${req.name}. Cel: ${req.purpose}.</p>
         </div>
         ${fieldList(req, state.consentLevel[persona], { done: true })}
         ${infoBox('Wpis jest już w Twojej historii. Możesz z niej cofnąć zgodę albo zgłosić nadużycie.')}
@@ -388,7 +388,7 @@ export const controlScreens = {
       report: (el, persona) => {
         const state = store.get();
         const entry = entriesFor(state, persona).find((e) => e.id === el.dataset.id);
-        notify(persona, { title: 'Dziękujemy za zgłoszenie', body: `${reportRecipient(entry, state)} Odpowiedź dostaniesz w Skrzynce. W prototypie nic nie wysyłamy.` });
+        notify(persona, { title: 'Dziękujemy za zgłoszenie', body: `${reportRecipient(entry, state)} Odpowiedź dostaniesz w powiadomieniach. W prototypie nic nie wysyłamy.` });
       },
       revokeGuardian: () => revokeGuardian(),
     },
@@ -399,7 +399,7 @@ export const controlScreens = {
 function reportRecipient(entry, state) {
   if (!entry) return 'Zgłoszenie trafi do zespołu mObywatela.';
   if (entry.actor === 'anna') {
-    return `Zapytamy o to: ${annaFor(state)}. Jeśli to nie ona, odwołasz pomoc jednym przyciskiem.`;
+    return `Zapytamy o to ${contactCase(state, 'krystyna', 'anna', 'acc')}. Jeśli to nie ona, odwołasz pomoc jednym przyciskiem.`;
   }
   if (entry.actor === 'institution') return `Zgłoszenie trafi do inspektora ochrony danych w: ${entry.who}.`;
   return `Zgłoszenie trafi do inspektora ochrony danych w: ${entry.who}, a jeśli to wygląda na oszustwo — także do CERT Polska.`;

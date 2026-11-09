@@ -2,7 +2,7 @@
 // Nasze nowe usługi są wpięte w istniejące miejsca i oznaczone etykietą „Nowość”.
 import { store, notify, markNotificationsRead, openTab, addHistory } from '../store.js';
 import { icon } from '../icons.js';
-import { people, family, fullName, contactName } from '../personas.js';
+import { people, family, fullName, contactName, contactCase } from '../personas.js';
 import { documents, list, row, newBadge, sectionTitle, serviceHeader, infoBox, coreNotice, docMini, shortcut } from '../ui.js';
 import { servicesFor, documentCatalog, findService, searchCatalog } from '../catalog.js';
 import { zosiaServices } from '../scenes/junior.js';
@@ -162,7 +162,7 @@ function docDetail(docId, ownerId) {
       const owner = people[ownerId ?? persona];
       const shortcuts = docShortcuts[docId] ?? [['Usuń dokument', 'trash']];
       return `
-        <p class="doc-time">Czas: 9:41:21 ${new Date().toLocaleDateString('pl-PL')}</p>
+        <p class="doc-time">Czas: <span data-live-time="seconds">${new Date().toLocaleTimeString('pl-PL')}</span> ${new Date().toLocaleDateString('pl-PL')}</p>
         <div class="doc-big" style="background:${doc.bg}">
           <span class="doc-photo" aria-hidden="true">${icon('people', { size: 40 })}</span>
           <dl class="doc-data">
@@ -236,7 +236,7 @@ const screens = {
     kind: 'inner',
     title: 'Pomoc',
     speech: (state, persona) => {
-      const contact = contactName(state, persona, people[persona].contact);
+      const contact = contactCase(state, persona, people[persona].contact, 'gen');
       return `Spokojnie. Nic się nie stanie, jeśli teraz przerwiesz. Możesz zadzwonić do ${contact}, dać znać, że potrzebujesz pomocy, albo wrócić na start.`;
     },
     render: (state, persona) => {
@@ -250,7 +250,7 @@ const screens = {
           <p class="service-desc">Nic się nie stanie, jeśli teraz przerwiesz.</p>
         </div>
         ${list([
-          row({ iconName: 'call', tint: 'green', title: `Zadzwoń do ${contact}`, go: 'callContact' }),
+          row({ iconName: 'call', tint: 'green', title: `Zadzwoń do ${contactCase(state, persona, contactId, 'gen')}`, go: 'callContact' }),
           canAsk
             ? row({ iconName: 'people', tint: 'blue', title: `Daj znać: ${contact}`, desc: from ? `Zobaczy, że potrzebujesz pomocy przy: „${from}”` : 'Zobaczy, że potrzebujesz pomocy', action: 'askForHelp' })
             : row({ iconName: 'people', tint: 'blue', title: 'Pozwól bliskiej osobie Ci pomagać', go: 'helpers' }),
@@ -267,7 +267,7 @@ const screens = {
         notify(contactId, {
           title: me,
           body: `Potrzebuje pomocy${from ? ` na ekranie „${from}”` : ''}. Zadzwoń do niej.`,
-          action: { label: `Zadzwoń do ${me}`, go: 'callContact' },
+          action: { label: `Zadzwoń do ${contactCase(state, contactId, persona, 'gen')}`, go: 'callContact' },
         });
         notify(persona, { title: 'Wysłane', body: `Wysłaliśmy do: ${contactName(state, persona, contactId)}. Zaraz może do Ciebie zadzwonić.` });
       },

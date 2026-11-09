@@ -28,6 +28,12 @@ export const explanation = {
   todo: 'Napisz krótkie wyjaśnienie i wyślij je do urzędu. Nic nie płacisz.',
   when: `Do ${letter.deadline}`,
   warning: 'Jeśli nie odpowiesz, urząd może sam ustalić podatek — możliwe, że wyższy.',
+  // To samo dla osoby, która pomaga (Anna czyta pismo mamy)
+  forHelper: {
+    what: 'Urząd pyta, dlaczego w informacji o podatku od domu podano 98 m², a w urzędowej ewidencji dom ma 120 m². Chce wiedzieć, skąd ta różnica.',
+    todo: 'Trzeba napisać krótkie wyjaśnienie i wysłać je do urzędu. Nic nie trzeba płacić.',
+    warning: 'Jeśli odpowiedź nie dotrze na czas, urząd może sam ustalić podatek — możliwe, że wyższy.',
+  },
 };
 
 export function explanationSpeech(e = explanation) {

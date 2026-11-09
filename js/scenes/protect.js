@@ -6,13 +6,14 @@ import { store, go, home, replace, notify, patch, addHistory, withBiometric, ope
 import { icon } from '../icons.js';
 import { speak, stopSpeaking } from '../speech.js';
 import { list, row, newBadge, sectionTitle, serviceHeader, infoBox } from '../ui.js';
-import { contactName } from '../personas.js';
+import { contactName, contactCase } from '../personas.js';
 import { clock } from '../dates.js';
 import { qrSvg } from './control.js';
 
 // Imiona bez odmiany: „Anna Nowak, Córka” na telefonie Krystyny, „Mama” na telefonie Anny
 const annaFor = (state) => contactName(state, 'krystyna', 'anna');
 const mamaFor = (state) => contactName(state, 'anna', 'krystyna');
+const mamaGen = (state) => contactCase(state, 'anna', 'krystyna', 'gen');
 
 // Po rozłączeniu oszust próbuje dalej: prośba o logowanie przychodzi po chwili
 const PUSH_DELAY_MS = 2500;
@@ -228,6 +229,7 @@ export function blockedStatus(state) {
 
 function checkSpeech(check) {
   if (!check) return null;
+  if (check.mismatch) return 'Ta instytucja nie dzwoni teraz do Ciebie. Teraz dzwoni do Ciebie Zakład Ubezpieczeń Społecznych. Wybierz go, żeby sprawdzić rozmówcę.';
   if (check.verified) {
     const code = realCaller.code.split('').join(' ');
     return `Tak, dzwoni do Ciebie naprawdę Zakład Ubezpieczeń Społecznych. Rozmawia z Tobą ${realCaller.name}. Poproś ją o kod. Powinna podać: ${code}. Jeśli poda inny, rozłącz się.`;
@@ -235,9 +237,19 @@ function checkSpeech(check) {
   return 'Żadna instytucja nie dzwoni teraz do Ciebie. To prawie na pewno oszustwo. Rozłącz się. Nikomu nie przekazuj pieniędzy ani kodów.';
 }
 
+// Podczas prawdziwej rozmowy z ZUS wybrano inną instytucję — bez alarmu i bez ostrzeżenia dla Anny
+function mismatchResult(check) {
+  const { title } = institutions.find((i) => i.id === check.institution);
+  return `
+    <div class="alert-full alert-info" role="status">
+      <h2>${title}: nie dzwoni teraz do Ciebie</h2>
+      <p>Teraz dzwoni do Ciebie <strong>Zakład Ubezpieczeń Społecznych</strong>. Wybierz go, żeby sprawdzić rozmówcę.</p>
+    </div>
+    <button class="btn btn-primary" data-back>Wybierz jeszcze raz</button>`;
+}
+
 function scamResult(state, check) {
   const onCall = Boolean(state.call);
-  const other = state.call?.caller === 'zus' && check.institution !== 'zus' ? infoBox('Teraz dzwoni do Ciebie tylko <strong>Zakład Ubezpieczeń Społecznych</strong>. Wybierz go, żeby sprawdzić rozmówcę.') : '';
   const annaInfo = guardianAlerts(state)
     ? infoBox(`<strong>Ostrzeżenie dostała: ${annaFor(state)}.</strong> Zaraz może do Ciebie zadzwonić.`)
     : infoBox('Gdy pozwolisz bliskiej osobie pomagać, dostanie w takiej chwili ostrzeżenie.');
@@ -248,7 +260,6 @@ function scamResult(state, check) {
       <p>To prawie na pewno <strong>oszustwo</strong>.</p>
       <p class="alert-do">Rozłącz się. Nikomu nie przekazuj pieniędzy ani kodów.</p>
     </div>
-    ${other}
     ${onCall ? '<button class="btn btn-danger" data-action="hangup">Rozłącz się</button>' : ''}
     ${annaInfo}
     <p class="footnote">Policja, bank ani urząd nigdy nie proszą przez telefon o pieniądze, kaucję, numer karty ani kod z SMS-a.</p>
@@ -289,9 +300,11 @@ export const protectScreens = {
         const state = store.get();
         const institution = el.dataset.id;
         const verified = state.call?.caller === 'zus' && institution === 'zus';
+        // Trwa prawdziwa rozmowa z ZUS, a wybrano inną instytucję: to nie oszustwo, tylko pomyłka w wyborze
+        const mismatch = state.call?.caller === 'zus' && institution !== 'zus';
         const { from } = institutions.find((i) => i.id === institution);
         const fromText = from ? ` „${from}”` : '';
-        patch({ callCheck: { institution, verified } });
+        patch({ callCheck: { institution, verified, mismatch } });
 
         if (verified) {
           if (state.realCall !== 'verified') {
@@ -312,7 +325,7 @@ export const protectScreens = {
               title: mamaFor(state),
               body: `Sprawdza podejrzany telefon${fromText}. Aplikacja kazała jej się rozłączyć. Zadzwoń do niej.`,
               tone: 'danger',
-              action: { label: `Zadzwoń do ${mamaFor(state)}`, go: 'callContact' },
+              action: { label: `Zadzwoń do ${mamaGen(state)}`, go: 'callContact' },
             });
           }
         }
@@ -329,6 +342,7 @@ export const protectScreens = {
     render: (state) => {
       const check = state.callCheck;
       if (!check) return infoBox('Wybierz najpierw, kto się przedstawił.');
+      if (check.mismatch) return mismatchResult(check);
       return check.verified ? verifiedResult(state) : scamResult(state, check);
     },
     actions: {
@@ -387,9 +401,9 @@ export const protectScreens = {
           });
           notify('anna', {
             title: mamaFor(state),
-            body: 'Ktoś próbował zalogować się na to konto. Prośba została odrzucona i zablokowana.',
+            body: 'Ktoś próbował zalogować się na jej konto. Prośba została odrzucona i zablokowana.',
             tone: 'danger',
-            action: { label: `Zadzwoń do ${mamaFor(state)}`, go: 'callContact' },
+            action: { label: `Zadzwoń do ${mamaGen(state)}`, go: 'callContact' },
           });
         }
         if (store.get().simpleMode[persona]) speak('Zablokowane. Nikt nie zalogował się na Twoje konto.');

@@ -1,14 +1,15 @@
 // Zakładka „Dokumenty” — ekran główny mObywatela. Są tu tylko dokumenty, jak w aplikacji.
 // Wyjątek to tryb prosty: nie ma w nim zakładek, a ten sam ekran staje się ekranem startowym.
 import { notify } from '../store.js';
-import { people, contactName, fullName } from '../personas.js';
-import { docStack, list, row, newBadge, sectionTitle } from '../ui.js';
+import { people, contactName, contactCase, fullName } from '../personas.js';
+import { docStack, list, row, newBadge, sectionTitle, infoBox } from '../ui.js';
 import { protectionStatus, blockedStatus } from '../scenes/protect.js';
 import { medsStatus } from '../scenes/meds.js';
 import { pickupStatus } from '../scenes/pickup.js';
 
-// Imiona bez odmiany: „Anna Nowak, Córka” albo nadana nazwa, np. „Mama”
+// „Anna Nowak, Córka” albo nadana nazwa, np. „Mama”; contactGen — „do Anny Nowak”, „do Mamy”
 const contactFor = (state, persona) => contactName(state, persona, people[persona].contact);
+const contactGen = (state, persona) => contactCase(state, persona, people[persona].contact, 'gen');
 
 function standardHome(persona) {
   return `
@@ -60,7 +61,7 @@ function simpleRows(persona, state) {
     row({ iconName: 'qr', title: 'Zeskanuj kod QR', desc: 'W hotelu, w urzędzie, przy logowaniu', go: 'qrScan' }),
     row({ iconName: 'eye', tint: 'green', title: 'Kto widział moje dane', go: 'myData' }),
     row({ iconName: 'bell', title: 'Powiadomienia', desc: unread ? `Nowe: ${unread}` : 'Brak nowych', go: 'notifications' }),
-    row({ iconName: 'call', tint: 'blue', title: `Zadzwoń do ${contactFor(state, persona)}`, go: 'callContact' }),
+    row({ iconName: 'call', tint: 'blue', title: `Zadzwoń do ${contactGen(state, persona)}`, go: 'callContact' }),
   ].filter(Boolean);
 }
 
@@ -90,6 +91,19 @@ export const documentsScreen = {
   render: (state, persona) => (state.simpleMode[persona] ? simpleHome(persona, state) : standardHome(persona)),
 };
 
+// Zwykłe połączenie telefoniczne. mObywatel tylko je otwiera, więc w prototypie rozmowy nie łączymy.
+// „Wróć” prowadzi tam, skąd dzwoniono.
+export function phoneCallView(name, detail = '') {
+  return `
+    <div class="calling">
+      <div class="avatar avatar-large" aria-hidden="true">${name[0]}</div>
+      <p class="calling-name">${name}</p>
+      ${detail ? `<p class="muted">${detail}</p>` : ''}
+    </div>
+    ${infoBox('W prawdziwej aplikacji otworzy się zwykłe połączenie telefoniczne. W prototypie rozmowy nie łączymy.')}
+    <button class="btn btn-primary" data-back>Wróć</button>`;
+}
+
 // Połączenie z bliską osobą. Na drugim telefonie dzwoniący jest podpisany tak, jak widzi go odbiorca.
 export function callScreenFor(contactId) {
   return {
@@ -97,18 +111,9 @@ export function callScreenFor(contactId) {
     title: 'Połączenie',
     onEnter: (state, persona) => {
       const callee = contactId ?? people[persona].contact;
-      notify(callee, { title: contactName(state, callee, persona), body: 'Dzwoni do Ciebie.' });
+      notify(callee, { title: contactName(state, callee, persona), body: 'Próbuje się do Ciebie dodzwonić.' });
     },
-    render: (state, persona) => {
-      const name = contactName(state, persona, contactId ?? people[persona].contact);
-      return `
-      <div class="calling">
-        <div class="avatar avatar-large" aria-hidden="true">${name[0]}</div>
-        <p class="calling-name">${name}</p>
-        <p class="muted">Łączę…</p>
-      </div>
-      <button class="btn btn-danger" data-home>Rozłącz</button>`;
-    },
+    render: (state, persona) => phoneCallView(contactName(state, persona, contactId ?? people[persona].contact)),
   };
 }
 

@@ -19,6 +19,7 @@ import { startAutoplay, stopAutoplay, pauseAutoplay, resumeAutoplay, autoplaySta
 import { initDevices, biometric } from './device.js';
 import { initProlog, prolog, prologEnabled } from './postacie/prolog.js';
 import { initTypography } from './typografia.js';
+import { clock } from './dates.js';
 
 const tabs = [
   { id: 'documents', iconName: 'cards', label: 'Dokumenty' },
@@ -158,7 +159,7 @@ function readAloudButton(state, persona, screen) {
 // Pasek stanu jak w iOS: godzina (albo zielona pigułka trwającej rozmowy), zasięg, Wi-Fi, bateria
 const statusbar = (state, persona) => `
   <div class="statusbar">
-    ${callPill(state, persona) || '<span class="statusbar-time" aria-hidden="true">9:41</span>'}
+    ${callPill(state, persona) || `<span class="statusbar-time" aria-hidden="true" data-live-time="minutes">${clock(Date.now())}</span>`}
     <span class="statusbar-icons" aria-hidden="true">
       <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
       <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.2-1.2A10.3 10.3 0 008 .9 10.3 10.3 0 00.8 3.8L2 5a8.6 8.6 0 016-2.4z"/><path d="M8 6c1.4 0 2.6.5 3.6 1.4l1.2-1.2A6.9 6.9 0 008 4.3c-1.9 0-3.6.7-4.8 1.9l1.2 1.2C5.4 6.5 6.6 6 8 6z"/><path d="M8 9.3c.6 0 1.2.2 1.6.6L8 11.6 6.4 9.9c.4-.4 1-.6 1.6-.6z"/></svg>
@@ -386,35 +387,53 @@ function openEpisode(index, { quick = false } = {}) {
   renderMobileSwitch(store.get());
 }
 
-// Powrót do bohaterek po skończonym scenariuszu: 6 s na zobaczenie efektu na telefonie,
-// komunikat z odliczaniem i możliwością zostania przy telefonach
-const RETURN_MS = 6000;
+// Powrót do bohaterek po skończonym scenariuszu: 15 s na zobaczenie efektu na telefonach i wariantów w panelu,
+// komunikat z odliczaniem. Każde kliknięcie albo klawisz zatrzymuje odliczanie i zostajemy przy telefonach.
+const RETURN_S = 15;
 let returnTimer = null;
 
+function stopOnInteraction(event) {
+  if (event.target.closest?.('[data-return-toast]')) return;
+  cancelReturn();
+}
+
 function cancelReturn() {
-  clearTimeout(returnTimer);
+  clearInterval(returnTimer);
   returnTimer = null;
+  document.removeEventListener('pointerdown', stopOnInteraction, true);
+  document.removeEventListener('keydown', stopOnInteraction, true);
   document.querySelector('[data-return-toast]')?.remove();
 }
 
 function scheduleReturn(episode) {
   cancelReturn();
+  let left = RETURN_S;
   const toast = document.createElement('div');
   toast.className = 'return-toast';
   toast.dataset.returnToast = '';
   toast.setAttribute('role', 'status');
   toast.innerHTML = `
-    <p><strong>Scenariusz obejrzany ✓</strong> Za chwilę wracamy do bohaterek.</p>
+    <p><strong>Scenariusz obejrzany ✓</strong> Wracamy do bohaterek za <span data-return-left>${left}</span> s. Kliknij cokolwiek, żeby zostać.</p>
     <button class="return-toast-stay" data-return-stay>Zostań tutaj</button>
-    <span class="return-toast-bar" style="animation-duration: ${RETURN_MS}ms"></span>`;
+    <span class="return-toast-bar" style="animation-duration: ${RETURN_S * 1000}ms"></span>`;
   document.body.appendChild(toast);
   toast.querySelector('[data-return-stay]').addEventListener('click', cancelReturn);
-  returnTimer = setTimeout(() => {
+  // Nasłuch dopiero po bieżącym kliknięciu — to ono mogło zakończyć scenariusz
+  setTimeout(() => {
+    if (!returnTimer) return;
+    document.addEventListener('pointerdown', stopOnInteraction, true);
+    document.addEventListener('keydown', stopOnInteraction, true);
+  }, 0);
+  returnTimer = setInterval(() => {
+    left -= 1;
+    const counter = toast.querySelector('[data-return-left]');
+    if (counter) counter.textContent = left;
+    if (left > 0) return;
     cancelReturn();
     // Ktoś w międzyczasie otworzył inny scenariusz albo pokaz — zostajemy
     if (store.get().episode !== episode || autoplayState()) return;
     prolog()?.showStart();
-  }, RETURN_MS);
+  }, 1000);
 }
 
 // Scenariusz z wprowadzeniem bohaterki, gdy prolog jest włączony
@@ -430,6 +449,29 @@ function resetDemo() {
   lastStepPersona = null;
   lastGuideEpisode = null;
   store.reset();
+}
+
+// „Od początku” pyta przed resetem: obejrzane scenariusze i stan telefonów przepadają
+function confirmReset() {
+  const dialog = document.createElement('dialog');
+  dialog.className = 'confirm-dialog';
+  dialog.setAttribute('aria-labelledby', 'confirm-reset-title');
+  dialog.innerHTML = `
+    <h2 id="confirm-reset-title">Zacząć od początku?</h2>
+    <p>Wszystkie scenariusze będą oznaczone jako nieobejrzane, a telefony wrócą do stanu początkowego.</p>
+    <div class="confirm-dialog-actions">
+      <button class="btn btn-secondary btn-small" value="cancel" data-confirm-cancel>Anuluj</button>
+      <button class="btn btn-primary btn-small" data-confirm-ok>Zacznij od początku</button>
+    </div>`;
+  document.body.appendChild(dialog);
+  dialog.addEventListener('close', () => dialog.remove());
+  dialog.querySelector('[data-confirm-cancel]').addEventListener('click', () => dialog.close());
+  dialog.querySelector('[data-confirm-ok]').addEventListener('click', () => {
+    dialog.close();
+    resetDemo();
+  });
+  dialog.showModal();
+  dialog.querySelector('[data-confirm-cancel]').focus();
 }
 
 function showPersona(persona) {
@@ -551,7 +593,7 @@ function handleClick(event) {
     return;
   }
 
-  if ('reset' in target.dataset) resetDemo();
+  if ('reset' in target.dataset) confirmReset();
 }
 
 document.addEventListener('click', handleClick);
@@ -597,6 +639,13 @@ document.addEventListener('change', (event) => {
 });
 // Twarde spacje po słowach z 1–2 liter na całej stronie, także w tym, co dorysują telefony i prolog
 initTypography();
+
+// Prawdziwa godzina na paskach stanu i na dokumentach (jak w aplikacji: dokument pokazuje czas z sekundami)
+setInterval(() => {
+  const now = new Date();
+  document.querySelectorAll('[data-live-time="minutes"]').forEach((el) => { el.textContent = clock(now); });
+  document.querySelectorAll('[data-live-time="seconds"]').forEach((el) => { el.textContent = now.toLocaleTimeString('pl-PL'); });
+}, 1000);
 store.subscribe(render);
 onSpeakingChange(() => render(store.get()));
 onAutoplayChange(() => render(store.get()));

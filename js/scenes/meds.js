@@ -4,14 +4,16 @@
 import { store, notify, patch, addHistory, replace } from '../store.js';
 import { icon } from '../icons.js';
 import { list, row, newBadge, serviceHeader, infoBox } from '../ui.js';
-import { contactName } from '../personas.js';
+import { contactName, contactCase } from '../personas.js';
 import { qrSvg } from './control.js';
+import { phoneCallView } from '../screens/documents.js';
 
 // Po prośbie Anny przychodnia wystawia receptę po chwili
 const REFILL_DELAY_MS = 3000;
 
 const annaFor = (state) => contactName(state, 'krystyna', 'anna');
 const mamaFor = (state) => contactName(state, 'anna', 'krystyna');
+const mamaGen = (state) => contactCase(state, 'anna', 'krystyna', 'gen');
 
 // Leki z e-recept, opisane po ludzku. Nazwy substancji są prawdziwe, dawki przykładowe.
 export const meds = [
@@ -34,7 +36,9 @@ export const meds = [
 ];
 
 const clinic = { name: 'Przychodnia „Pod Lipami” w Wejherowie', phone: '58 000 00 00' };
+// Każda e-recepta ma własny kod. Nowa recepta (po prośbie Anny) dostaje nowy kod.
 const prescriptionCode = '4827';
+const newPrescriptionCode = '6153';
 
 const lowMed = meds[0];
 
@@ -92,6 +96,7 @@ function medDetail(medId) {
   return {
     kind: 'inner',
     title: med.plain,
+    hideReadAloud: true,
     speech: () => `${med.plain}. ${med.dose}, ${med.when.toLowerCase()}. ${med.leaflet} W razie wątpliwości zapytaj lekarza lub farmaceutę.`,
     render: () => `
       <h2 class="service-title">${med.plain}</h2>
@@ -101,6 +106,18 @@ function medDetail(medId) {
       </div>
       <p class="ai-source">${icon('assistant', { size: 16 })} Streszczenie ulotki leku. W razie wątpliwości zapytaj lekarza lub farmaceutę.</p>
       <button class="btn btn-secondary" data-speak>${icon('speaker', { size: 20 })} Przeczytaj mi to</button>`,
+  };
+}
+
+// Co pokazać w aptece. Gdy lek się kończy, jego stara recepta jest już wykorzystana — w aptece widać tylko pozostałe.
+// Nowa recepta ma własny kod.
+function pharmacyFor(state) {
+  if (state.meds === 'refilled') return { code: newPrescriptionCode, items: [lowMed], fresh: true };
+  if (state.meds === 'ok') return { code: prescriptionCode, items: meds };
+  return {
+    code: prescriptionCode,
+    items: meds.filter((m) => m !== lowMed),
+    note: `${lowMed.plain}: recepta jest już wykorzystana. Nową zamówisz w „Moje leki”.`,
   };
 }
 
@@ -144,7 +161,7 @@ export const medsScreens = {
         <p class="service-desc">${lowMed.substance}. Kto ma poprosić lekarza o nową receptę?</p>
         ${list([
           ask,
-          row({ iconName: 'call', tint: 'blue', title: 'Zadzwoń do przychodni', desc: `${clinic.name} · ${clinic.phone}`, trailing: '' }),
+          row({ iconName: 'call', tint: 'blue', title: 'Zadzwoń do przychodni', desc: `${clinic.name} · ${clinic.phone}`, go: 'medsCallClinic' }),
         ])}`;
     },
     actions: {
@@ -162,22 +179,32 @@ export const medsScreens = {
     },
   },
 
+  medsCallClinic: {
+    kind: 'inner',
+    title: 'Połączenie',
+    render: () => phoneCallView(clinic.name, clinic.phone),
+  },
+
   medsPharmacy: {
     kind: 'inner',
     title: 'W aptece',
     onEnter: (state) => {
       if (state.meds === 'refilled' && !state.medsShown) patch({ medsShown: true });
     },
-    speech: () => `Pokaż ten ekran w aptece. Kod recepty: ${prescriptionCode.split('').join(' ')}. Farmaceuta zeskanuje kod albo przepisze cyfry.`,
-    render: () => `
+    speech: (state) => `Pokaż ten ekran w aptece. Kod recepty: ${pharmacyFor(state).code.split('').join(' ')}. Farmaceuta zeskanuje kod albo przepisze cyfry.`,
+    render: (state) => {
+      const { code, items, note, fresh } = pharmacyFor(state);
+      return `
       <div class="pharmacy">
-        <p class="ai-label">Pokaż w aptece</p>
+        <p class="ai-label">${fresh ? 'Nowa recepta · pokaż w aptece' : 'Pokaż w aptece'}</p>
         ${qrSvg(170)}
-        <p class="pharmacy-code">${prescriptionCode.split('').map((d) => `<span>${d}</span>`).join('')}</p>
+        <p class="pharmacy-code">${code.split('').map((d) => `<span>${d}</span>`).join('')}</p>
         <p class="service-desc">Kod recepty. Farmaceuta zeskanuje kod albo przepisze cyfry. Nie musisz niczego szukać ani tłumaczyć.</p>
       </div>
-      ${list(meds.map((m) => row({ iconName: 'pill', tint: 'red', title: m.plain, desc: m.substance, trailing: '' })))}
-      <button class="btn btn-primary" data-home>Gotowe</button>`,
+      ${list(items.map((m) => row({ iconName: 'pill', tint: 'red', title: m.plain, desc: m.substance, trailing: '' })))}
+      ${note ? infoBox(note) : ''}
+      <button class="btn btn-primary" data-home>Gotowe</button>`;
+    },
   },
 
   // Telefon Anny: prośba mamy o pomoc z receptą
@@ -196,12 +223,12 @@ export const medsScreens = {
           ${list([row({ iconName: 'building', tint: 'blue', title: clinic.name, desc: 'Przychodnia lekarza rodzinnego', trailing: '' })])}
           <button class="btn btn-primary" data-action="orderRx">Poproś przychodnię o receptę ${newBadge()}</button>`;
       }
-      if (state.meds === 'ordered') return infoBox(`<strong>Przychodnia dostała prośbę.</strong> Recepta przyjdzie prosto do telefonu: ${mamaFor(state)}.`);
+      if (state.meds === 'ordered') return infoBox(`<strong>Przychodnia dostała prośbę.</strong> Recepta przyjdzie prosto na telefon ${mamaGen(state)}.`);
       return `
         <div class="success">
           <span class="success-icon">${icon('check', { size: 40 })}</span>
           <h2 class="service-title">Recepta gotowa</h2>
-          <p class="service-desc">Przychodnia wystawiła receptę. Jest już w telefonie: ${mamaFor(state)}.</p>
+          <p class="service-desc">Przychodnia wystawiła receptę. Jest już w telefonie ${mamaGen(state)}.</p>
         </div>
         <button class="btn btn-primary" data-home>Gotowe</button>`;
     },

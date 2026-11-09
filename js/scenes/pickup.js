@@ -21,9 +21,9 @@ const untilOptions = {
 };
 
 // W czyjej sprawie i jakie podpowiedzi. Listy nie da się przewidzieć, dlatego zawsze jest też „Inna sprawa”.
+// Antka tu nie pokazujemy: żaden scenariusz o nim nie opowiada (decyzja Filipa, 9.11.2026).
 const subjects = [
   { id: 'zosia', purposes: ['school', 'doctor'] },
-  { id: 'antek', purposes: ['doctor'] },
   { id: 'me', purposes: ['parcel'] },
 ];
 
@@ -67,6 +67,14 @@ export const pickupScreens = {
           ${serviceHeader({ iconName: 'people', tint: 'green', title: 'Upoważnienie aktywne', desc: `${mamaFor(state)} · ${untilOptions[state.pickup.until].short}`, badge: newBadge() })}
           ${list([row({ iconName: 'check', tint: 'green', title: scopeText(state, state.pickup, 'anna'), trailing: '' })])}
           ${infoBox('Dostaniesz powiadomienie, gdy ktoś zeskanuje kod.')}
+          <button class="btn btn-secondary btn-danger-text" data-action="revokePickup">Odwołaj upoważnienie</button>`;
+      }
+      if (state.pickup?.status === 'used') {
+        return `
+          ${serviceHeader({ iconName: 'people', tint: 'green', title: 'Upoważnienie użyte', desc: `${mamaFor(state)} · dziś o ${clock(state.pickup.usedAt)}`, badge: newBadge() })}
+          ${list([row({ iconName: 'check', tint: 'green', title: scopeText(state, state.pickup, 'anna'), desc: `Ważne ${untilOptions[state.pickup.until].short}`, trailing: '' })])}
+          ${infoBox(isSchool(state.pickup) ? 'Szkoła potwierdziła odbiór. Wpis znajdziesz też w historii.' : 'Osoba sprawdzająca potwierdziła upoważnienie. Wpis znajdziesz też w historii.')}
+          <button class="btn btn-primary" data-home>Gotowe</button>
           <button class="btn btn-secondary btn-danger-text" data-action="revokePickup">Odwołaj upoważnienie</button>`;
       }
       const draft = state.pickupDraft;

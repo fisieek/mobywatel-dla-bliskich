@@ -26,14 +26,16 @@ const familyReady = (s) => {
 // Kontrola pokazuje historię z całej rodziny, więc startuje z tym, co wydarzyłoby się we wcześniejszych scenariuszach
 function controlStart(s) {
   familyReady(s);
-  const at = new Date().toISOString();
+  // Wpisy rozłożone w czasie, jak prawdziwa historia dnia (ale zawsze dzisiaj)
+  const midnight = new Date().setHours(0, 5, 0, 0);
+  const minutesAgo = (m) => new Date(Math.max(Date.now() - m * 60 * 1000, midnight)).toISOString();
   s.letter = 'signed';
-  s.protection = { checked: true, push: 'blocked', blockedAt: at };
+  s.protection = { checked: true, push: 'blocked', blockedAt: minutesAgo(25) };
   s.history = [
-    { id: 'seed-1', at, persona: 'krystyna', actor: 'blocked', text: 'Ktoś próbował zalogować się na Twoje konto z innego urządzenia. Prośbę odrzuciłaś' },
-    { id: 'seed-2', at, persona: 'krystyna', actor: 'self', text: 'Podpisałaś i wysłałaś odpowiedź do urzędu' },
-    { id: 'seed-3', at, persona: 'krystyna', actor: 'anna', text: 'Przygotowała odpowiedź do urzędu' },
-    { id: 'seed-4', at, persona: 'krystyna', actor: 'anna', text: 'Przeczytała pismo z urzędu' },
+    { id: 'seed-1', at: minutesAgo(25), persona: 'krystyna', actor: 'blocked', text: 'Ktoś próbował zalogować się na Twoje konto z innego urządzenia. Prośbę odrzuciłaś' },
+    { id: 'seed-2', at: minutesAgo(55), persona: 'krystyna', actor: 'self', text: 'Podpisałaś i wysłałaś odpowiedź do urzędu' },
+    { id: 'seed-3', at: minutesAgo(80), persona: 'krystyna', actor: 'anna', text: 'Przygotowała odpowiedź do urzędu' },
+    { id: 'seed-4', at: minutesAgo(115), persona: 'krystyna', actor: 'anna', text: 'Przeczytała pismo z urzędu' },
   ];
 }
 
@@ -74,7 +76,8 @@ export const episodes = [
       { text: 'Do Krystyny dzwoni oszust podający się za policjanta.', button: { action: 'scamCall', label: 'Zasymuluj telefon' }, done: (s) => Boolean(s.call) || s.protection.checked },
       { phone: K, text: 'Odbierz. Już pod numerem widać podpis: „Numer niepotwierdzony przez żadną instytucję”.', done: (s) => s.call?.status === 'talking' || s.protection.checked },
       { phone: K, text: 'Nie rozłączaj się. Wyjdź z ekranu rozmowy (pasek „Przesuń w górę”), dotknij „Sprawdź, kto dzwoni” i wybierz „Policja”.', done: (s) => s.protection.checked },
-      { phone: K, text: 'Aplikacja mówi: rozłącz się. Dotknij „Rozłącz się”. Anna dostaje ostrzeżenie.', done: (s) => s.protection.checked && !s.call },
+      // Rozmowa z ZUS z wariantu nie cofa tego kroku — liczy się tylko rozmowa z oszustem
+      { phone: K, text: 'Aplikacja mówi: rozłącz się. Anna już dostała ostrzeżenie. Dotknij „Rozłącz się”.', done: (s) => s.protection.checked && s.call?.caller !== 'scam' },
       { phone: K, text: 'Przychodzi prośba o logowanie, której Krystyna nie zaczęła. Otwórz ją i odrzuć. Nie da się jej zatwierdzić.', done: (s) => s.protection.push === 'blocked' },
     ],
   },
@@ -104,7 +107,7 @@ export const episodes = [
     start: familyReady,
     steps: [
       { text: 'Mija kilka tygodni. Krystynie kończy się lek na ciśnienie.', button: { action: 'medsLow', label: 'Przejdź kilka tygodni dalej' }, done: (s) => s.meds !== 'ok' },
-      { phone: K, text: 'Otwórz powiadomienie, dotknij „Poproś o nową receptę” i poproś o pomoc Annę.', done: (s) => ['requested', 'ordered', 'refilled'].includes(s.meds) },
+      { phone: K, text: 'Otwórz powiadomienie („Zobacz”), dotknij „Poproś o nową receptę” i poproś o pomoc Annę.', done: (s) => ['requested', 'ordered', 'refilled'].includes(s.meds) },
       { phone: A, text: 'Otwórz powiadomienie od mamy i dotknij „Poproś przychodnię o receptę”. Anna widzi tylko ten jeden lek.', done: (s) => ['ordered', 'refilled'].includes(s.meds) },
       { text: 'Przychodnia wystawia receptę. Poczekaj chwilę.', done: (s) => s.meds === 'refilled' },
       { phone: K, text: 'Recepta przyszła na telefon Krystyny. Dotknij „Pokaż w aptece”.', done: (s) => s.medsShown },
@@ -120,8 +123,8 @@ export const episodes = [
     people: [anna, krystyna],
     start: familyReady,
     steps: [
-      { phone: A, text: 'Anna utknęła w pracy, a lekcje Zosi kończą się o 13:30. Otwórz Usługi → „Upoważnij bliską osobę” i dotknij „Upoważnij”.', done: (s) => Boolean(s.pickup) },
-      { phone: K, text: 'Krystyna jest pod szkołą. Otwórz powiadomienie, a potem dotknij „Nauczycielka skanuje kod”.', done: (s) => s.pickup?.status === 'used' },
+      { phone: A, text: 'Anna utknęła w pracy, a lekcje Zosi zaraz się kończą. Otwórz Usługi → „Upoważnij bliską osobę” i dotknij „Upoważnij”.', done: (s) => Boolean(s.pickup) },
+      { phone: K, text: 'Krystyna jest pod szkołą. Otwórz powiadomienie („Pokaż kod”), a potem dotknij „Nauczycielka skanuje kod”.', done: (s) => s.pickup?.status === 'used' },
     ],
   },
   {

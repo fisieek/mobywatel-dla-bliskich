@@ -112,7 +112,7 @@ export const intros = {
     speaker: 'anna',
     listeners: ['krystyna', 'zosia'],
     lines: [
-      'Utknęłam w pracy, a lekcje Zosi kończą się o 13:30.',
+      'Utknęłam w pracy, a lekcje Zosi zaraz się kończą.',
       'Odbierze ją mama, ale szkoła dostaje ode mnie tylko kartkę, której nie ma jak sprawdzić.',
       'Zobaczcie, jak upoważniam mamę w telefonie, a nauczycielka sprawdza kod.',
     ],
