@@ -13,6 +13,8 @@ function initialState() {
     episode: 0,
     episodeOpen: false,
     summaryOpen: false,
+    // Gdy scenariusz jest otwarty, panel pokazuje tylko jego; pozostałe są pod „Pokaż pozostałe scenariusze”
+    othersOpen: false,
     seenEpisodes: [],
     // Pozwolenie Krystyny dla Anny (scena 1a): 'none' | 'pending' | 'active'
     guardian: 'none',

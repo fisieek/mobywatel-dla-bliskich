@@ -658,6 +658,32 @@ button:disabled {
 }
 
 /* Podział listy: trzy filary, potem kolejne pomysły dla całej rodziny */
+.eps-others-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 14px;
+  border: 1px dashed var(--mo-hair);
+  border-radius: 14px;
+  color: var(--mo-blue);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.eps-others-toggle[aria-expanded='true'] .ep-chevron {
+  transform: rotate(-135deg);
+  margin-bottom: -3px;
+}
+
+.eps-others {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .eps-group {
   display: grid;
   gap: 2px;

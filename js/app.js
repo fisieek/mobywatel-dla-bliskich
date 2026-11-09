@@ -559,6 +559,16 @@ function handleClick(event) {
       return s;
     });
   }
+  if ('others' in target.dataset) {
+    store.update((s) => {
+      s.othersOpen = !s.othersOpen;
+      return s;
+    });
+    // Po rozwinięciu przycisk idzie na górę panelu, żeby od razu było widać pozostałe scenariusze
+    // (po przerysowaniu panelu, które przywraca poprzednie przewinięcie)
+    if (store.get().othersOpen) setTimeout(() => document.querySelector('[data-others]')?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 50);
+    return;
+  }
   if ('summary' in target.dataset) {
     return store.update((s) => {
       s.summaryOpen = !s.summaryOpen;

@@ -340,20 +340,14 @@ function episodeItem(state, index, run) {
     </li>`;
 }
 
-export function renderGuide(state, run = null) {
+// Cała lista: „W skrócie”, scenariusze w grupach i podsumowanie. skip — scenariusz pokazany już wyżej.
+function fullList(state, run, skip = null) {
   return `
-    <div class="guide-head">
-      <div class="guide-title-row">
-        <h2 class="guide-title">Scenariusze</h2>
-        <span class="guide-progress">Obejrzane: ${state.seenEpisodes.length} z ${episodes.length}</span>
-      </div>
-      ${autoplayBar(run)}
-    </div>
-    <div class="guide-body" data-guide-body>
       ${intro(state, run)}
       <ol class="eps">
         ${episodes
           .map((episode, i) => {
+            if (i === skip) return '';
             const groupStart = episode.group === 'family' && episodes[i - 1]?.group !== 'family';
             const heading = groupStart
               ? `<li class="eps-group"><p class="eps-group-title">Cała rodzina: kolejne pomysły</p><p class="eps-group-desc">Ten sam wzorzec zgody i historii w innych sprawach rodziny.</p></li>`
@@ -369,7 +363,33 @@ export function renderGuide(state, run = null) {
           </button>
           ${state.summaryOpen ? `<div class="ep-body">${summary()}</div>` : ''}
         </li>
-      </ol>
+      </ol>`;
+}
+
+// Oglądany scenariusz jest w panelu sam, żeby nie czytać o innym w trakcie.
+// Pozostałe (i „W skrócie”) czekają pod przyciskiem, a oglądany zostaje na górze, gdy się je rozwinie.
+function focusedList(state, run) {
+  const others = episodes.length - 1;
+  return `
+      <ol class="eps">${episodeItem(state, state.episode, run)}</ol>
+      <button class="eps-others-toggle" data-others aria-expanded="${state.othersOpen}">
+        ${state.othersOpen ? 'Ukryj pozostałe scenariusze' : `Pokaż pozostałe scenariusze (${others})`}
+        <span class="ep-chevron" aria-hidden="true"></span>
+      </button>
+      ${state.othersOpen ? `<div class="eps-others">${fullList(state, run, state.episode)}</div>` : ''}`;
+}
+
+export function renderGuide(state, run = null) {
+  return `
+    <div class="guide-head">
+      <div class="guide-title-row">
+        <h2 class="guide-title">Scenariusze</h2>
+        <span class="guide-progress">Obejrzane: ${state.seenEpisodes.length} z ${episodes.length}</span>
+      </div>
+      ${autoplayBar(run)}
+    </div>
+    <div class="guide-body" data-guide-body>
+      ${state.episodeOpen ? focusedList(state, run) : fullList(state, run)}
     </div>
     <div class="guide-foot">
       <button class="btn btn-secondary btn-small" data-autoplay="highlights">▶ Najważniejsze · 2 min</button>
