@@ -216,6 +216,7 @@ function renderPhone(persona, state) {
 
   root.querySelector('.app-content').scrollTop = keepScroll;
   restoreFocus(root, focus);
+  fitNavTitle(root);
 
   if (lastScreen[persona] !== screenId) {
     lastScreen[persona] = screenId;
@@ -224,6 +225,21 @@ function renderPhone(persona, state) {
     if (stale.length) setTimeout(() => stale.forEach((n) => dismissNotification(persona, n.id)), 0);
     // Akcje przy wejściu na ekran (np. powiadomienie na drugim telefonie) po zakończeniu renderowania
     if (screen.onEnter) setTimeout(() => screen.onEnter(store.get(), persona), 0);
+  }
+}
+
+// Tytuł na górnym pasku ma się zmieścić między „Wróć” a ikoną po prawej: najpierw cała szerokość środka,
+// potem mniejsza czcionka (do 13 px). Wielokropek dopiero, gdy i to nie wystarczy.
+function fitNavTitle(root) {
+  const title = root.querySelector('.nav-title');
+  const bar = title?.parentElement;
+  if (!bar || !bar.clientWidth) return;
+  const side = Math.max(0, ...[...bar.children].filter((el) => el !== title).map((el) => el.getBoundingClientRect().width));
+  title.style.maxWidth = `${bar.clientWidth - 16 - 2 * side - 8}px`;
+  let size = parseFloat(getComputedStyle(title).fontSize);
+  while (title.scrollWidth > title.clientWidth && size > 13) {
+    size -= 1;
+    title.style.fontSize = `${size}px`;
   }
 }
 

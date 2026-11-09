@@ -3364,11 +3364,11 @@ label.btn {
     display: none;
   }
 
+  /* Licencje muszą być zawsze widoczne: przy węższym oknie stopka zawija się do dwóch linii zamiast się ucinać */
   .footer-short {
     display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 12px;
+    line-height: 1.35;
   }
 
   .fit-screen .stage-footer {

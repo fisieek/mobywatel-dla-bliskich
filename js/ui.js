@@ -31,10 +31,11 @@ export function docStack(ids, owner) {
 
 // Wiersz listy: { brand, iconName, tint, leading, title, desc, go, action, badge, trailing }.
 // brand — kolorowa ikona istniejącej usługi; nasze nowe mają ikonę na pastelowym kółku.
-export function row({ brand, iconName, tint = 'blue', leading = '', title, desc = '', go, action, id, badge = '', trailing }) {
+// attrs — dodatkowe atrybuty przycisku, np. role="switch" aria-checked="true" dla przełącznika
+export function row({ brand, iconName, tint = 'blue', leading = '', title, desc = '', go, action, id, badge = '', trailing, attrs = '' }) {
   const target = go ? `data-go="${go}"` : action ? `data-action="${action}"${id ? ` data-id="${id}"` : ''}` : '';
   return `
-    <button class="row" ${target}>
+    <button class="row" ${target} ${attrs}>
       ${leading}${brand ? `<span class="row-brand">${brandIcon(brand)}</span>` : iconName ? `<span class="row-icon tint-${tint}">${icon(iconName, { size: 20 })}</span>` : ''}
       <span class="row-text">
         <span class="row-title">${title}${badge}</span>

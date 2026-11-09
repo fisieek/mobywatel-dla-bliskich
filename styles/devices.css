@@ -385,17 +385,38 @@
     background: var(--mo-blue-wash);
   }
 
-  /* Tryb prosty nie ma bocznego menu — dwa duże przyciski są na dole, jak na telefonie */
-  [data-device='duo-open'] .simple .phone-screen {
-    padding-left: 0;
+  /* Tryb prosty: na niskim, szerokim ekranie przyciski „Przeczytaj na głos”, „Start” i „Nie wiem, co zrobić”
+     idą do bocznego paska (jak menu w zwykłym trybie), żeby treść miała całą wysokość ekranu */
+  [data-device='duo-open'] .simple .read-aloud-bar {
+    position: absolute;
+    top: var(--statusbar-h);
+    left: 0;
+    width: var(--sidebar-w);
+    padding: 12px;
+    border-top: 0;
+    background: none;
+    z-index: 1;
   }
 
-  [data-device='duo-open'] .simple .statusbar {
-    margin-left: 0;
+  [data-device='duo-open'] .simple .simple-dock {
+    position: absolute;
+    top: var(--statusbar-h);
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-w);
+    grid-template-columns: 1fr;
+    align-content: end;
+    padding: 12px 12px var(--safe-bottom);
+    border-right: 1px solid var(--mo-hair);
   }
 
-  [data-device='duo-open'] .simple .banners {
-    left: calc(50% - 190px);
+  /* Treść nie kończy się pod paskiem domowym */
+  [data-device='duo-open'] .app-content {
+    padding-bottom: calc(24px + var(--safe-bottom));
+  }
+
+  [data-device='duo-open'] .simple .app-content {
+    padding-bottom: calc(24px + var(--safe-bottom));
   }
 
   /* Powiadomienia na środku obszaru treści */

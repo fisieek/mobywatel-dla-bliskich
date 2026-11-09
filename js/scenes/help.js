@@ -232,6 +232,8 @@ export const helpScreens = {
             action: item.locked ? undefined : 'toggleScope',
             id: item.key,
             trailing: toggle(state.guardianScope[item.key], Boolean(item.locked)),
+            // Czytnik ekranu słyszy „przełącznik, włączony / wyłączony”; zablokowany jest niedostępny
+            attrs: `role="switch" aria-checked="${Boolean(state.guardianScope[item.key])}"${item.locked ? ' aria-disabled="true"' : ''}`,
           }),
         ),
       )}

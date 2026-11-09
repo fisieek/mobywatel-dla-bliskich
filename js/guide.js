@@ -229,10 +229,11 @@ function autoplayBar(run) {
     </div>`;
 }
 
-// Karta „W skrócie”: teza, krótki pokaz i porównanie z prototypem referencyjnym. Scenariusze są tuż pod nią.
-// Porównujemy z wersją pod linkiem na mobywatel.ai (tryb skryptowy), tak jak widzi ją jury.
+// Karta „W skrócie”: teza, krótki pokaz i porównanie z prototypem organizatorów konkursu. Scenariusze są tuż pod nią.
+// Porównujemy z wersją, którą można otworzyć na mobywatel.ai (przygotowane odpowiedzi), tak jak widzi ją jury.
+// Tekst czytają też urzędnicy spoza konkursu, więc bez słów „referencja” i „tryb skryptowy”.
 const comparison = [
-  ['Sprawy bliskiej osoby', 'Każda osoba pokazowa załatwia własne sprawy. Na pytanie o sprawy mamy, np. „Jakie recepty ma moja mama?”, wersja pod linkiem nie ma przygotowanej odpowiedzi.', 'Mama daje córce pozwolenie z zakresem. Córka przygotowuje odpowiedź, mama ją czyta i podpisuje. Każdy krok jest w historii.'],
+  ['Sprawy bliskiej osoby', 'Każda osoba pokazowa załatwia własne sprawy. Na pytanie o sprawy mamy, np. „Jakie recepty ma moja mama?”, prototyp organizatorów nie ma przygotowanej odpowiedzi.', 'Mama daje córce pozwolenie z zakresem. Córka przygotowuje odpowiedź, mama ją czyta i podpisuje. Każdy krok jest w historii.'],
   ['Telefon od oszusta', 'Scenariusz podejrzanego SMS-a, o który użytkownik pyta asystenta.', 'Podpis numeru już przy dzwonieniu, sprawdzenie w trakcie rozmowy, prośba o logowanie bez przycisku „Zatwierdź” i ostrzeżenie dla córki.'],
   ['Jedna sprawa, kilka osób', 'Rozmowa jednej osoby z asystentem na jednym telefonie.', 'Sprawa przechodzi między telefonami Krystyny, Anny i Zosi. Każdy widzi tylko swoją część.'],
 ];
@@ -251,19 +252,19 @@ function intro(state, run) {
       <p class="intro-thesis">Sprawy urzędowe często załatwia się w rodzinie. <strong>Pokazujemy mObywatela, w którym bliscy pomagają sobie bezpiecznie: na dwóch telefonach naraz, ze zgodą, zakresem i historią.</strong></p>
       ${running ? '' : `<button class="btn btn-primary intro-play" data-autoplay="highlights">▶ Pokaż najważniejsze (ok. 2 min)</button>`}
       <details class="guide-details intro-compare">
-        <summary>Prototyp referencyjny i my</summary>
+        <summary>Porównanie z prototypem organizatorów konkursu</summary>
         <div class="compare">
           ${comparison
             .map(
               ([what, reference, ours]) => `
               <div class="compare-row">
                 <p class="summary-what">${what}</p>
-                <div class="counter-row"><span>Referencja</span><p>${reference}</p></div>
+                <div class="counter-row"><span>Prototyp organizatorów</span><p>${reference}</p></div>
                 <div class="counter-row counter-new"><span>U nas</span><p>${ours}</p></div>
               </div>`,
             )
             .join('')}
-          <p class="guide-note">Prototyp referencyjny prowadzi jedną osobę w rozmowie z asystentem. Porównujemy z wersją pod linkiem na mobywatel.ai (tryb skryptowy), którą widzi jury. Pełna wersja z modelem językowym może odpowiadać na więcej pytań. Mocną stroną referencji jest rozmowa z asystentem, więc nie konkurujemy z nią wprost: dokładamy to, czego brakuje rodzinie.</p>
+          <p class="guide-note">Organizatorzy konkursu mObywatel Challenge pokazują na stronie <a href="https://mobywatel.ai" target="_blank" rel="noopener">mobywatel.ai</a> własny prototyp: asystenta, z którym rozmawia jedna osoba. Porównujemy się z wersją, którą można tam otworzyć w przeglądarce — odpowiada przygotowanymi wcześniej tekstami. Wersja połączona z modelem językowym może odpowiedzieć na więcej pytań. Mocną stroną tamtego prototypu jest rozmowa z asystentem, więc nie konkurujemy z nim wprost: dokładamy to, czego brakuje rodzinie.</p>
         </div>
       </details>
     </div>`;

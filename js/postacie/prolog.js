@@ -212,10 +212,12 @@ class Prolog {
     const open = this.currentEpisode();
     const next = this.nextEpisode();
     const label = (i) => `Scenariusz ${i + 1} „${this.episodes[i].name}”`;
+    // Główny przycisk: krótkie polecenie w pierwszej linii, nazwa scenariusza pod spodem — zawsze ten sam układ
+    const twoLines = (verb, i) => `<span>${verb} scenariusz ${i + 1}</span><span class="btn-sub">${this.episodes[i].name}</span>`;
     let main;
     if (next === null) main = '<p class="prolog-done">Wszystkie scenariusze obejrzane ✓</p><button class="btn btn-primary" data-prolog-action="summary">Podsumowanie: dziś i po zmianie</button>';
-    else if (open === next) main = `<button class="btn btn-primary" data-prolog-action="back-to-phones">Kontynuuj: ${label(next)}</button>`;
-    else main = `<button class="btn btn-primary" data-prolog-action="episode" data-index="${next}">Rozpocznij: ${label(next)}</button>`;
+    else if (open === next) main = `<button class="btn btn-primary btn-two-lines" data-prolog-action="back-to-phones">${twoLines('Kontynuuj', next)}</button>`;
+    else main = `<button class="btn btn-primary btn-two-lines" data-prolog-action="episode" data-index="${next}">${twoLines('Rozpocznij', next)}</button>`;
     const resume = open !== null && open !== next ? `<button class="btn btn-secondary btn-small" data-prolog-action="back-to-phones">Wróć do: ${label(open)}</button>` : '';
     this.actions.innerHTML = `
       ${main}
