@@ -12,6 +12,8 @@
 <p align="center">
   <a href="https://mobywatel-dla-bliskich-prototyp.vercel.app"><strong>Otwórz prototyp</strong></a>
   &nbsp;·&nbsp;
+  <a href="https://youtu.be/sOqvXTOI6qA">Film (1 min)</a>
+  &nbsp;·&nbsp;
   <a href="#jak-obejrzeć">Jak obejrzeć</a>
   &nbsp;·&nbsp;
   <a href="#uruchomienie-na-własnym-komputerze">Uruchomienie</a>
@@ -36,8 +38,10 @@ Prototyp pokazuje, jak mObywatel może działać dla rodziny. Sprawa przechodzi 
 Prototyp prowadzi przez sprawy jednej fikcyjnej rodziny: babci Krystyny (71 lat), jej córki Anny (34 lata) i wnuczki Zosi (11 lat).
 
 <p align="center">
-  <img src="docs/zrzuty/bohaterki.png" width="720" alt="Trzy bohaterki prototypu: Krystyna, Anna i Zosia">
+  <a href="https://youtu.be/sOqvXTOI6qA"><img src="docs/zrzuty/film.jpg" width="720" alt="Film „Sprawy urzędowe załatwia się w rodzinie” na YouTube: Krystyna, Anna i Zosia Nowak"></a>
 </p>
+
+<p align="center"><sub>Film w minutę o problemach, z którymi rodzina zostaje dziś sama przy sprawach urzędowych. <a href="https://youtu.be/sOqvXTOI6qA">Obejrzyj na YouTube</a></sub></p>
 
 Na ekranie startowym każda z nich przedstawia się i wprowadza w swój scenariusz. Bohaterki mówią głosem z nagrań przygotowanych wcześniej, więc w czasie pokazu prototyp nie łączy się z żadną usługą. Napisy w dymkach zostają, a głos można wyciszyć przyciskiem „Wycisz”.
 
@@ -69,6 +73,7 @@ Najprościej otworzyć **[prototyp w przeglądarce](https://mobywatel-dla-blisk
 - **Na komputerze** telefony stoją obok siebie, a obok jest panel ze scenariuszami. Każdy scenariusz opisuje problem, grupę osób, której dotyczy, i kolejne kroki.
 - **Pokaz automatyczny** sam klika te same przyciski co człowiek i podświetla każde dotknięcie. „Najważniejsze” trwa około 2 minut (trzy filary), a „Wszystkie” około 6 minut (siedem scenariuszy). Pokaz można w każdej chwili zatrzymać.
 - **Na telefonie** widać jeden telefon naraz, a zakładki Krystyna · Anna · Zosia przełączają osobę.
+- **Film** na YouTube (1 min) pokazuje problemy, od których zaczyna się prototyp: [youtu.be/sOqvXTOI6qA](https://youtu.be/sOqvXTOI6qA).
 - **„Pokaż na”** w nagłówku zmienia urządzenie: iPhone 18 Pro albo składany iPhone Duo (złożony i rozłożony).
 
 Wygląd odwzorowuje aktualną aplikację mObywatel. Nowe funkcje mają etykietę „Nowość”, a usługi, które już działają w mObywatelu, prowadzą do ekranu z tą informacją.
