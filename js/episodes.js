@@ -2,7 +2,7 @@
 // Najpierw trzy filary (`group: 'main'`), potem kolejne pomysły dla całej rodziny (`group: 'family'`).
 // Tryb prosty jest pierwszym krokiem Pomocy, a nie osobnym odcinkiem.
 // Każdy zaczyna się od własnego stanu (`start`), więc można otworzyć dowolny bez przechodzenia poprzednich.
-// Problemy i grupy dla pierwszych czterech: context/docs/strategia-priorytety.md, sekcja 3.
+// Problemy i grupy osób wynikają z rozmów i researchu projektu (dokumentacja poza repozytorium).
 
 const K = 'Telefon Krystyny';
 const A = 'Telefon Anny';

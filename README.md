@@ -39,6 +39,8 @@ Prototyp prowadzi przez sprawy jednej fikcyjnej rodziny: babci Krystyny (71 lat
   <img src="docs/zrzuty/bohaterki.png" width="720" alt="Trzy bohaterki prototypu: Krystyna, Anna i Zosia">
 </p>
 
+Na ekranie startowym każda z nich przedstawia się i wprowadza w swój scenariusz. Bohaterki mówią głosem z nagrań przygotowanych wcześniej, więc w czasie pokazu prototyp nie łączy się z żadną usługą. Napisy w dymkach zostają, a głos można wyciszyć przyciskiem „Wycisz”.
+
 ## Trzy filary: pomoc, ochrona, kontrola
 
 <p align="center">
@@ -118,7 +120,7 @@ Następnie otwórz http://localhost:4173. Adres z `?prolog=0` pomija ekran z bo
 | `js/episodes.js` | Scenariusze: problem, grupa osób, bohaterki i kroki |
 | `js/scenes/` | Przebieg każdego scenariusza na telefonach |
 | `js/screens/` | Ekrany aplikacji mObywatel: Dokumenty, Usługi, Kod QR, Szukaj, Więcej |
-| `js/postacie/` | Ekran startowy z bohaterkami 3D |
+| `js/postacie/` | Ekran startowy z bohaterkami 3D i ich głosami |
 | `js/autoplay.js` | Pokaz automatyczny |
 | `styles/` | Wygląd aplikacji, telefonów i ekranu startowego |
 | `api/` | Funkcja serwerowa do połączenia z modelem PLLuM (nieużywana) |
@@ -131,6 +133,7 @@ Pełny opis plików i zasad pisania tekstów jest w [budowa.md](docs/budowa.md
 - **Kod prototypu:** licencja MIT, zobacz [LICENSE](LICENSE).
 - **Ikony:** system projektowy mObywatela, © 2025 Centralny Ośrodek Informatyki, licencja MIT ([LICENCJA.txt](assets/ikony/LICENCJA.txt)). Prototyp nie zawiera godła ani logo dokumentów.
 - **Postacie 3D:** biblioteka Microsoft Rocketbox, licencja MIT ([LICENCJA-Rocketbox.txt](assets/postacie/LICENCJA-Rocketbox.txt)).
+- **Głosy bohaterek:** nagrania z ElevenLabs (model eleven_v4), szczegóły w [ZRODLO.txt](assets/postacie/glosy/ZRODLO.txt).
 - **three.js 0.170:** licencja MIT ([LICENSE](vendor/three/LICENSE)).
 
 To nie jest kod aplikacji mObywatel ani prototypu przygotowanego przez organizatorów konkursu. Nazwa mObywatel należy do jej właściciela. Wszystkie osoby, pisma, instytucje i dane w prototypie są fikcyjne.
