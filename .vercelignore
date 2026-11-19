@@ -6,3 +6,5 @@ dev-server.mjs
 .env
 narzedzia/
 .github/
+docs/
+LICENSE

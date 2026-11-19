@@ -21,7 +21,7 @@ const untilOptions = {
 };
 
 // W czyjej sprawie i jakie podpowiedzi. Listy nie da się przewidzieć, dlatego zawsze jest też „Inna sprawa”.
-// Antka tu nie pokazujemy: żaden scenariusz o nim nie opowiada (decyzja Filipa, 9.11.2026).
+// Antka tu nie pokazujemy: żaden scenariusz o nim nie opowiada (decyzja zespołu, 9.11.2026).
 const subjects = [
   { id: 'zosia', purposes: ['school', 'doctor'] },
   { id: 'me', purposes: ['parcel'] },

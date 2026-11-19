@@ -1,5 +1,5 @@
 // Lokalny serwer: pliki prototypu + /api/assistant (ta sama logika co na Vercelu).
-// Uruchomienie: node projects/mobywatel-challenge/prototyp/dev-server.mjs
+// Uruchomienie: node dev-server.mjs
 // Klucz API czyta z prototyp/.env.local (szablon: .env.example). Bez klucza działa tryb awaryjny.
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';

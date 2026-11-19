@@ -1,5 +1,5 @@
 // Wirtualny asystent w prototypie: przygotowane odpowiedzi do przykładowego pisma.
-// Prototyp nie łączy się z żadnym modelem językowym (decyzja Filipa, 2.11.2026).
+// Prototyp nie łączy się z żadnym modelem językowym (decyzja zespołu, 2.11.2026).
 import { explanation, replyDraft } from './letter.js';
 
 // Spinner ma się pokazać choć na chwilę, jak przy prawdziwej odpowiedzi

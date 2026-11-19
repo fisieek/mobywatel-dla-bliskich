@@ -111,7 +111,7 @@ function toggle(on) {
   return `<span class="toggle ${on ? 'toggle-on' : ''}" aria-hidden="true"><span></span></span>`;
 }
 
-// Więcej dokładnie jak w aplikacji (lista od Filipa z telefonu, 2.11.2026). Nowy jest tylko Tryb prosty, reszta to ślepe uliczki.
+// Więcej dokładnie jak w aplikacji (lista przepisana z aplikacji na telefonie, 2.11.2026). Nowy jest tylko Tryb prosty, reszta to ślepe uliczki.
 const moreRow = (title, iconName, go = `core:${title}`) => row({ iconName, tint: 'plain', title, go });
 
 const moreScreen = {
