@@ -1,0 +1,6 @@
+Głosy bohaterek prologu — nagrania z ElevenLabs (model eleven_v4, język polski), wygenerowane 19.11.2026.
+Krystyna: głos „Babcia Bożenka” (6qkrzTbAj75WW5U8X5mB)
+Anna: głos „Kinga – Warm & Energetic Polish Voice” (hq1SDzCP9HutY7Ea9PAW)
+Zosia: głos „Zofia – Fresh and Upbeat” (5NJx3YreuBEwRpE2BG5G), w przeglądarce odtwarzany szybciej (tempo 1,15), żeby brzmiał młodziej.
+glosy.json: tekst kwestii → plik, długość w ms, tempo. Teksty kwestii: js/postacie/historie.js.
+Po zmianie tekstu kwestii trzeba nagrać ją od nowa; kwestia bez nagrania jest pokazywana tylko napisem.

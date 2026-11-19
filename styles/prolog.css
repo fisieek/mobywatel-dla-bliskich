@@ -249,7 +249,8 @@ body.prolog-open {
 }
 
 /* Wyjście do ekranu z bohaterkami, zawsze w tym samym miejscu */
-.prolog-close {
+.prolog-close,
+.prolog-sound {
   position: absolute;
   top: 24px;
   left: 24px;
@@ -261,6 +262,17 @@ body.prolog-open {
   font-weight: 600;
   color: var(--mo-blue);
   cursor: pointer;
+}
+
+.prolog-sound {
+  top: auto;
+  bottom: 24px;
+  left: auto;
+  right: 24px;
+}
+
+.prolog-sound[hidden] {
+  display: none;
 }
 
 .prolog[data-mode='start'] .prolog-close,
@@ -510,10 +522,30 @@ body.prolog-open {
     text-overflow: ellipsis;
   }
 
-  .prolog-close {
+  /* Miejsce na ikonę głosu w prawym górnym rogu */
+  .prolog:has(.prolog-sound:not([hidden])) .prolog-chip {
+    right: 54px;
+    max-width: calc(100% - 192px);
+  }
+
+  .prolog-close,
+  .prolog-sound {
     top: 12px;
     left: 12px;
     padding: 8px 12px;
+  }
+
+  /* Na telefonie sama ikona w prawym górnym rogu; podpis zostaje dla czytników ekranu (aria-label) */
+  .prolog-sound {
+    top: 10px;
+    bottom: auto;
+    left: auto;
+    right: 10px;
+    padding: 6px 10px;
+  }
+
+  .prolog-sound-label {
+    display: none;
   }
 
   .prolog-bubble,

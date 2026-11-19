@@ -174,10 +174,11 @@ export class Character {
     this.play('idle', 0.6);
   }
 
-  // Mówienie: gestykulacja + kształty ust z tekstu. Kończy się po czasie czytania napisu.
-  say(text) {
+  // Mówienie: gestykulacja + kształty ust z tekstu. Kończy się po czasie nagrania (durationMs)
+  // albo, bez nagrania, po czasie czytania napisu.
+  say(text, durationMs) {
     this.stopSpeaking();
-    const duration = readingTime(text);
+    const duration = durationMs ?? readingTime(text);
     this.smileTarget = 0.15;
     this.play('talk', 0.5);
     return new Promise((resolve) => {

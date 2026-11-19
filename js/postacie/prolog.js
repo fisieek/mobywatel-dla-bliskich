@@ -8,6 +8,7 @@
 // - adres z ?prolog=0 wyłącza prolog (np. nagrywanie filmu narzędziem narzedzia/nagraj-film.mjs).
 import { people, personById, intros, episodesOf } from './historie.js';
 import { readingTime } from './mowa.js';
+import { voice } from './glos.js';
 
 const SEEN_KEY = 'mobywatel-dla-bliskich:prolog-v1';
 const NARROW = '(max-width: 860px)';
@@ -43,10 +44,10 @@ class TextOnlyCharacter {
   wave() {
     return sleep(400);
   }
-  say(text) {
+  say(text, durationMs) {
     this.cancel?.();
     return new Promise((resolve) => {
-      const timer = setTimeout(() => resolve(true), readingTime(text));
+      const timer = setTimeout(() => resolve(true), durationMs ?? readingTime(text));
       this.cancel = () => {
         clearTimeout(timer);
         resolve(false);
@@ -93,6 +94,7 @@ class Prolog {
       </header>
       <p class="prolog-chip" data-prolog-chip></p>
       <button class="prolog-close" data-prolog-action="start">✕ Wróć do bohaterek</button>
+      <button class="prolog-sound" data-prolog-action="sound" aria-pressed="false" hidden></button>
       <div class="prolog-bubble" data-prolog-bubble aria-live="polite"><strong data-prolog-speaker></strong><span data-prolog-line></span></div>
       <ul class="prolog-cards" data-prolog-cards>
         ${people
@@ -115,6 +117,8 @@ class Prolog {
     this.actions = el.querySelector('[data-prolog-actions]');
     this.chip = el.querySelector('[data-prolog-chip]');
     this.loading = el.querySelector('[data-prolog-loading]');
+    this.sound = el.querySelector('[data-prolog-action="sound"]');
+    this.renderSound();
     el.addEventListener('click', (e) => this.onClick(e));
   }
 
@@ -345,7 +349,10 @@ class Prolog {
     for (const line of lines) {
       if (token !== this.token || this.skipping) return;
       this.setBubble(id, line);
-      await c.say(line);
+      // Głos z nagrania, jeśli jest i nie jest wyciszony; usta poruszają się tyle, ile trwa nagranie
+      const clip = voice.play(line);
+      await c.say(line, clip?.duration);
+      clip?.stop();
       if (token !== this.token || this.skipping) return;
       await sleep(320);
     }
@@ -363,6 +370,17 @@ class Prolog {
     this.bubble.querySelector('[data-prolog-speaker]').textContent = personById(id).name;
     this.bubble.querySelector('[data-prolog-line]').textContent = line;
     this.place();
+  }
+
+  // Przycisk głosu w prawym górnym rogu: widoczny tylko, gdy są nagrania
+  renderSound() {
+    voice.ready.then(() => {
+      const any = Object.keys(voice.list).length > 0;
+      this.sound.hidden = !any;
+      this.sound.innerHTML = voice.on ? '🔊<span class="prolog-sound-label"> Wycisz</span>' : '🔈<span class="prolog-sound-label"> Włącz głos</span>';
+      this.sound.setAttribute('aria-pressed', String(!voice.on));
+      this.sound.setAttribute('aria-label', voice.on ? 'Wycisz głosy bohaterek' : 'Włącz głosy bohaterek');
+    });
   }
 
   markSeen(kind, value) {
@@ -439,6 +457,10 @@ class Prolog {
     const action = btn.dataset.prologAction;
     if (!action) return;
     if (action === 'skip') return this.skip();
+    if (action === 'sound') {
+      voice.toggle();
+      return this.renderSound();
+    }
     if (action === 'start') return this.showStart();
     if (action === 'list') return this.hide();
     if (action === 'back-to-phones') return this.hide();
